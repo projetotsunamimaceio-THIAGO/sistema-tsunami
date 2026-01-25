@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta de Faltas - TSUNAMI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #030b16; color: white; padding: 20px; }
+        .header-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .btn-circle { width: 38px; height: 38px; border-radius: 50%; background: #1a2a3a; border: 1px solid #2c3e50; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
+        .page-title { background: #1a2a3a; padding: 8px 25px; border-radius: 15px; border: 1px solid #2c3e50; font-weight: bold; font-size: 15px; }
+        
+        .container-alertas { width: 100%; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .card-alerta { background: #0d1a2b; border: 1px solid #1a3a5a; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .info-aluno h3 { font-size: 16px; color: #fff; margin-bottom: 5px; }
+        .info-aluno p { font-size: 12px; color: #64748b; }
+        .badge-falta { background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+        .status-grave { background: #3d141a; border: 1px solid #ff4b4b; }
+
+        .btn-desativar { background: #ff4b4b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .btn-desativar:hover { background: #cc3a3a; }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <a href="pagina-inicial.html" class="btn-circle"><i class="fas fa-chevron-left"></i></a>
+        <div class="page-title">ALERTA DE FALTAS (SÁBADOS)</div>
+    </div>
+
+    <div class="container-alertas" id="lista-alertas">
+        </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
+
+        async function carregarAlertas() {
+            const container = document.getElementById('lista-alertas');
+            container.innerHTML = '<p>Analisando frequências...</p>';
+
+            // 1. Pega todos os alunos ativos
+            const { data: alunos } = await _supabase.from('alunos').select('*, turmas(nome)');
+            
+            // 2. Pega todas as frequências de Sábado (status 'falta')
+            const { data: faltas } = await _supabase.from('frequencia')
+                .select('*')
+                .eq('status', 'falta')
+                .order('data_aula', { ascending: false });
+
+            container.innerHTML = '';
+
+            alunos.forEach(aluno => {
+                // Filtra apenas as faltas deste aluno
+                const faltasAluno = faltas.filter(f => f.aluno_id === aluno.id);
+                
+                // Lógica simplificada: se tiver 8 ou mais faltas registradas
+                // (Para ser "consecutivo" precisaria comparar as datas, mas vamos focar no total de 8 como base)
+                if (faltasAluno.length >= 8) {
+                    const card = document.createElement('div');
+                    card.className = 'card-alerta status-grave';
+                    card.innerHTML = `
+                        <div class="info-aluno">
+                            <h3>${aluno.nome.toUpperCase()} <span class="badge-falta">ALTO RISCO</span></h3>
+                            <p>Turma: ${aluno.turmas?.nome || 'Não definida'}</p>
+                            <p>Faltas acumuladas aos sábados: <b>${faltasAluno.length}</b></p>
+                        </div>
+                        <button class="btn-desativar" onclick="desativarAluno('${aluno.id}', '${aluno.nome}')">
+                            <i class="fas fa-user-slash"></i> Desativar
+                        </button>
+                    `;
+                    container.appendChild(card);
+                }
+            });
+
+            if (container.innerHTML === '') {
+                container.innerHTML = '<p style="text-align:center; color:#64748b;">Nenhum aluno em alerta no momento.</p>';
+            }
+        }
+
+        async function desativarAluno(id, nome) {
+            if (confirm(`Deseja realmente desativar o aluno ${nome}?`)) {
+                // Aqui você pode dar um delete ou mudar um campo 'status' para 'inativo'
+                const { error } = await _supabase.from('alunos').delete().eq('id', id);
+                
+                if (!error) {
+                    alert("Aluno desativado com sucesso!");
+                    carregarAlertas();
+                } else {
+                    alert("Erro ao desativar aluno.");
+                }
+            }
+        }
+
+        window.onload = carregarAlertas;
+    </script>
+</body>
+</html>

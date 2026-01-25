@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios Analíticos - TSUNAMI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #030b16; color: white; padding: 20px; }
+        .header-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .btn-circle { width: 38px; height: 38px; border-radius: 50%; background: #1a2a3a; border: 1px solid #2c3e50; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
+        .page-title { background: #1a2a3a; padding: 8px 25px; border-radius: 15px; border: 1px solid #2c3e50; font-weight: bold; font-size: 15px; text-transform: uppercase; }
+        .filter-bar { background: rgba(13, 26, 43, 0.8); border: 1px solid #1a3a5a; padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 20px; font-size: 13px; }
+        select { background: #030b16; color: white; border: 1px solid #1a3a5a; padding: 5px 10px; border-radius: 6px; outline: none; }
+        label { color: #00d4ff; font-weight: bold; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-container { background: rgba(13, 26, 43, 0.5); border: 1px solid #1a3a5a; border-radius: 15px; padding: 20px; text-align: center; min-height: 350px; }
+        .full-width { grid-column: 1 / -1; }
+        h3 { font-size: 14px; margin-bottom: 5px; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
+        h4 { font-size: 11px; color: #00d4ff; margin-bottom: 15px; font-weight: normal; opacity: 0.8; }
+        canvas { width: 100% !important; max-height: 300px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <a href="pagina-inicial.html" class="btn-circle"><i class="fas fa-chevron-left"></i></a>
+        <div class="page-title">Relatórios Analíticos</div>
+    </div>
+
+    <div class="filter-bar">
+        <div>
+            <label>Mês:</label>
+            <select id="f-mes">
+                <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+                <option value="9">Outubro</option><option value="10" selected>Novembro</option><option value="11">Dezembro</option>
+            </select>
+        </div>
+        <div>
+            <label>Ano:</label>
+            <select id="f-ano"></select>
+        </div>
+        <div>
+            <label>Comparar:</label>
+            <select id="f-periodo">
+                <option value="1">Mensal (Atual)</option>
+                <option value="3" selected>Trimestral (Atual + 2 ant.)</option>
+                <option value="6">Semestral (Atual + 5 ant.)</option>
+                <option value="12">Anual</option>
+            </select>
+        </div>
+        <button onclick="carregarDados()" style="background:#00d4ff; border:none; padding:6px 15px; border-radius:6px; cursor:pointer; font-weight:bold; margin-left:auto;">ATUALIZAR RELATÓRIO</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="chart-container">
+            <h3>Quantidade de Alunos por Turma</h3>
+            <canvas id="chartPizza"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Faltas e Presenças por Turma</h3>
+            <canvas id="chartBarras"></canvas>
+        </div>
+        <div class="chart-container full-width">
+            <h3>Evolução: Alunos Presentes por Sábado</h3>
+            <h4 id="info-periodo">Carregando período...</h4>
+            <canvas id="chartLinhas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
+        let charts = {};
+
+        function configurarAnos() {
+            const selectAno = document.getElementById('f-ano');
+            const anoAtual = new Date().getFullYear();
+            for (let i = anoAtual - 2; i <= anoAtual + 1; i++) {
+                const opt = document.createElement('option');
+                opt.value = i; opt.innerText = i;
+                if (i === anoAtual) opt.selected = true;
+                selectAno.appendChild(opt);
+            }
+        }
+
+        async function carregarDados() {
+            const mesSel = parseInt(document.getElementById('f-mes').value);
+            const anoSel = parseInt(document.getElementById('f-ano').value);
+            const qtdMeses = parseInt(document.getElementById('f-periodo').value);
+
+            // LOGICA CORRIGIDA: Data Fim é o último dia do mês selecionado
+            const dataFim = new Date(anoSel, mesSel + 1, 0);
+            
+            // LOGICA CORRIGIDA: Data Início recua (N - 1) meses para incluir o atual
+            // Ex: Se quer 3 meses e selecionou Nov (10), inicia em Setembro (10 - 2 = 8)
+            const dataInicio = new Date(anoSel, (mesSel - (qtdMeses - 1)), 1);
+
+            const formatISO = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const strInicio = formatISO(dataInicio);
+            const strFim = formatISO(dataFim);
+
+            document.getElementById('info-periodo').innerText = `Exibindo de ${dataInicio.toLocaleDateString('pt-BR')} até ${dataFim.toLocaleDateString('pt-BR')}`;
+
+            // Busca dados em paralelo para ser mais rápido
+            const [respTurmas, respAlunos, respFreq] = await Promise.all([
+                _supabase.from('turmas').select('*').order('nome'),
+                _supabase.from('alunos').select('id, nome, turma_id'),
+                _supabase.from('frequencia').select('*').gte('data_aula', strInicio).lte('data_aula', strFim)
+            ]);
+
+            const turmas = respTurmas.data || [];
+            const alunos = respAlunos.data || [];
+            const frequencia = respFreq.data || [];
+
+            renderizarPizza(turmas, alunos);
+            renderizarBarras(turmas, alunos, frequencia);
+            renderizarLinhas(turmas, alunos, frequencia);
+        }
+
+        function renderizarPizza(turmas, alunos) {
+            const labels = turmas.map(t => t.nome);
+            const counts = turmas.map(t => alunos.filter(a => a.turma_id === t.id).length);
+            if(charts.pizza) charts.pizza.destroy();
+            charts.pizza = new Chart(document.getElementById('chartPizza'), {
+                type: 'pie',
+                data: { labels, datasets: [{ data: counts, backgroundColor: ['#36a2eb', '#ff9f40', '#00ff88', '#ffcd56', '#9966ff', '#ff4b4b'], borderWidth: 0 }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#fff', font: { size: 10 } } } } }
+            });
+        }
+
+        function renderizarBarras(turmas, alunos, freq) {
+            const labels = turmas.map(t => t.nome);
+            const presencas = turmas.map(t => {
+                const idsAlunos = alunos.filter(a => a.turma_id === t.id).map(a => a.id);
+                return freq.filter(f => idsAlunos.includes(f.aluno_id) && (f.status === 'presente' || f.status === 'atraso')).length;
+            });
+            const faltas = turmas.map(t => {
+                const idsAlunos = alunos.filter(a => a.turma_id === t.id).map(a => a.id);
+                return freq.filter(f => idsAlunos.includes(f.aluno_id) && (f.status === 'falta' || f.status === 'justificado')).length;
+            });
+
+            if(charts.barras) charts.barras.destroy();
+            charts.barras = new Chart(document.getElementById('chartBarras'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Presenças', data: presencas, backgroundColor: '#00ff88' }, { label: 'Faltas', data: faltas, backgroundColor: '#ff4b4b' }] },
+                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#142841' }, ticks: { color: '#64748b' } }, x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } } }, plugins: { legend: { labels: { color: '#64748b' } } } }
+            });
+        }
+
+        function renderizarLinhas(turmas, alunos, freq) {
+            // Filtra apenas sábados e ordena cronologicamente
+            const sabadosEncontrados = [...new Set(freq
+                .filter(f => {
+                    // Força a data para meio-dia para evitar erros de fuso horário local
+                    const dataObj = new Date(f.data_aula + 'T12:00:00');
+                    return dataObj.getDay() === 6; 
+                })
+                .map(f => f.data_aula)
+            )].sort();
+
+            const datasets = turmas.map((t, i) => {
+                const cores = ['#36a2eb', '#ff9f40', '#00ff88', '#ffcd56', '#9966ff', '#ff4b4b'];
+                const idsAlunosDaTurma = alunos.filter(a => a.turma_id === t.id).map(a => a.id);
+
+                return {
+                    label: t.nome,
+                    data: sabadosEncontrados.map(dia => {
+                        return freq.filter(f => 
+                            f.data_aula === dia && 
+                            idsAlunosDaTurma.includes(f.aluno_id) && 
+                            (f.status === 'presente' || f.status === 'atraso')
+                        ).length;
+                    }),
+                    borderColor: cores[i % cores.length],
+                    backgroundColor: cores[i % cores.length],
+                    tension: 0.3,
+                    pointRadius: 4
+                };
+            });
+
+            if(charts.linhas) charts.linhas.destroy();
+            charts.linhas = new Chart(document.getElementById('chartLinhas'), {
+                type: 'line',
+                data: { 
+                    labels: sabadosEncontrados.map(s => {
+                        const partes = s.split('-');
+                        return `${partes[2]}/${partes[1]}`; // Formato DD/MM
+                    }), 
+                    datasets: datasets 
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, usePointStyle: true } },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#142841' }, ticks: { color: '#64748b' } }, 
+                        x: { grid: { color: '#142841' }, ticks: { color: '#64748b', font: { size: 10 } } } 
+                    }
+                }
+            });
+        }
+
+        window.onload = () => { configurarAnos(); carregarDados(); };
+    </script>
+</body>
+</html>

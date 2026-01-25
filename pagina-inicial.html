@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSUNAMI - Gestão</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #030b16; color: white; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        
+        header { width: 100%; padding: 20px 40px; display: flex; justify-content: flex-end; }
+        .user-info { border: 1px solid #142841; padding: 10px 20px; border-radius: 10px; font-size: 13px; display: flex; align-items: center; gap: 15px; background: rgba(10, 25, 47, 0.5); }
+        .logout { color: #ff4b4b; cursor: pointer; font-weight: bold; text-decoration: none; }
+
+        .brand-section { display: flex; align-items: center; justify-content: center; gap: 30px; margin: 20px 0 60px 0; width: 90%; }
+        .logo-container { width: 150px; height: 150px; }
+        .logo-container img { width: 100%; height: 100%; object-fit: contain; }
+        
+        h1 { font-size: 85px; letter-spacing: 8px; color: #00d4ff; line-height: 1; }
+        h2 { font-size: 28px; letter-spacing: 4px; color: #fff; font-weight: 400; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; width: 90%; max-width: 1100px; margin-bottom: 50px; }
+        
+        .card { 
+            background: #0d2137; 
+            border: 1px solid #1a3a5a; 
+            border-radius: 20px; 
+            padding: 40px 20px; 
+            text-align: center; 
+            text-decoration: none; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px; 
+            transition: 0.3s; 
+        }
+        
+        .card:hover { transform: translateY(-5px); border-color: #00d4ff; box-shadow: 0 5px 15px rgba(0, 212, 255, 0.15); }
+        .card i { font-size: 35px; color: #00d4ff; }
+        .card span { font-weight: bold; font-size: 18px; text-transform: uppercase; }
+
+        .card-red { background-color: #3d141a; }
+        .card-gold { background-color: #3d3514; }
+        
+        footer { margin-top: auto; padding: 40px; font-size: 13px; color: #64748b; }
+
+        @media (max-width: 900px) { h1 { font-size: 50px; } .grid-container { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="user-info">
+            <span id="user-email">Verificando...</span>
+            <span class="logout" onclick="logout()">Sair</span>
+        </div>
+    </header>
+
+    <div class="brand-section">
+        <div class="logo-container">
+            <img src="logo.png" alt="Logo">
+        </div>
+        <div class="title-group">
+            <h1>TSUNAMI</h1>
+            <h2>FREQUÊNCIA - GESTÃO</h2>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <a href="turmas.html" class="card">
+            <span>Turmas Ativas</span>
+            <i class="fas fa-users"></i>
+        </a>
+        
+        <a href="alunos.html" class="card">
+            <span>Cadastro de Alunos</span>
+            <i class="fas fa-user-plus"></i>
+        </a>
+        
+        <a href="alerta-faltas.html" class="card card-red">
+            <span>Alerta de Faltas</span>
+            <i class="fas fa-triangle-exclamation"></i>
+        </a>
+        
+        <a href="frequencia-arena.html" class="card">
+            <span>Frequência Arena</span>
+            <i class="fas fa-clipboard-check"></i>
+        </a>
+        
+        <a href="frequencia-projeto.html" class="card">
+            <span>Frequência Projeto</span>
+            <i class="fas fa-chart-simple"></i>
+        </a>
+        
+        <a href="relatorios.html" class="card card-gold">
+            <span>Relatórios</span>
+            <i class="fas fa-file-lines"></i>
+        </a>
+    </div>
+
+    <footer>Esporte Cristo • Sistema de Gestão de Frequência</footer>
+
+    <script>
+        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
+
+        async function checkUser() {
+            try {
+                const { data: { user }, error } = await _supabase.auth.getUser();
+                if (error || !user) {
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('user-email').innerText = user.email;
+                }
+            } catch (err) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function logout() {
+            await _supabase.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = checkUser;
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequência Arena - TSUNAMI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #030b16; color: white; padding: 20px; }
+        .header-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .btn-circle { width: 38px; height: 38px; border-radius: 50%; background: #1a2a3a; border: 1px solid #2c3e50; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
+        .page-title { background: #1a2a3a; padding: 8px 25px; border-radius: 15px; border: 1px solid #2c3e50; font-weight: bold; font-size: 15px; }
+        .date-row { display: flex; align-items: center; gap: 15px; margin: 15px 0; }
+        .month-label { font-size: 17px; min-width: 160px; text-align: center; font-weight: 500; }
+        .filter-pos { position: absolute; right: 20px; top: 75px; }
+        select { background: #0d1a2b; color: white; border: 1px solid #1a3a5a; padding: 6px 15px; border-radius: 8px; outline: none; }
+        .arena-container { background: #0d1a2b; border: 1px solid #1a3a5a; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #142841; }
+        th { color: #64748b; font-size: 9px; text-transform: uppercase; background: #142841; }
+        .td-aluno { text-align: left !important; padding-left: 20px; }
+        .aluno-nome { font-weight: bold; font-size: 12px; color: white; }
+        .aluno-turma { font-size: 8px; color: #00d4ff; font-weight: bold; margin-top: 2px; }
+        .box { width: 27px; height: 27px; background: #1a2a3a; border-radius: 6px; cursor: pointer; border: 1px solid #2c3e50; display: flex; align-items: center; justify-content: center; transition: 0.1s; font-size: 11px; margin: 0 auto; }
+        .box-all { color: #4ba3ff; font-size: 9px; font-weight: bold; }
+        .btn-share { background: #1a3a5a; color: #00d4ff; border: 1px solid #00d4ff; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .st-falta { background: #ff4b4b !important; border-color: #ff4b4b !important; color: white; }
+        .st-presente { background: #00ff88 !important; border-color: #00ff88 !important; color: #030b16; }
+        .st-atraso { background: #ffd400 !important; border-color: #ffd400 !important; color: #030b16; }
+        .st-justificado { background: #00d4ff !important; border-color: #00d4ff !important; color: white; }
+        .falta-badge { background: #ff4b4b; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        .row-presencas { background: rgba(0, 212, 255, 0.05); color: #00ff88; font-weight: bold; font-size: 11px; }
+        #toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; display: none; z-index: 999; font-weight: bold; }
+        .toast-success { background: #00ff88; color: #030b16; }
+        .toast-error { background: #ff4b4b; color: white; }
+    </style>
+</head>
+<body>
+    <div id="toast"></div>
+    <div class="header-nav">
+        <a href="pagina-inicial.html" class="btn-circle"><i class="fas fa-chevron-left"></i></a>
+        <div class="page-title">FREQUÊNCIA ARENA</div>
+    </div>
+    <div class="date-row">
+        <div class="btn-circle" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></div>
+        <span class="month-label" id="label-mes">JANEIRO DE 2026</span>
+        <div class="btn-circle" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></div>
+    </div>
+    <div class="filter-pos">
+        <select id="sel-turma" onchange="carregarArena()"><option value="">Todas as turmas</option></select>
+    </div>
+    <div class="arena-container">
+        <table>
+            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th><th style="width:60px">Faltas</th></tr></thead>
+            <tbody id="b-table"></tbody>
+            <tfoot><tr class="row-presencas" id="f-total"><td class="td-aluno">PRESENÇAS (VERDE/AMARELO)</td><td id="total-geral-faltas"></td></tr></tfoot>
+        </table>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
+        let dataFoco = new Date(2026, 0, 1); 
+        let sabadosDoMes = [];
+        let cicloAllEstado = {}; 
+        let listaAlunosCache = [];
+        let freqCache = [];
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = type === 'success' ? 'toast-success' : 'toast-error';
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2000);
+        }
+
+        function atualizarSabados() {
+            const ano = dataFoco.getFullYear();
+            const mes = dataFoco.getMonth();
+            document.getElementById('label-mes').innerText = `${dataFoco.toLocaleString('pt-BR', { month: 'long' }).toUpperCase()} DE ${ano}`;
+            sabadosDoMes = [];
+            let d = new Date(ano, mes, 1);
+            while (d.getMonth() === mes) {
+                if (d.getDay() === 6) {
+                    const s = `${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    sabadosDoMes.push(s);
+                    if (cicloAllEstado[s] === undefined) cicloAllEstado[s] = 0;
+                }
+                d.setDate(d.getDate() + 1);
+            }
+        }
+
+        async function carregarArena() {
+            const body = document.getElementById('b-table');
+            const head = document.getElementById('h-days');
+            const foot = document.getElementById('f-total');
+            const tId = document.getElementById('sel-turma').value;
+            
+            while(head.children.length > 2) head.removeChild(head.children[1]);
+            while(foot.children.length > 2) foot.removeChild(foot.children[1]);
+
+            sabadosDoMes.forEach(d => {
+                const th = document.createElement('th');
+                th.innerHTML = `Sáb<br>${d.split('-')[2]}/${d.split('-')[1]}`;
+                head.insertBefore(th, head.lastElementChild);
+                const tdFoot = document.createElement('td');
+                tdFoot.id = `total-dia-${d}`;
+                tdFoot.innerText = "0";
+                foot.insertBefore(tdFoot, foot.lastElementChild);
+            });
+
+            const { data: alunos } = await _supabase.from('alunos').select('*, turmas(nome, id)').order('nome');
+            const { data: freq } = await _supabase.from('frequencia').select('*');
+            
+            // --- NOVA LÓGICA DE FILTRAGEM (TRAVA) ---
+            const primeiroDiaFoco = sabadosDoMes[0];
+            const ultimoDiaFoco = sabadosDoMes[sabadosDoMes.length - 1];
+
+            listaAlunosCache = (alunos || []).filter(a => {
+                const pertenceTurma = !tId || a.turma_id === tId;
+                
+                // 1. Só aparece se já estava matriculado no mês que estamos vendo
+                const jaMatriculado = a.data_matricula <= ultimoDiaFoco;
+
+                // 2. Trava de 2026: Se estivermos em 2026, a validade deve ser futura.
+                let validadeOk = true;
+                if (primeiroDiaFoco >= "2026-01-01") {
+                    validadeOk = a.data_validade_fim && a.data_validade_fim >= primeiroDiaFoco;
+                }
+
+                return pertenceTurma && jaMatriculado && validadeOk;
+            });
+
+            freqCache = freq || [];
+            body.innerHTML = '';
+            
+            // Linha Marcar Todos
+            let trAll = document.createElement('tr');
+            trAll.style.background = "rgba(255,255,255,0.02)";
+            let htmlAll = `<td class="td-aluno"><b>MARCAR TODOS</b></td>`;
+            sabadosDoMes.forEach(d => {
+                htmlAll += `<td>
+                    <div class="box box-all" onclick="ciclarAll('${d}')">ALL</div>
+                    <button class="btn-share" onclick="gerarRelatorio('${d}')"><i class="fas fa-share-nodes"></i></button>
+                </td>`;
+            });
+            htmlAll += `<td></td>`;
+            trAll.innerHTML = htmlAll;
+            body.appendChild(trAll);
+
+            // Linhas dos Alunos
+            listaAlunosCache.forEach(aluno => {
+                let tr = document.createElement('tr');
+                let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome.toUpperCase()}</span><div class="aluno-turma">${aluno.turmas?.nome || ''}</div></td>`;
+                
+                sabadosDoMes.forEach((dia) => {
+                    // O aluno só ganha botão se já estava matriculado naquela data específica
+                    if (aluno.data_matricula > dia) {
+                        html += `<td><div class="box" style="opacity:0.1; cursor:default;">-</div></td>`;
+                    } else {
+                        const f = freqCache.find(x => x.aluno_id === aluno.id && x.data_aula === dia);
+                        const st = f?.status || '';
+                        let ico = st === 'falta' ? '✕' : (st === 'presente' ? '✓' : (st === 'atraso' ? '!' : (st === 'justificado' ? 'J' : '—')));
+                        html += `<td><div id="btn-${aluno.id}-${dia}" class="box st-${st}" onclick="mudarStatus('${aluno.id}','${dia}')">${ico}</div></td>`;
+                    }
+                });
+                
+                html += `<td><div id="faltas-${aluno.id}" class="falta-badge">0</div></td>`;
+                tr.innerHTML = html;
+                body.appendChild(tr);
+            });
+            atualizarSomatorias();
+        }
+
+        function atualizarSomatorias() {
+            listaAlunosCache.forEach(aluno => {
+                let totalF = 0;
+                sabadosDoMes.forEach(dia => {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if (el && (el.classList.contains('st-falta') || el.classList.contains('st-justificado'))) totalF++;
+                });
+                const fBadge = document.getElementById(`faltas-${aluno.id}`);
+                if(fBadge) fBadge.innerText = totalF;
+            });
+            sabadosDoMes.forEach(dia => {
+                let totalP = 0;
+                listaAlunosCache.forEach(aluno => {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if (el && (el.classList.contains('st-presente') || el.classList.contains('st-atraso'))) totalP++;
+                });
+                const fDia = document.getElementById(`total-dia-${dia}`);
+                if(fDia) fDia.innerText = totalP;
+            });
+        }
+
+        async function mudarStatus(id, dia) {
+            const el = document.getElementById(`btn-${id}-${dia}`);
+            const ciclo = ['', 'falta', 'presente', 'atraso', 'justificado'];
+            let atual = '';
+            ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
+            let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
+            
+            el.className = `box st-${prox}`;
+            el.innerText = prox === 'falta' ? '✕' : (prox === 'presente' ? '✓' : (prox === 'atraso' ? '!' : (prox === 'justificado' ? 'J' : '—')));
+            atualizarSomatorias();
+
+            let payload = { aluno_id: id, data_aula: dia, status: prox, justificativa: null };
+            if (prox === 'justificado') {
+                const m = prompt("Motivo da Justificativa:");
+                payload.justificativa = m || "Sem motivo informado";
+            }
+
+            if (prox === '') {
+                await _supabase.from('frequencia').delete().match({ aluno_id: id, data_aula: dia });
+            } else {
+                await _supabase.from('frequencia').upsert(payload, { onConflict: 'aluno_id, data_aula' });
+            }
+            showToast("Atualizado", "success");
+        }
+
+        async function ciclarAll(dia) {
+            const ciclo = ['falta', 'presente', 'atraso', '']; 
+            let index = cicloAllEstado[dia];
+            let statusAplicar = ciclo[index];
+            cicloAllEstado[dia] = (index + 1) % ciclo.length;
+
+            const batch = [];
+            const idsParaDeletar = [];
+
+            listaAlunosCache.forEach(aluno => {
+                // Só marca quem já estava matriculado no dia
+                if (aluno.data_matricula <= dia) {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if(el) {
+                        el.className = `box st-${statusAplicar}`;
+                        el.innerText = statusAplicar === 'falta' ? '✕' : (statusAplicar === 'presente' ? '✓' : (statusAplicar === 'atraso' ? '!' : '—'));
+                        if (statusAplicar === '') idsParaDeletar.push(aluno.id);
+                        else batch.push({ aluno_id: aluno.id, data_aula: dia, status: statusAplicar });
+                    }
+                }
+            });
+            
+            atualizarSomatorias();
+
+            if (statusAplicar === '') {
+                await _supabase.from('frequencia').delete().in('aluno_id', idsParaDeletar).eq('data_aula', dia);
+            } else if (batch.length > 0) {
+                await _supabase.from('frequencia').upsert(batch, { onConflict: 'aluno_id, data_aula' });
+            }
+            showToast("Coluna atualizada", "success");
+        }
+
+        async function gerarRelatorio(dia) {
+            const { data: fr } = await _supabase.from('frequencia').select('*').eq('data_aula', dia);
+            const { data: tms } = await _supabase.from('turmas').select('*').order('nome');
+            let dataFormatada = dia.split('-').reverse().join('/');
+            let texto = `*Frequência ARENA*\nDia: ${dataFormatada}\n\n`;
+            let totalArena = 0;
+            let justificadosTxt = "";
+            let temJustificativa = false;
+
+            tms.forEach(turma => {
+                const alunosTurma = listaAlunosCache.filter(a => a.turma_id === turma.id);
+                let alunosTxt = "";
+                let countTurma = 0;
+                alunosTurma.forEach(aluno => {
+                    const f = fr?.find(x => x.aluno_id === aluno.id);
+                    if (f && (f.status === 'presente' || f.status === 'atraso')) {
+                        let simbolo = f.status === 'atraso' ? '⚠️' : '';
+                        alunosTxt += `${aluno.nome.toUpperCase()} ${simbolo}\n`;
+                        countTurma++; totalArena++;
+                    } else if (f?.status === 'justificado') {
+                        temJustificativa = true;
+                        justificadosTxt += `${aluno.nome.toUpperCase()}\n(${f.justificativa || 'Sem motivo'})\n`;
+                    }
+                });
+                if (alunosTxt !== "") texto += `*🔹🔹${turma.nome.toUpperCase()}*\n${alunosTxt}-Total: ${countTurma} alunos\n\n`;
+            });
+
+            texto += `#Total/ARENA: ${totalArena} alunos\n`;
+            if (temJustificativa) texto += `\n🗣️ - Justificados\n${justificadosTxt}`;
+            if (navigator.share) navigator.share({ title: 'Frequência Arena', text: texto });
+            else { navigator.clipboard.writeText(texto); alert("Copiado!"); }
+        }
+
+        async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarSabados(); await carregarArena(); }
+        async function init() {
+            const { data } = await _supabase.from('turmas').select('*').order('nome');
+            const sel = document.getElementById('sel-turma');
+            data?.forEach(t => { const opt = document.createElement('option'); opt.value = t.id; opt.innerText = t.nome; sel.appendChild(opt); });
+            atualizarSabados(); await carregarArena();
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>

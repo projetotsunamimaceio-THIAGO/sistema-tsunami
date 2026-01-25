@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alunos - TSUNAMI</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #030b16; color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header-nav { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .btn-danger { background: #3d141a; color: #ff4b4b; border: 1px solid #5a1e26; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .main-container { display: flex; gap: 30px; width: 100%; max-width: 1100px; align-items: flex-start; }
+        .sidebar-form { width: 350px; background: #0d2137; padding: 25px; border-radius: 20px; border: 1px solid #1a3a5a; position: sticky; top: 20px; }
+        label { display: block; font-size: 11px; color: #8da0b1; margin-bottom: 8px; text-transform: uppercase; }
+        select, input, textarea { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; margin-bottom: 20px; }
+        .btn-import { background: #00d4ff; color: #030b16; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
+        .btn-cancel { background: #1a2a3a; color: white; margin-top: 10px; font-size: 12px; display: none; width: 100%; padding: 10px; border-radius: 10px; border: none; cursor: pointer; }
+        .content-list { flex: 1; }
+        .search-bar { width: 100%; padding: 12px; background: #0d2137; border: 1px solid #1a3a5a; border-radius: 12px; color: white; margin-bottom: 20px; }
+        .aluno-card { background: #0d2137; border: 1px solid #1a3a5a; padding: 15px 20px; border-radius: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; border-left: 4px solid #00d4ff; }
+        .aluno-info { flex: 1; }
+        .aluno-info h4 { font-size: 16px; text-transform: uppercase; color: #fff; }
+        .aluno-info p { font-size: 12px; color: #8da0b1; margin-top: 4px; }
+        .actions { display: flex; gap: 10px; }
+        .btn-icon { background: #1a2a3a; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; }
+        .remat-badge { background: #00ff88; color: #030b16; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <a href="pagina-inicial.html" class="back-btn"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <button class="btn-danger" onclick="limparBase()">LIMPAR BASE</button>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar-form">
+            <h3 id="form-title" style="margin-bottom: 15px; color: #00d4ff; font-size: 18px;">Novo Cadastro</h3>
+            
+            <label>Turma Destino</label>
+            <select id="select-turma"><option value="">Selecione...</option></select>
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Matrícula</label>
+                    <input type="date" id="data_matricula">
+                </div>
+                <div style="flex: 1;">
+                    <label style="color: #00ff88;">Rematrícula</label>
+                    <input type="date" id="data_rematricula" style="border-color: #00ff88;">
+                </div>
+            </div>
+
+            <label id="label-nomes">Nomes (Um por linha)</label>
+            <textarea id="input_nomes" style="height: 120px;" placeholder="João Silva..."></textarea>
+
+            <button class="btn-import" onclick="processarFormulario()" id="btn-principal">
+                <i class="fas fa-plus"></i> <span id="text-btn">CADASTRAR LOTE</span>
+            </button>
+            
+            <button class="btn-cancel" id="btn-cancelar" onclick="cancelarEdicao()">CANCELAR EDIÇÃO</button>
+        </div>
+
+        <div class="content-list">
+            <input type="text" class="search-bar" id="search" placeholder="Buscar aluno..." oninput="carregarAlunos()">
+            <div id="alunos-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
+        let idEditando = null;
+
+        document.getElementById('data_matricula').valueAsDate = new Date();
+
+        async function carregarTurmas() {
+            const { data } = await _supabase.from('turmas').select('id, nome').order('nome');
+            const select = document.getElementById('select-turma');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            data?.forEach(t => select.innerHTML += `<option value="${t.id}">${t.nome}</option>`);
+        }
+
+        async function processarFormulario() {
+            const turmaId = document.getElementById('select-turma').value;
+            const dataMat = document.getElementById('data_matricula').value;
+            const dataRemat = document.getElementById('data_rematricula').value;
+            const texto = document.getElementById('input_nomes').value.trim();
+
+            if (!turmaId || !texto) return alert("Preencha todos os campos!");
+
+            // LÓGICA DE VALIDADE INTELIGENTE (RESOLVE 2026.1 e 2026.2)
+            let dataValidadeFim;
+            if (dataRemat) {
+                const dataR = new Date(dataRemat);
+                // Se o mês for Janeiro (0) até Junho (5), vale até 30/06. Senão, 31/12.
+                if (dataR.getMonth() <= 5) {
+                    dataValidadeFim = "2026-06-30"; 
+                } else {
+                    dataValidadeFim = "2026-12-31";
+                }
+            } else {
+                let dFim = new Date(dataMat);
+                dFim.setMonth(dFim.getMonth() + 6);
+                dataValidadeFim = dFim.toISOString().split('T')[0];
+            }
+
+            const payloadBase = { 
+                turma_id: turmaId, 
+                data_matricula: dataMat, 
+                data_rematricula: dataRemat || null,
+                data_validade_fim: dataValidadeFim 
+            };
+
+            if (idEditando) {
+                await _supabase.from('alunos').update({ nome: texto.toUpperCase(), ...payloadBase }).eq('id', idEditando);
+                alert("Aluno atualizado!");
+            } else {
+                const nomes = texto.split('\n').filter(n => n.trim() !== "");
+                for (let nome of nomes) {
+                    const nomeLimpo = nome.trim().toUpperCase();
+                    const { data: ex } = await _supabase.from('alunos').select('id').ilike('nome', nomeLimpo).maybeSingle();
+                    if (ex) await _supabase.from('alunos').update({ nome: nomeLimpo, ...payloadBase }).eq('id', ex.id);
+                    else await _supabase.from('alunos').insert({ nome: nomeLimpo, ...payloadBase });
+                }
+                alert("Lote processado!");
+            }
+            cancelarEdicao();
+            carregarAlunos();
+        }
+
+        async function carregarAlunos() {
+            const busca = document.getElementById('search').value;
+            let query = _supabase.from('alunos').select('*, turmas(nome)').order('nome');
+            if (busca) query = query.ilike('nome', `%${busca}%`);
+            const { data } = await query;
+            const container = document.getElementById('alunos-list');
+            container.innerHTML = '';
+            data?.forEach(a => {
+                const validadeStr = a.data_validade_fim ? a.data_validade_fim.split('-').reverse().join('/') : '---';
+                const rematBadge = a.data_rematricula ? `<span class="remat-badge">REMATRICULADO EM ${a.data_rematricula.split('-').reverse().join('/')}</span>` : '';
+                container.innerHTML += `
+                    <div class="aluno-card">
+                        <div class="aluno-info">
+                            <h4>${a.nome} ${rematBadge}</h4>
+                            <p><i class="fas fa-users"></i> ${a.turmas?.nome || 'Sem Turma'} • Matrícula: ${a.data_matricula}</p>
+                            <p style="font-size:10px; color:#00d4ff">VENCE EM: ${validadeStr}</p>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-icon" onclick="prepararEdicao('${a.id}', '${a.nome}', '${a.turma_id}', '${a.data_matricula}', '${a.data_rematricula || ''}')"><i class="fas fa-pencil"></i></button>
+                            <button class="btn-icon" onclick="deletarAluno('${a.id}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function prepararEdicao(id, nome, turma_id, data, remat) {
+            idEditando = id;
+            document.getElementById('form-title').innerText = "Editando Aluno";
+            document.getElementById('text-btn').innerText = "SALVAR ALTERAÇÃO";
+            document.getElementById('input_nomes').value = nome;
+            document.getElementById('select-turma').value = turma_id;
+            document.getElementById('data_matricula').value = data;
+            document.getElementById('data_rematricula').value = remat;
+            document.getElementById('btn-cancelar').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicao() {
+            idEditando = null;
+            document.getElementById('form-title').innerText = "Novo Cadastro";
+            document.getElementById('text-btn').innerText = "CADASTRAR LOTE";
+            document.getElementById('input_nomes').value = '';
+            document.getElementById('btn-cancelar').style.display = "none";
+            document.getElementById('data_rematricula').value = '';
+        }
+
+        async function deletarAluno(id) { if (confirm("Excluir?")) { await _supabase.from('alunos').delete().eq('id', id); carregarAlunos(); } }
+        async function limparBase() { if (confirm("Apagar tudo?")) { await _supabase.from('alunos').delete().neq('id', '0'); carregarAlunos(); } }
+
+        carregarTurmas();
+        carregarAlunos();
+    </script>
+</body>
+</html>
