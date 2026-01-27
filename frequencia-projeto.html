@@ -14,27 +14,20 @@
         .page-title { background: #1a2a3a; padding: 8px 25px; border-radius: 15px; border: 1px solid #2c3e50; font-weight: bold; font-size: 15px; }
         .date-row { display: flex; align-items: center; gap: 15px; margin: 15px 0; }
         .month-label { font-size: 17px; min-width: 160px; text-align: center; font-weight: 500; }
-        
-        /* Ajuste para caber os dois filtros no topo */
-        .filters-container { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        
-        select { background: #0d1a2b; color: white; border: 1px solid #1a3a5a; padding: 6px 10px; border-radius: 8px; outline: none; font-size: 12px; }
-        .arena-container { background: #0d1a2b; border: 1px solid #1a3a5a; border-radius: 8px; overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; min-width: 300px; }
+        .filter-pos { position: absolute; right: 20px; top: 75px; }
+        select { background: #0d1a2b; color: white; border: 1px solid #1a3a5a; padding: 6px 15px; border-radius: 8px; outline: none; }
+        .arena-container { background: #0d1a2b; border: 1px solid #1a3a5a; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #142841; }
         th { color: #64748b; font-size: 9px; text-transform: uppercase; background: #142841; }
-        .td-aluno { text-align: left !important; padding-left: 20px; min-width: 140px; }
+        .td-aluno { text-align: left !important; padding-left: 20px; }
         .aluno-nome { font-weight: bold; font-size: 12px; color: white; }
         .aluno-turma { font-size: 8px; color: #00d4ff; font-weight: bold; margin-top: 2px; }
-        .box { width: 32px; height: 32px; background: #1a2a3a; border-radius: 6px; cursor: pointer; border: 1px solid #2c3e50; display: flex; align-items: center; justify-content: center; transition: 0.1s; font-size: 14px; margin: 0 auto; }
-        .box-all { color: #4ba3ff; font-size: 10px; font-weight: bold; }
-        .btn-share { background: #1a3a5a; color: #00d4ff; border: 1px solid #00d4ff; padding: 4px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .box { width: 27px; height: 27px; background: #1a2a3a; border-radius: 6px; cursor: pointer; border: 1px solid #2c3e50; display: flex; align-items: center; justify-content: center; transition: 0.1s; font-size: 11px; margin: 0 auto; }
         .st-falta { background: #ff4b4b !important; border-color: #ff4b4b !important; color: white; }
         .st-presente { background: #00ff88 !important; border-color: #00ff88 !important; color: #030b16; }
         .st-atraso { background: #ffd400 !important; border-color: #ffd400 !important; color: #030b16; }
         .st-justificado { background: #00d4ff !important; border-color: #00d4ff !important; color: white; }
-        .falta-badge { background: #ff4b4b; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
-        .row-presencas { background: rgba(0, 212, 255, 0.05); color: #00ff88; font-weight: bold; font-size: 11px; }
         #toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; display: none; z-index: 999; font-weight: bold; }
         .toast-success { background: #00ff88; color: #030b16; }
     </style>
@@ -45,156 +38,93 @@
         <a href="pagina-inicial.html" class="btn-circle"><i class="fas fa-chevron-left"></i></a>
         <div class="page-title">FREQUÊNCIA PROJETO</div>
     </div>
-    
     <div class="date-row">
         <div class="btn-circle" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></div>
-        <span class="month-label" id="label-mes">JANEIRO DE 2026</span>
+        <span class="month-label" id="label-mes"></span>
         <div class="btn-circle" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></div>
     </div>
-
-    <div class="filters-container">
-        <select id="sel-dia" onchange="carregarProjeto()">
-            <option value="">Todos os dias</option>
-        </select>
-        <select id="sel-turma" onchange="carregarProjeto()">
-            <option value="">Todas as turmas</option>
-        </select>
+    <div class="filter-pos">
+        <select id="sel-turma" onchange="carregarProjeto()"><option value="">Todas as turmas</option></select>
     </div>
-
     <div class="arena-container">
         <table>
-            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th><th style="width:60px">Faltas</th></tr></thead>
+            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th></tr></thead>
             <tbody id="b-table"></tbody>
-            <tfoot><tr class="row-presencas" id="f-total"><td class="td-aluno">PRESENÇAS</td><td id="total-geral-faltas"></td></tr></tfoot>
         </table>
     </div>
 
     <script>
         const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
         let dataFoco = new Date(2026, 0, 1); 
-        let diasProjetoMes = [];
-        let cicloAllEstado = {}; 
+        let diasUteis = [];
         let listaAlunosCache = [];
 
-        function showToast(msg, type) {
+        function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg;
-            t.className = type === 'success' ? 'toast-success' : 'toast-error';
+            t.className = 'toast-success';
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 2000);
         }
 
-        function atualizarDiasProjeto() {
+        function atualizarDias() {
             const ano = dataFoco.getFullYear();
             const mes = dataFoco.getMonth();
             document.getElementById('label-mes').innerText = `${dataFoco.toLocaleString('pt-BR', { month: 'long' }).toUpperCase()} DE ${ano}`;
-            
-            diasProjetoMes = [];
-            const selDia = document.getElementById('sel-dia');
-            const diaSelecionadoAntigo = selDia.value;
-            selDia.innerHTML = '<option value="">Todos os dias</option>';
-
+            diasUteis = [];
             let d = new Date(ano, mes, 1);
-            const nomesDias = {2: 'Ter', 5: 'Sex', 6: 'Sáb'};
-
             while (d.getMonth() === mes) {
-                if (d.getDay() === 2 || d.getDay() === 5 || d.getDay() === 6) {
-                    const s = `${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                    diasProjetoMes.push({data: s, diaSemana: d.getDay()});
-                    
-                    const opt = document.createElement('option');
-                    opt.value = s;
-                    opt.innerText = `${d.getDate()}/${d.getMonth()+1} (${nomesDias[d.getDay()]})`;
-                    selDia.appendChild(opt);
-
-                    if (cicloAllEstado[s] === undefined) cicloAllEstado[s] = 0;
+                // Segunda (1) a Sexta (5)
+                if (d.getDay() > 0 && d.getDay() < 6) {
+                    diasUteis.push(`${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
                 }
                 d.setDate(d.getDate() + 1);
             }
-            if (diaSelecionadoAntigo) selDia.value = diaSelecionadoAntigo;
         }
 
         async function carregarProjeto() {
             const body = document.getElementById('b-table');
             const head = document.getElementById('h-days');
-            const foot = document.getElementById('f-total');
             const tId = document.getElementById('sel-turma').value;
-            const diaFiltro = document.getElementById('sel-dia').value;
             
-            while(head.children.length > 2) head.removeChild(head.children[1]);
-            while(foot.children.length > 2) foot.removeChild(foot.children[1]);
+            while(head.children.length > 1) head.removeChild(head.lastElementChild);
 
-            const nomesDias = {2: 'Ter', 5: 'Sex', 6: 'Sáb'};
-            const diasExibir = diaFiltro ? diasProjetoMes.filter(d => d.data === diaFiltro) : diasProjetoMes;
-
-            diasExibir.forEach(item => {
+            diasUteis.forEach(d => {
                 const th = document.createElement('th');
-                th.innerHTML = `${nomesDias[item.diaSemana]}<br>${item.data.split('-')[2]}/${item.data.split('-')[1]}`;
-                head.insertBefore(th, head.lastElementChild);
-                const tdFoot = document.createElement('td');
-                tdFoot.id = `total-dia-${item.data}`;
-                tdFoot.innerText = "0";
-                foot.insertBefore(tdFoot, foot.lastElementChild);
+                th.innerHTML = `${d.split('-')[2]}/${d.split('-')[1]}`;
+                head.appendChild(th);
             });
 
             const { data: alunos } = await _supabase.from('alunos').select('*, turmas(nome, id)').order('nome');
             const { data: freq } = await _supabase.from('frequencia').select('*');
             
-            const ultimoDiaFoco = diasProjetoMes[diasProjetoMes.length - 1].data;
-            listaAlunosCache = (alunos || []).filter(a => (!tId || a.turma_id === tId) && a.data_matricula <= ultimoDiaFoco);
+            // TRAVA DE VALIDADE (A MESMA DA ARENA)
+            const primeiroDiaMes = diasUteis[0];
+            const ultimoDiaMes = diasUteis[diasUteis.length - 1];
+
+            listaAlunosCache = (alunos || []).filter(a => {
+                const pertenceTurma = !tId || a.turma_id === tId;
+                const jaMatriculado = a.data_matricula <= ultimoDiaMes;
+                const validadeAtiva = a.data_validade_fim && a.data_validade_fim >= primeiroDiaMes;
+                return pertenceTurma && jaMatriculado && validadeAtiva;
+            });
 
             body.innerHTML = '';
-            
-            // Linha Marcar Todos
-            let trAll = document.createElement('tr');
-            trAll.style.background = "rgba(255,255,255,0.02)";
-            let htmlAll = `<td class="td-aluno"><b>MARCAR TODOS</b></td>`;
-            diasExibir.forEach(item => {
-                htmlAll += `<td>
-                    <div class="box box-all" onclick="ciclarAll('${item.data}')">ALL</div>
-                    <button class="btn-share" onclick="gerarRelatorio('${item.data}')"><i class="fas fa-share-nodes"></i></button>
-                </td>`;
-            });
-            htmlAll += `<td></td>`;
-            trAll.innerHTML = htmlAll;
-            body.appendChild(trAll);
-
             listaAlunosCache.forEach(aluno => {
                 let tr = document.createElement('tr');
                 let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome.toUpperCase()}</span><div class="aluno-turma">${aluno.turmas?.nome || ''}</div></td>`;
-                
-                diasExibir.forEach((item) => {
-                    const f = freq?.find(x => x.aluno_id === aluno.id && x.data_aula === item.data);
-                    const st = f?.status || '';
-                    let ico = st === 'falta' ? '✕' : (st === 'presente' ? '✓' : (st === 'atraso' ? '!' : (st === 'justificado' ? 'J' : '—')));
-                    html += `<td><div id="btn-${aluno.id}-${item.data}" class="box st-${st}" onclick="mudarStatus('${aluno.id}','${item.data}')">${ico}</div></td>`;
+                diasUteis.forEach((dia) => {
+                    if (aluno.data_matricula > dia) {
+                        html += `<td><div class="box" style="opacity:0.1; cursor:default;">-</div></td>`;
+                    } else {
+                        const f = (freq || []).find(x => x.aluno_id === aluno.id && x.data_aula === dia);
+                        const st = f?.status || '';
+                        let ico = st === 'falta' ? '✕' : (st === 'presente' ? '✓' : (st === 'atraso' ? '!' : (st === 'justificado' ? 'J' : '—')));
+                        html += `<td><div id="btn-${aluno.id}-${dia}" class="box st-${st}" onclick="mudarStatus('${aluno.id}','${dia}')">${ico}</div></td>`;
+                    }
                 });
-                
-                html += `<td><div id="faltas-${aluno.id}" class="falta-badge">0</div></td>`;
                 tr.innerHTML = html;
                 body.appendChild(tr);
-            });
-            atualizarSomatorias();
-        }
-
-        function atualizarSomatorias() {
-            listaAlunosCache.forEach(aluno => {
-                let totalF = 0;
-                diasProjetoMes.forEach(item => {
-                    const el = document.getElementById(`btn-${aluno.id}-${item.data}`);
-                    if (el && (el.classList.contains('st-falta') || el.classList.contains('st-justificado'))) totalF++;
-                });
-                const fBadge = document.getElementById(`faltas-${aluno.id}`);
-                if(fBadge) fBadge.innerText = totalF;
-            });
-            diasProjetoMes.forEach(item => {
-                let totalP = 0;
-                listaAlunosCache.forEach(aluno => {
-                    const el = document.getElementById(`btn-${aluno.id}-${item.data}`);
-                    if (el && (el.classList.contains('st-presente') || el.classList.contains('st-atraso'))) totalP++;
-                });
-                const fDia = document.getElementById(`total-dia-${item.data}`);
-                if(fDia) fDia.innerText = totalP;
             });
         }
 
@@ -204,63 +134,21 @@
             let atual = '';
             ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
             let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-            
             el.className = `box st-${prox}`;
             el.innerText = prox === 'falta' ? '✕' : (prox === 'presente' ? '✓' : (prox === 'atraso' ? '!' : (prox === 'justificado' ? 'J' : '—')));
-            atualizarSomatorias();
-
+            
             let payload = { aluno_id: id, data_aula: dia, status: prox };
-            if (prox === 'justificado') payload.justificativa = prompt("Motivo:") || "Justificado";
-
             if (prox === '') await _supabase.from('frequencia').delete().match({ aluno_id: id, data_aula: dia });
             else await _supabase.from('frequencia').upsert(payload, { onConflict: 'aluno_id, data_aula' });
-            showToast("OK", "success");
+            showToast("Atualizado");
         }
 
-        async function ciclarAll(dia) {
-            const ciclo = ['falta', 'presente', 'atraso', '']; 
-            let statusAplicar = ciclo[cicloAllEstado[dia]];
-            cicloAllEstado[dia] = (cicloAllEstado[dia] + 1) % ciclo.length;
-            
-            const batch = [];
-            listaAlunosCache.forEach(aluno => {
-                const el = document.getElementById(`btn-${aluno.id}-${dia}`);
-                if(el) {
-                    el.className = `box st-${statusAplicar}`;
-                    el.innerText = statusAplicar === 'falta' ? '✕' : (statusAplicar === 'presente' ? '✓' : (statusAplicar === 'atraso' ? '!' : '—'));
-                    if (statusAplicar !== '') batch.push({ aluno_id: aluno.id, data_aula: dia, status: statusAplicar });
-                }
-            });
-            atualizarSomatorias();
-            if (statusAplicar === '') await _supabase.from('frequencia').delete().eq('data_aula', dia);
-            else await _supabase.from('frequencia').upsert(batch, { onConflict: 'aluno_id, data_aula' });
-        }
-
-        async function gerarRelatorio(dia) {
-            const { data: fr } = await _supabase.from('frequencia').select('*').eq('data_aula', dia);
-            let texto = `*Frequência PROJETO (${dia.split('-').reverse().join('/')})*\n\n`;
-            let total = 0;
-            listaAlunosCache.forEach(aluno => {
-                const f = fr?.find(x => x.aluno_id === aluno.id);
-                if (f && (f.status === 'presente' || f.status === 'atraso')) {
-                    texto += `• ${aluno.nome.toUpperCase()}\n`;
-                    total++;
-                }
-            });
-            texto += `\n*Total: ${total} alunos*`;
-            if (navigator.share) navigator.share({ text: texto });
-            else alert("Copiado!");
-        }
-
-        async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarDiasProjeto(); await carregarProjeto(); }
+        async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarDias(); await carregarProjeto(); }
         async function init() {
             const { data } = await _supabase.from('turmas').select('*').order('nome');
-            data?.forEach(t => { 
-                const opt = document.createElement('option'); 
-                opt.value = t.id; opt.innerText = t.nome; 
-                document.getElementById('sel-turma').appendChild(opt); 
-            });
-            atualizarDiasProjeto(); await carregarProjeto();
+            const sel = document.getElementById('sel-turma');
+            data?.forEach(t => { const opt = document.createElement('option'); opt.value = t.id; opt.innerText = t.nome; sel.appendChild(opt); });
+            atualizarDias(); await carregarProjeto();
         }
         window.onload = init;
     </script>

@@ -15,7 +15,7 @@
         .main-container { display: flex; gap: 30px; width: 100%; max-width: 1100px; align-items: flex-start; }
         .sidebar-form { width: 350px; background: #0d2137; padding: 25px; border-radius: 20px; border: 1px solid #1a3a5a; position: sticky; top: 20px; }
         label { display: block; font-size: 11px; color: #8da0b1; margin-bottom: 8px; text-transform: uppercase; }
-        select, input, textarea { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; margin-bottom: 20px; }
+        select, input, textarea { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; margin-bottom: 15px; }
         .btn-import { background: #00d4ff; color: #030b16; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
         .btn-cancel { background: #1a2a3a; color: white; margin-top: 10px; font-size: 12px; display: none; width: 100%; padding: 10px; border-radius: 10px; border: none; cursor: pointer; }
         .content-list { flex: 1; }
@@ -27,6 +27,7 @@
         .actions { display: flex; gap: 10px; }
         .btn-icon { background: #1a2a3a; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; }
         .remat-badge { background: #00ff88; color: #030b16; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 10px; }
+        .validade-destaque { color: #ffd400 !important; font-weight: bold; border-color: #ffd400 !important; }
     </style>
 </head>
 <body>
@@ -54,11 +55,14 @@
                 </div>
             </div>
 
+            <label style="color: #ffd400;">Validade de Acesso (Vencimento)</label>
+            <input type="date" id="data_validade_fim" class="validade-destaque">
+
             <label id="label-nomes">Nomes (Um por linha)</label>
-            <textarea id="input_nomes" style="height: 120px;" placeholder="João Silva..."></textarea>
+            <textarea id="input_nomes" style="height: 100px;" placeholder="João Silva..."></textarea>
 
             <button class="btn-import" onclick="processarFormulario()" id="btn-principal">
-                <i class="fas fa-plus"></i> <span id="text-btn">CADASTRAR LOTE</span>
+                <i class="fas fa-save"></i> <span id="text-btn">CADASTRAR LOTE</span>
             </button>
             
             <button class="btn-cancel" id="btn-cancelar" onclick="cancelarEdicao()">CANCELAR EDIÇÃO</button>
@@ -87,31 +91,28 @@
             const turmaId = document.getElementById('select-turma').value;
             const dataMat = document.getElementById('data_matricula').value;
             const dataRemat = document.getElementById('data_rematricula').value;
+            const dataValManual = document.getElementById('data_validade_fim').value;
             const texto = document.getElementById('input_nomes').value.trim();
 
-            if (!turmaId || !texto) return alert("Preencha todos os campos!");
+            if (!turmaId || !texto) return alert("Preencha Turma e Nomes!");
 
-            // LÓGICA DE VALIDADE INTELIGENTE (RESOLVE 2026.1 e 2026.2)
-            let dataValidadeFim;
-            if (dataRemat) {
-                const dataR = new Date(dataRemat);
-                // Se o mês for Janeiro (0) até Junho (5), vale até 30/06. Senão, 31/12.
-                if (dataR.getMonth() <= 5) {
-                    dataValidadeFim = "2026-06-30"; 
-                } else {
-                    dataValidadeFim = "2026-12-31";
-                }
+            let dataValidadeFinal;
+
+            if (dataValManual) {
+                // Se você preencheu manualmente, usa ela
+                dataValidadeFinal = dataValManual;
             } else {
-                let dFim = new Date(dataMat);
-                dFim.setMonth(dFim.getMonth() + 6);
-                dataValidadeFim = dFim.toISOString().split('T')[0];
+                // Se não preencheu, calcula automático pelo semestre
+                const refDate = dataRemat ? new Date(dataRemat) : new Date(dataMat);
+                const ano = refDate.getFullYear();
+                dataValidadeFinal = refDate.getMonth() <= 5 ? `${ano}-06-30` : `${ano}-12-31`;
             }
 
             const payloadBase = { 
                 turma_id: turmaId, 
                 data_matricula: dataMat, 
                 data_rematricula: dataRemat || null,
-                data_validade_fim: dataValidadeFim 
+                data_validade_fim: dataValidadeFinal 
             };
 
             if (idEditando) {
@@ -125,7 +126,7 @@
                     if (ex) await _supabase.from('alunos').update({ nome: nomeLimpo, ...payloadBase }).eq('id', ex.id);
                     else await _supabase.from('alunos').insert({ nome: nomeLimpo, ...payloadBase });
                 }
-                alert("Lote processado!");
+                alert("Processado com sucesso!");
             }
             cancelarEdicao();
             carregarAlunos();
@@ -145,18 +146,18 @@
                     <div class="aluno-card">
                         <div class="aluno-info">
                             <h4>${a.nome} ${rematBadge}</h4>
-                            <p><i class="fas fa-users"></i> ${a.turmas?.nome || 'Sem Turma'} • Matrícula: ${a.data_matricula}</p>
-                            <p style="font-size:10px; color:#00d4ff">VENCE EM: ${validadeStr}</p>
+                            <p><i class="fas fa-users"></i> ${a.turmas?.nome || 'Sem Turma'} • Matrícula: ${a.data_matricula.split('-').reverse().join('/')}</p>
+                            <p style="font-size:11px; color:#ffd400; margin-top:5px;">📅 ACESSO ATÉ: ${validadeStr}</p>
                         </div>
                         <div class="actions">
-                            <button class="btn-icon" onclick="prepararEdicao('${a.id}', '${a.nome}', '${a.turma_id}', '${a.data_matricula}', '${a.data_rematricula || ''}')"><i class="fas fa-pencil"></i></button>
+                            <button class="btn-icon" onclick="prepararEdicao('${a.id}', '${a.nome}', '${a.turma_id}', '${a.data_matricula}', '${a.data_rematricula || ''}', '${a.data_validade_fim || ''}')"><i class="fas fa-pencil"></i></button>
                             <button class="btn-icon" onclick="deletarAluno('${a.id}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
                         </div>
                     </div>`;
             });
         }
 
-        function prepararEdicao(id, nome, turma_id, data, remat) {
+        function prepararEdicao(id, nome, turma_id, data, remat, validade) {
             idEditando = id;
             document.getElementById('form-title').innerText = "Editando Aluno";
             document.getElementById('text-btn').innerText = "SALVAR ALTERAÇÃO";
@@ -164,6 +165,7 @@
             document.getElementById('select-turma').value = turma_id;
             document.getElementById('data_matricula').value = data;
             document.getElementById('data_rematricula').value = remat;
+            document.getElementById('data_validade_fim').value = validade;
             document.getElementById('btn-cancelar').style.display = "block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -175,6 +177,7 @@
             document.getElementById('input_nomes').value = '';
             document.getElementById('btn-cancelar').style.display = "none";
             document.getElementById('data_rematricula').value = '';
+            document.getElementById('data_validade_fim').value = '';
         }
 
         async function deletarAluno(id) { if (confirm("Excluir?")) { await _supabase.from('alunos').delete().eq('id', id); carregarAlunos(); } }
