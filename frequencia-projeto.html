@@ -24,10 +24,13 @@
         .aluno-nome { font-weight: bold; font-size: 12px; color: white; }
         .aluno-turma { font-size: 8px; color: #00d4ff; font-weight: bold; margin-top: 2px; }
         .box { width: 27px; height: 27px; background: #1a2a3a; border-radius: 6px; cursor: pointer; border: 1px solid #2c3e50; display: flex; align-items: center; justify-content: center; transition: 0.1s; font-size: 11px; margin: 0 auto; }
+        .box-all { color: #4ba3ff; font-size: 9px; font-weight: bold; }
         .st-falta { background: #ff4b4b !important; border-color: #ff4b4b !important; color: white; }
         .st-presente { background: #00ff88 !important; border-color: #00ff88 !important; color: #030b16; }
         .st-atraso { background: #ffd400 !important; border-color: #ffd400 !important; color: #030b16; }
         .st-justificado { background: #00d4ff !important; border-color: #00d4ff !important; color: white; }
+        .falta-badge { background: #ff4b4b; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        .row-presencas { background: rgba(0, 212, 255, 0.05); color: #00ff88; font-weight: bold; font-size: 11px; }
         #toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border-radius: 8px; display: none; z-index: 999; font-weight: bold; }
         .toast-success { background: #00ff88; color: #030b16; }
     </style>
@@ -48,8 +51,9 @@
     </div>
     <div class="arena-container">
         <table>
-            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th></tr></thead>
+            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th><th style="width:60px">Faltas</th></tr></thead>
             <tbody id="b-table"></tbody>
+            <tfoot><tr class="row-presencas" id="f-total"><td class="td-aluno">PRESENÇAS (VERDE/AMARELO)</td><td id="total-geral-faltas"></td></tr></tfoot>
         </table>
     </div>
 
@@ -58,6 +62,7 @@
         let dataFoco = new Date(2026, 0, 1); 
         let diasUteis = [];
         let listaAlunosCache = [];
+        let cicloAllEstado = {};
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -74,9 +79,10 @@
             diasUteis = [];
             let d = new Date(ano, mes, 1);
             while (d.getMonth() === mes) {
-                // Segunda (1) a Sexta (5)
                 if (d.getDay() > 0 && d.getDay() < 6) {
-                    diasUteis.push(`${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+                    const s = `${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    diasUteis.push(s);
+                    if (cicloAllEstado[s] === undefined) cicloAllEstado[s] = 0;
                 }
                 d.setDate(d.getDate() + 1);
             }
@@ -85,20 +91,27 @@
         async function carregarProjeto() {
             const body = document.getElementById('b-table');
             const head = document.getElementById('h-days');
+            const foot = document.getElementById('f-total');
             const tId = document.getElementById('sel-turma').value;
             
-            while(head.children.length > 1) head.removeChild(head.lastElementChild);
+            // Limpa cabeçalho e rodapé mantendo a primeira e última colunas fixas
+            while(head.children.length > 2) head.removeChild(head.children[1]);
+            while(foot.children.length > 2) foot.removeChild(foot.children[1]);
 
             diasUteis.forEach(d => {
                 const th = document.createElement('th');
                 th.innerHTML = `${d.split('-')[2]}/${d.split('-')[1]}`;
-                head.appendChild(th);
+                head.insertBefore(th, head.lastElementChild);
+                
+                const tdFoot = document.createElement('td');
+                tdFoot.id = `total-dia-${d}`;
+                tdFoot.innerText = "0";
+                foot.insertBefore(tdFoot, foot.lastElementChild);
             });
 
             const { data: alunos } = await _supabase.from('alunos').select('*, turmas(nome, id)').order('nome');
             const { data: freq } = await _supabase.from('frequencia').select('*');
             
-            // TRAVA DE VALIDADE (A MESMA DA ARENA)
             const primeiroDiaMes = diasUteis[0];
             const ultimoDiaMes = diasUteis[diasUteis.length - 1];
 
@@ -110,6 +123,17 @@
             });
 
             body.innerHTML = '';
+
+            // LINHA ALL
+            let trAll = document.createElement('tr');
+            let htmlAll = `<td class="td-aluno"><b>MARCAR TODOS</b></td>`;
+            diasUteis.forEach(d => {
+                htmlAll += `<td><div class="box box-all" onclick="ciclarAll('${d}')">ALL</div></td>`;
+            });
+            htmlAll += `<td></td>`;
+            trAll.innerHTML = htmlAll;
+            body.appendChild(trAll);
+
             listaAlunosCache.forEach(aluno => {
                 let tr = document.createElement('tr');
                 let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome.toUpperCase()}</span><div class="aluno-turma">${aluno.turmas?.nome || ''}</div></td>`;
@@ -123,9 +147,53 @@
                         html += `<td><div id="btn-${aluno.id}-${dia}" class="box st-${st}" onclick="mudarStatus('${aluno.id}','${dia}')">${ico}</div></td>`;
                     }
                 });
+                html += `<td><div id="faltas-${aluno.id}" class="falta-badge">0</div></td>`;
                 tr.innerHTML = html;
                 body.appendChild(tr);
             });
+            atualizarSomatorias();
+        }
+
+        function atualizarSomatorias() {
+            listaAlunosCache.forEach(aluno => {
+                let totalF = 0;
+                diasUteis.forEach(dia => {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if (el && (el.classList.contains('st-falta') || el.classList.contains('st-justificado'))) totalF++;
+                });
+                const fBadge = document.getElementById(`faltas-${aluno.id}`);
+                if(fBadge) fBadge.innerText = totalF;
+            });
+            diasUteis.forEach(dia => {
+                let totalP = 0;
+                listaAlunosCache.forEach(aluno => {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if (el && (el.classList.contains('st-presente') || el.classList.contains('st-atraso'))) totalP++;
+                });
+                const fDia = document.getElementById(`total-dia-${dia}`);
+                if(fDia) fDia.innerText = totalP;
+            });
+        }
+
+        async function ciclarAll(dia) {
+            const ciclo = ['falta', 'presente', 'atraso', '']; 
+            let statusAplicar = ciclo[cicloAllEstado[dia]];
+            cicloAllEstado[dia] = (cicloAllEstado[dia] + 1) % ciclo.length;
+            const batch = [];
+            listaAlunosCache.forEach(aluno => {
+                if (aluno.data_matricula <= dia) {
+                    const el = document.getElementById(`btn-${aluno.id}-${dia}`);
+                    if(el) {
+                        el.className = `box st-${statusAplicar}`;
+                        el.innerText = statusAplicar === 'falta' ? '✕' : (statusAplicar === 'presente' ? '✓' : (statusAplicar === 'atraso' ? '!' : '—'));
+                        if (statusAplicar !== '') batch.push({ aluno_id: aluno.id, data_aula: dia, status: statusAplicar });
+                    }
+                }
+            });
+            if (statusAplicar === '') await _supabase.from('frequencia').delete().eq('data_aula', dia);
+            else await _supabase.from('frequencia').upsert(batch, { onConflict: 'aluno_id, data_aula' });
+            atualizarSomatorias();
+            showToast("Atualizado!");
         }
 
         async function mudarStatus(id, dia) {
@@ -136,11 +204,11 @@
             let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
             el.className = `box st-${prox}`;
             el.innerText = prox === 'falta' ? '✕' : (prox === 'presente' ? '✓' : (prox === 'atraso' ? '!' : (prox === 'justificado' ? 'J' : '—')));
-            
             let payload = { aluno_id: id, data_aula: dia, status: prox };
             if (prox === '') await _supabase.from('frequencia').delete().match({ aluno_id: id, data_aula: dia });
             else await _supabase.from('frequencia').upsert(payload, { onConflict: 'aluno_id, data_aula' });
-            showToast("Atualizado");
+            atualizarSomatorias();
+            showToast("OK");
         }
 
         async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarDias(); await carregarProjeto(); }
