@@ -20,6 +20,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px 5px; text-align: center; border-bottom: 1px solid #142841; }
         th { color: #64748b; font-size: 9px; text-transform: uppercase; background: #142841; }
+        .th-semana { color: #00d4ff; font-size: 8px; border-bottom: none; padding-top: 10px; }
         .td-aluno { text-align: left !important; padding-left: 20px; }
         .aluno-nome { font-weight: bold; font-size: 12px; color: white; }
         .aluno-turma { font-size: 8px; color: #00d4ff; font-weight: bold; margin-top: 2px; }
@@ -51,7 +52,10 @@
     </div>
     <div class="arena-container">
         <table>
-            <thead><tr id="h-days"><th class="td-aluno">Nome / Turma</th><th style="width:60px">Faltas</th></tr></thead>
+            <thead id="h-container">
+                <tr id="h-semana"><th class="td-aluno"></th><th style="width:60px"></th></tr>
+                <tr id="h-days"><th class="td-aluno">Nome / Turma</th><th style="width:60px">Faltas</th></tr>
+            </thead>
             <tbody id="b-table"></tbody>
             <tfoot><tr class="row-presencas" id="f-total"><td class="td-aluno">PRESENÇAS (VERDE/AMARELO)</td><td id="total-geral-faltas"></td></tr></tfoot>
         </table>
@@ -79,7 +83,9 @@
             diasUteis = [];
             let d = new Date(ano, mes, 1);
             while (d.getMonth() === mes) {
-                if (d.getDay() > 0 && d.getDay() < 6) {
+                const diaSemana = d.getDay();
+                // Filtro: 2 = Terça, 5 = Sexta, 6 = Sábado
+                if (diaSemana === 2 || diaSemana === 5 || diaSemana === 6) {
                     const s = `${ano}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     diasUteis.push(s);
                     if (cicloAllEstado[s] === undefined) cicloAllEstado[s] = 0;
@@ -90,18 +96,29 @@
 
         async function carregarProjeto() {
             const body = document.getElementById('b-table');
-            const head = document.getElementById('h-days');
+            const headDays = document.getElementById('h-days');
+            const headSemana = document.getElementById('h-semana');
             const foot = document.getElementById('f-total');
             const tId = document.getElementById('sel-turma').value;
             
-            // Limpa cabeçalho e rodapé mantendo a primeira e última colunas fixas
-            while(head.children.length > 2) head.removeChild(head.children[1]);
+            while(headDays.children.length > 2) headDays.removeChild(headDays.children[1]);
+            while(headSemana.children.length > 2) headSemana.removeChild(headSemana.children[1]);
             while(foot.children.length > 2) foot.removeChild(foot.children[1]);
 
+            const nomesDias = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+
             diasUteis.forEach(d => {
-                const th = document.createElement('th');
-                th.innerHTML = `${d.split('-')[2]}/${d.split('-')[1]}`;
-                head.insertBefore(th, head.lastElementChild);
+                const partes = d.split('-');
+                const dataObj = new Date(partes[0], partes[1]-1, partes[2]);
+                
+                const thS = document.createElement('th');
+                thS.className = 'th-semana';
+                thS.innerText = nomesDias[dataObj.getDay()];
+                headSemana.insertBefore(thS, headSemana.lastElementChild);
+
+                const thD = document.createElement('th');
+                thD.innerHTML = `${partes[2]}/${partes[1]}`;
+                headDays.insertBefore(thD, headDays.lastElementChild);
                 
                 const tdFoot = document.createElement('td');
                 tdFoot.id = `total-dia-${d}`;
@@ -124,7 +141,6 @@
 
             body.innerHTML = '';
 
-            // LINHA ALL
             let trAll = document.createElement('tr');
             let htmlAll = `<td class="td-aluno"><b>MARCAR TODOS</b></td>`;
             diasUteis.forEach(d => {

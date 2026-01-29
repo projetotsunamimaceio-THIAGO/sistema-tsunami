@@ -98,11 +98,10 @@
 
             let dataValidadeFinal;
 
+            // Lógica: se informada manualmente, ela manda. Se não, calcula automático.
             if (dataValManual) {
-                // Se você preencheu manualmente, usa ela
                 dataValidadeFinal = dataValManual;
             } else {
-                // Se não preencheu, calcula automático pelo semestre
                 const refDate = dataRemat ? new Date(dataRemat) : new Date(dataMat);
                 const ano = refDate.getFullYear();
                 dataValidadeFinal = refDate.getMonth() <= 5 ? `${ano}-06-30` : `${ano}-12-31`;
@@ -165,7 +164,7 @@
             document.getElementById('select-turma').value = turma_id;
             document.getElementById('data_matricula').value = data;
             document.getElementById('data_rematricula').value = remat;
-            document.getElementById('data_validade_fim').value = validade;
+            document.getElementById('data_validade_fim').value = validade; // Agora preenche corretamente!
             document.getElementById('btn-cancelar').style.display = "block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -178,6 +177,7 @@
             document.getElementById('btn-cancelar').style.display = "none";
             document.getElementById('data_rematricula').value = '';
             document.getElementById('data_validade_fim').value = '';
+            document.getElementById('data_matricula').valueAsDate = new Date();
         }
 
         async function deletarAluno(id) { if (confirm("Excluir?")) { await _supabase.from('alunos').delete().eq('id', id); carregarAlunos(); } }
