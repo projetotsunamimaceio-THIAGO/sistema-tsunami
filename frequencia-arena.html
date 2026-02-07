@@ -18,6 +18,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-color); color: white; padding: 20px; }
 
+        /* LOADING OVERLAY */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 11, 22, 0.9); z-index: 10000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #loading-overlay.active { display: flex; }
+        .spinner {
+            width: 50px; height: 50px; border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-text { margin-top: 15px; color: var(--accent-blue); font-size: 14px; }
+
         header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
         .btn-nav { 
             width: 40px; height: 40px; border-radius: 50%; 
@@ -25,6 +40,7 @@
             color: white; display: flex; align-items: center; justify-content: center;
             cursor: pointer; text-decoration: none;
         }
+        .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .page-badge {
             background: var(--btn-bg); padding: 10px 25px; border-radius: 30px;
@@ -73,7 +89,11 @@
         .aluno-turma { font-size: 9px; color: var(--accent-blue); font-weight: bold; }
 
         .btn-action-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .btn-all { background: #2563eb; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; }
+        .btn-all { 
+            background: #2563eb; color: white; border: none; padding: 2px 6px; border-radius: 4px; 
+            font-size: 9px; font-weight: bold; cursor: pointer; 
+        }
+        .btn-all:disabled { background: #1a2a3a; cursor: not-allowed; }
         .btn-share { color: var(--accent-blue); font-size: 13px; cursor: pointer; padding: 4px; }
 
         .box { 
@@ -92,34 +112,17 @@
         .falta-badge { width: 24px; height: 24px; border-radius: 50%; background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; margin: 0 auto; }
         .val-total { color: #10b981; font-weight: bold; font-size: 13px; }
         #toast { position: fixed; bottom: 30px; right: 30px; background: #10b981; color: white; padding: 12px 25px; border-radius: 10px; display: none; font-weight: bold; z-index: 1000;}
-        
-        /* Painel de debug - oculto por padrão */
-        #debug-panel { 
-            position: fixed; bottom: 10px; left: 10px; 
-            background: rgba(0,0,0,0.9); color: #0f0; 
-            padding: 10px; border-radius: 5px; 
-            font-family: monospace; font-size: 11px;
-            max-width: 600px; max-height: 300px; overflow: auto;
-            display: none; z-index: 9999;
-        }
-        
-        /* Botão para ativar/desativar debug */
-        .debug-toggle {
-            position: fixed; bottom: 10px; right: 10px;
-            background: #1a2a3a; color: #64748b;
-            border: 1px solid var(--border-color);
-            padding: 5px 10px; border-radius: 5px;
-            font-size: 10px; cursor: pointer;
-            z-index: 10000;
-        }
-        .debug-toggle:hover { color: white; }
     </style>
 </head>
 <body>
 
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">SALVANDO...</div>
+</div>
+
 <div id="toast">SALVO!</div>
-<div id="debug-panel"></div>
-<button class="debug-toggle" onclick="toggleDebug()" title="Ativar/Desativar Debug">DEBUG</button>
 
 <header>
     <a href="pagina-inicial.html" class="btn-nav"><i class="fas fa-chevron-left"></i></a>
@@ -127,9 +130,9 @@
 </header>
 
 <div class="date-control">
-    <div class="btn-nav" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></div>
+    <button class="btn-nav" id="btn-mes-anterior" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></button>
     <span class="month-display" id="label-mes">...</span>
-    <div class="btn-nav" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></div>
+    <button class="btn-nav" id="btn-mes-proximo" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></button>
 </div>
 
 <div class="filter-container">
@@ -168,22 +171,25 @@
     let sabadosDoMes = [];
     let listaAlunosCache = [];
     let freqCache = [];
-    let debugMode = false; // DEBUG DESATIVADO por padrão
+    let isProcessing = false; // Bloqueia navegação durante processamento
+    let requestQueue = []; // Fila de requisições
+    let isQueueRunning = false;
 
-    function toggleDebug() {
-        debugMode = !debugMode;
-        const panel = document.getElementById('debug-panel');
-        panel.style.display = debugMode ? 'block' : 'none';
-        if (!debugMode) panel.innerHTML = '';
-        alert('Debug ' + (debugMode ? 'ATIVADO' : 'DESATIVADO'));
+    function showLoading(text = 'CARREGANDO...') {
+        document.getElementById('loading-text').innerText = text;
+        document.getElementById('loading-overlay').classList.add('active');
+        isProcessing = true;
+        // Desabilita botões de navegação
+        document.getElementById('btn-mes-anterior').disabled = true;
+        document.getElementById('btn-mes-proximo').disabled = true;
     }
 
-    function log(msg) {
-        if (!debugMode) return;
-        console.log(msg);
-        const panel = document.getElementById('debug-panel');
-        panel.innerHTML += msg + '<br>';
-        panel.scrollTop = panel.scrollHeight;
+    function hideLoading() {
+        document.getElementById('loading-overlay').classList.remove('active');
+        isProcessing = false;
+        // Habilita botões de navegação
+        document.getElementById('btn-mes-anterior').disabled = false;
+        document.getElementById('btn-mes-proximo').disabled = false;
     }
 
     function showToast() {
@@ -241,11 +247,47 @@
         return data.getFullYear() * 10000 + (data.getMonth() + 1) * 100 + data.getDate();
     }
 
+    // FILA DE REQUISIÇÕES - Processa uma por vez
+    async function addToQueue(nome, dia, status, obs) {
+        return new Promise((resolve) => {
+            requestQueue.push({ nome, dia, status, obs, resolve });
+            processQueue();
+        });
+    }
+
+    async function processQueue() {
+        if (isQueueRunning || requestQueue.length === 0) return;
+        
+        isQueueRunning = true;
+        const req = requestQueue.shift();
+        
+        try {
+            await fetch(URL_SISTEMA, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ 
+                    action: "upsert", 
+                    data: { nome_aluno: req.nome, data: req.dia, status: req.status, obs: req.obs } 
+                }) 
+            });
+            // Delay entre requisições para não sobrecarregar o GS
+            await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+            console.error('Erro na requisição:', e);
+        }
+        
+        req.resolve();
+        isQueueRunning = false;
+        processQueue(); // Processa próxima
+    }
+
     async function carregarArena() {
+        if (isProcessing) return; // Impede carregar se já está processando
+        
+        showLoading('CARREGANDO DADOS...');
+        
         const body = document.getElementById('b-table'), head = document.getElementById('h-days'), rowActions = document.getElementById('row-all-actions'), foot = document.getElementById('f-total'), turmaFiltro = document.getElementById('sel-turma').value;
         body.innerHTML = '<tr><td colspan="15" style="padding:50px; color:gray; text-align:center;">CARREGANDO...</td></tr>';
-        
-        if (debugMode) document.getElementById('debug-panel').innerHTML = '';
         
         while(head.children.length > 2) head.removeChild(head.children[1]);
         while(rowActions.children.length > 2) rowActions.removeChild(rowActions.children[1]);
@@ -261,7 +303,7 @@
             head.insertBefore(th, head.lastElementChild);
             
             const tdAct = document.createElement('td'); 
-            tdAct.innerHTML = `<div class="btn-action-group"><button class="btn-all" onclick="cicloColuna('${dia}')">ALL</button><i class="fas fa-share-alt btn-share" onclick="compartilharDia('${dia}')"></i></div>`;
+            tdAct.innerHTML = `<div class="btn-action-group"><button class="btn-all" id="btn-all-${dia}" onclick="cicloColuna('${dia}')">ALL</button><i class="fas fa-share-alt btn-share" onclick="compartilharDia('${dia}')"></i></div>`;
             rowActions.insertBefore(tdAct, rowActions.lastElementChild);
 
             const tdFoot = document.createElement('td'); 
@@ -275,9 +317,7 @@
             listaAlunosCache = dados.alunos;
             freqCache = dados.frequencia;
             
-            log(`<strong>Total alunos: ${listaAlunosCache.length}</strong>`);
-            
-            // ORDENAÇÃO ALFABÉTICA AQUI ✅
+            // ORDENAÇÃO ALFABÉTICA
             listaAlunosCache.sort((a, b) => {
                 const nomeA = (a.nome || '').toUpperCase();
                 const nomeB = (b.nome || '').toUpperCase();
@@ -287,7 +327,7 @@
             const listaAlunosFiltrados = listaAlunosCache.filter(a => turmaFiltro === "" || a.turma === turmaFiltro);
             body.innerHTML = '';
 
-            listaAlunosFiltrados.forEach((aluno, idx) => {
+            listaAlunosFiltrados.forEach((aluno) => {
                 const dMat = parseDataManual(aluno.data_matricula);
                 const dValAtual = parseDataManual(aluno.data_de_validade_fim);
                 const dRemat = parseDataManual(aluno.data_rematricula);
@@ -298,16 +338,12 @@
                 const numRemat = dataParaNumero(dRemat);
                 const numValAnterior = dataParaNumero(dValAnterior);
 
-                if (idx === 0 && debugMode) {
-                    log(`<hr><strong>Aluno: ${aluno.nome}</strong>`);
-                    log(`Parsed - Mat: ${numMat}, ValAtual: ${numValAtual}, Remat: ${numRemat}, ValAnt: ${numValAnterior}`);
-                }
-
                 if (numMat && numMat > numFimMes) return;
-                
                 if (!numRemat && numValAtual && numValAtual < numInicioMes) return;
 
                 let tr = document.createElement('tr');
+                tr.setAttribute('data-nome', aluno.nome);
+                
                 let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome}</span><span class="aluno-turma">♦ ${aluno.turma}</span></td>`;
                 
                 sabadosDoMes.forEach(diaStr => {
@@ -329,16 +365,13 @@
                         if (numSab > numValAnterior && numSab < numRemat) {
                             bloqueado = true;
                             motivo = 'VACUO';
-                            if (idx === 0 && debugMode) log(`DIA ${numSab}: VÁCUO`);
                         }
                         else if (numSab >= numRemat && numSab <= numValAtual) {
                             bloqueado = false;
-                            if (idx === 0 && debugMode) log(`DIA ${numSab}: LIBERADO`);
                         }
                         else if (numSab > numValAtual) {
                             bloqueado = true;
                             motivo = 'nova_validade_expirada';
-                            if (idx === 0 && debugMode) log(`DIA ${numSab}: BLOQUEADO (expirado)`);
                         }
                     }
                     else if (numValAtual && numSab > numValAtual) {
@@ -351,16 +384,20 @@
                     } else {
                         const f = freqCache.find(x => x.aluno === aluno.nome && x.data.includes(diaStr));
                         const st = f ? f.status : '';
-                        html += `<td><div id="btn-${aluno.nome.replace(/\s/g,'')}-${diaStr}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome}','${diaStr}')">${getIcon(st)}</div></td>`;
+                        const alunoIndex = listaAlunosCache.findIndex(a => a.nome === aluno.nome);
+                        html += `<td><div id="btn-idx-${alunoIndex}-${diaStr}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome.replace(/'/g, "\\'")}','${diaStr}')">${getIcon(st)}</div></td>`;
                     }
                 });
-                html += `<td><div id="faltas-${aluno.nome.replace(/\s/g,'')}" class="falta-badge">0</div></td>`;
-                tr.innerHTML = html; body.appendChild(tr);
+                html += `<td><div id="faltas-idx-${listaAlunosCache.findIndex(a => a.nome === aluno.nome)}" class="falta-badge">0</div></td>`;
+                tr.innerHTML = html; 
+                body.appendChild(tr);
             });
             atualizarSomatorias();
         } catch (e) { 
             console.error(e);
             body.innerHTML = '<tr><td colspan="15" style="text-align:center;">Erro ao carregar dados.</td></tr>'; 
+        } finally {
+            hideLoading();
         }
     }
 
@@ -381,58 +418,119 @@
             let c = document.getElementById(`total-dia-${dia}`); if(c) c.innerText = p;
         });
 
-        document.querySelectorAll('#b-table tr').forEach(tr => {
-            const nomeSpan = tr.querySelector('.aluno-nome');
-            if(!nomeSpan) return;
-            const nome = nomeSpan.innerText;
-            let f = 0; const id = nome.replace(/\s/g,'');
+        document.querySelectorAll('#b-table tr').forEach((tr) => {
+            const nome = tr.getAttribute('data-nome');
+            if(!nome) return;
+            let f = 0;
             sabadosDoMes.forEach(dia => {
-                const el = document.getElementById(`btn-${id}-${dia}`);
+                const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+                const el = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
                 if (el && (el.classList.contains('st-falta') || el.classList.contains('st-justificado'))) f++;
             });
-            let b = document.getElementById(`faltas-${id}`); if(b) b.innerText = f;
+            const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+            let b = document.getElementById(`faltas-idx-${alunoIndex}`); 
+            if(b) b.innerText = f;
         });
     }
 
     async function cicloIndividual(nome, dia) {
-        const el = document.getElementById(`btn-${nome.replace(/\s/g,'')}-${dia}`);
+        if (isProcessing) return; // Bloqueia durante processamento
+        
+        const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+        const el = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
         if(!el) return;
+        
         const ciclo = ['', 'falta', 'presente', 'atraso', 'justificado'];
         let atual = ''; ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
         let obs = "";
+        
         if (prox === 'justificado') {
             obs = prompt("JUSTIFICATIVA:") || "Sem justificativa";
             if (obs === null) return;
         }
-        el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
-        enviarDados(nome, dia, prox, obs);
+        
+        el.className = `box st-${prox}`; 
+        el.innerHTML = getIcon(prox);
+        
+        // Atualiza cache local imediatamente
         const fIdx = freqCache.findIndex(x => x.aluno === nome && x.data.includes(dia));
-        if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = obs; }
-        else { freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); }
+        if(fIdx > -1) { 
+            freqCache[fIdx].status = prox; 
+            freqCache[fIdx].obs = obs; 
+        } else { 
+            freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); 
+        }
+        
+        // Adiciona à fila em vez de enviar direto
+        await addToQueue(nome, dia, prox, obs);
+        
         showToast(); 
         atualizarSomatorias();
     }
 
-    function cicloColuna(dia) {
+    // FUNÇÃO ALL CORRIGIDA COM BLOQUEIO
+    async function cicloColuna(dia) {
+        if (isProcessing) return; // Impede clique múltiplo
+        
+        const btnAll = document.getElementById(`btn-all-${dia}`);
+        if (btnAll) btnAll.disabled = true; // Desabilita botão ALL
+        
+        showLoading('MARCANDO TODOS...');
+        
         const boxes = Array.from(document.querySelectorAll(`[id$='-${dia}']`)).filter(el => !el.classList.contains('st-nm'));
-        if (!boxes.length) return;
+        if (!boxes.length) {
+            hideLoading();
+            if (btnAll) btnAll.disabled = false;
+            return;
+        }
+        
         const ciclo = ['', 'falta', 'presente'];
-        let atual = ''; ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
+        let atual = ''; 
+        ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-        boxes.forEach(el => {
-            const nomeRaw = el.id.replace('btn-', '').replace('-'+dia, '');
-            const alunoOriginal = listaAlunosCache.find(a => a.nome.replace(/\s/g,'') === nomeRaw);
-            if (alunoOriginal) {
-                el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
-                enviarDados(alunoOriginal.nome, dia, prox, "");
-                const fIdx = freqCache.findIndex(x => x.aluno === alunoOriginal.nome && x.data.includes(dia));
-                if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = ""; }
-                else { freqCache.push({ aluno: alunoOriginal.nome, data: dia, status: prox, obs: "" }); }
+        
+        const linhas = document.querySelectorAll('#b-table tr');
+        let count = 0;
+        
+        for (const tr of linhas) {
+            const nomeAluno = tr.getAttribute('data-nome');
+            if (!nomeAluno) continue;
+            
+            const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nomeAluno);
+            const btn = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
+            
+            if (btn && !btn.classList.contains('st-nm')) {
+                btn.className = `box st-${prox}`; 
+                btn.innerHTML = getIcon(prox);
+                
+                // Atualiza cache
+                const fIdx = freqCache.findIndex(x => x.aluno === nomeAluno && x.data.includes(dia));
+                if(fIdx > -1) { 
+                    freqCache[fIdx].status = prox; 
+                    freqCache[fIdx].obs = ""; 
+                } else { 
+                    freqCache.push({ aluno: nomeAluno, data: dia, status: prox, obs: "" }); 
+                }
+                
+                // Adiciona à fila (aguarda confirmação)
+                await addToQueue(nomeAluno, dia, prox, "");
+                count++;
+                
+                // Atualiza texto do loading
+                document.getElementById('loading-text').innerText = `MARCANDO... ${count}/${linhas.length}`;
             }
-        });
+        }
+        
+        // Aguarda a fila terminar
+        while (requestQueue.length > 0 || isQueueRunning) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        
         showToast(); 
-        setTimeout(atualizarSomatorias, 500);
+        atualizarSomatorias();
+        hideLoading();
+        if (btnAll) btnAll.disabled = false;
     }
 
     async function compartilharDia(dia) {
@@ -463,14 +561,25 @@
         }
     }
 
-    function enviarDados(nome, dia, status, obs) {
-        fetch(URL_SISTEMA, { 
-            method: 'POST', mode: 'no-cors', 
-            body: JSON.stringify({ action: "upsert", data: { nome_aluno: nome, data: dia, status: status, obs: obs } }) 
-        });
+    async function navegarMes(dir) {
+        if (isProcessing) {
+            alert('Aguarde o processamento atual terminar...');
+            return;
+        }
+        
+        // Aguarda a fila de requisições terminar antes de navegar
+        if (requestQueue.length > 0 || isQueueRunning) {
+            showLoading('AGUARDANDO SALVAMENTO...');
+            while (requestQueue.length > 0 || isQueueRunning) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            hideLoading();
+        }
+        
+        dataFoco.setMonth(dataFoco.getMonth() + dir); 
+        atualizarSabados(); 
+        await carregarArena();
     }
-
-    async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarSabados(); await carregarArena(); }
 
     window.onload = async () => {
         atualizarSabados();

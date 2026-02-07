@@ -18,6 +18,21 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-color); color: white; padding: 20px; }
 
+        /* LOADING OVERLAY */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 11, 22, 0.9); z-index: 10000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #loading-overlay.active { display: flex; }
+        .spinner {
+            width: 50px; height: 50px; border: 3px solid var(--border-color);
+            border-top-color: var(--accent-blue); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-text { margin-top: 15px; color: var(--accent-blue); font-size: 14px; }
+
         header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
         .btn-nav { 
             width: 40px; height: 40px; border-radius: 50%; 
@@ -25,6 +40,7 @@
             color: white; display: flex; align-items: center; justify-content: center;
             cursor: pointer; text-decoration: none;
         }
+        .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .page-badge {
             background: var(--btn-bg); padding: 10px 25px; border-radius: 30px;
@@ -41,8 +57,7 @@
             padding: 10px 15px; border-radius: 10px; outline: none; width: 220px; font-size: 14px;
         }
 
-        /* AJUSTE PARA VISUALIZAÇÃO MOBILE: COLUNA FIXA */
-        .projeto-container { 
+        .arena-container { 
             background: var(--card-bg); border-radius: 12px; 
             overflow-x: auto; border: 1px solid var(--border-color);
             margin-top: 20px;
@@ -52,7 +67,6 @@
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
         th, td { border-bottom: 1px solid var(--border-color); text-align: center; background: var(--card-bg); }
 
-        /* FIXANDO A COLUNA DO NOME */
         .td-aluno { 
             text-align: left !important; 
             padding-left: 15px; 
@@ -75,7 +89,11 @@
         .aluno-turma { font-size: 9px; color: var(--accent-blue); font-weight: bold; }
 
         .btn-action-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .btn-all { background: #2563eb; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; }
+        .btn-all { 
+            background: #2563eb; color: white; border: none; padding: 2px 6px; border-radius: 4px; 
+            font-size: 9px; font-weight: bold; cursor: pointer; 
+        }
+        .btn-all:disabled { background: #1a2a3a; cursor: not-allowed; }
         .btn-share { color: var(--accent-blue); font-size: 13px; cursor: pointer; padding: 4px; }
 
         .box { 
@@ -98,6 +116,12 @@
 </head>
 <body>
 
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">SALVANDO...</div>
+</div>
+
 <div id="toast">SALVO!</div>
 
 <header>
@@ -106,9 +130,9 @@
 </header>
 
 <div class="date-control">
-    <div class="btn-nav" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></div>
+    <button class="btn-nav" id="btn-mes-anterior" onclick="navegarMes(-1)"><i class="fas fa-chevron-left"></i></button>
     <span class="month-display" id="label-mes">...</span>
-    <div class="btn-nav" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></div>
+    <button class="btn-nav" id="btn-mes-proximo" onclick="navegarMes(1)"><i class="fas fa-chevron-right"></i></button>
 </div>
 
 <div class="filter-container">
@@ -117,7 +141,7 @@
     </select>
 </div>
 
-<div class="projeto-container">
+<div class="arena-container">
     <table>
         <thead>
             <tr id="h-days">
@@ -144,60 +168,157 @@
     const URL_TURMAS = "https://script.google.com/macros/s/AKfycbw3Zy6DuTZO61C-RpD6hrnOFjXkFHNZQYDFKLFQAZ4hFVere7K31Y2W9FCBAhsgfOiSvQ/exec";
 
     let dataFoco = new Date(); 
-    let diasDoMes = [];
+    let diasProjeto = []; // Terças, Sextas e Sábados
     let listaAlunosCache = [];
     let freqCache = [];
+    let isProcessing = false;
+    let requestQueue = [];
+    let isQueueRunning = false;
+
+    function showLoading(text = 'CARREGANDO...') {
+        document.getElementById('loading-text').innerText = text;
+        document.getElementById('loading-overlay').classList.add('active');
+        isProcessing = true;
+        document.getElementById('btn-mes-anterior').disabled = true;
+        document.getElementById('btn-mes-proximo').disabled = true;
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-overlay').classList.remove('active');
+        isProcessing = false;
+        document.getElementById('btn-mes-anterior').disabled = false;
+        document.getElementById('btn-mes-proximo').disabled = false;
+    }
 
     function showToast() {
         const t = document.getElementById('toast');
         t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1000);
     }
 
-    function atualizarDias() {
+    // ALTERAÇÃO 2: FUNÇÃO ATUALIZADA PARA PEGAR TERÇAS (2), SEXTAS (5) E SÁBADOS (6)
+    function atualizarDiasProjeto() {
         const ano = dataFoco.getFullYear(), mes = dataFoco.getMonth();
         document.getElementById('label-mes').innerText = `${dataFoco.toLocaleString('pt-BR', { month: 'long' }).toUpperCase()} DE ${ano}`;
-        diasDoMes = [];
+        diasProjeto = [];
         let d = new Date(ano, mes, 1);
+        
         while (d.getMonth() === mes) {
-            if (d.getDay() === 2 || d.getDay() === 5 || d.getDay() === 6) {
+            const diaSemana = d.getDay(); // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb
+            // Pega Terças (2), Sextas (5) e Sábados (6)
+            if (diaSemana === 2 || diaSemana === 5 || diaSemana === 6) {
                 let y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
-                let label = d.getDay() === 2 ? "TER" : d.getDay() === 5 ? "SEX" : "SÁB";
-                diasDoMes.push({ data: `${y}-${m}-${day}`, label: label });
+                diasProjeto.push(`${y}-${m}-${day}`);
             }
             d.setDate(d.getDate() + 1);
         }
     }
 
     function parseDataManual(valor) {
-        if (!valor) return null;
-        let s = valor.toString().split('T')[0];
-        let partes = s.includes('-') ? s.split('-') : s.split('/');
-        let d = (partes[0].length === 4) ? new Date(partes[0], partes[1] - 1, partes[2]) : new Date(partes[2], partes[1] - 1, partes[0]);
-        if (isNaN(d.getTime())) return null;
-        d.setHours(0,0,0,0); return d;
+        if (!valor || valor === '-' || valor === '' || valor === 'undefined' || valor === 'null') return null;
+        
+        let s = valor.toString().trim().split('T')[0];
+        let dia, mes, ano;
+        
+        if (s.includes('-') && s.split('-')[0].length === 4) {
+            let partes = s.split('-');
+            ano = parseInt(partes[0]); 
+            mes = parseInt(partes[1]) - 1; 
+            dia = parseInt(partes[2]);
+        }
+        else if (s.includes('/') || (s.includes('-') && s.split('-')[2] && s.split('-')[2].length === 4)) {
+            let sep = s.includes('/') ? '/' : '-';
+            let partes = s.split(sep);
+            dia = parseInt(partes[0]); 
+            mes = parseInt(partes[1]) - 1; 
+            ano = parseInt(partes[2]);
+        } else { 
+            return null; 
+        }
+        
+        if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return null;
+        
+        let data = new Date(ano, mes, dia);
+        if (isNaN(data.getTime())) return null;
+        
+        data.setHours(0, 0, 0, 0);
+        return data;
+    }
+
+    function dataParaNumero(data) {
+        if (!data) return null;
+        return data.getFullYear() * 10000 + (data.getMonth() + 1) * 100 + data.getDate();
+    }
+
+    async function addToQueue(nome, dia, status, obs) {
+        return new Promise((resolve) => {
+            requestQueue.push({ nome, dia, status, obs, resolve });
+            processQueue();
+        });
+    }
+
+    async function processQueue() {
+        if (isQueueRunning || requestQueue.length === 0) return;
+        
+        isQueueRunning = true;
+        const req = requestQueue.shift();
+        
+        try {
+            await fetch(URL_SISTEMA, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ 
+                    action: "upsert", 
+                    data: { nome_aluno: req.nome, data: req.dia, status: req.status, obs: req.obs } 
+                }) 
+            });
+            await new Promise(r => setTimeout(r, 100));
+        } catch (e) {
+            console.error('Erro na requisição:', e);
+        }
+        
+        req.resolve();
+        isQueueRunning = false;
+        processQueue();
     }
 
     async function carregarProjeto() {
+        if (isProcessing) return;
+        
+        showLoading('CARREGANDO DADOS...');
+        
         const body = document.getElementById('b-table'), head = document.getElementById('h-days'), rowActions = document.getElementById('row-all-actions'), foot = document.getElementById('f-total'), turmaFiltro = document.getElementById('sel-turma').value;
-        body.innerHTML = '<tr><td colspan="30" style="padding:50px; color:gray; text-align:center;">CARREGANDO...</td></tr>';
+        body.innerHTML = '<tr><td colspan="15" style="padding:50px; color:gray; text-align:center;">CARREGANDO...</td></tr>';
         
         while(head.children.length > 2) head.removeChild(head.children[1]);
         while(rowActions.children.length > 2) rowActions.removeChild(rowActions.children[1]);
         while(foot.children.length > 2) foot.removeChild(foot.children[1]);
 
-        const inicioMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth(), 1).getTime();
-        const fimMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth() + 1, 0).getTime();
+        const inicioMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth(), 1);
+        const fimMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth() + 1, 0);
+        const numInicioMes = dataParaNumero(inicioMes);
+        const numFimMes = dataParaNumero(fimMes);
 
-        diasDoMes.forEach(item => {
-            const th = document.createElement('th'); th.className = "col-dia"; th.innerHTML = `${item.label}<br>${item.data.split('-')[2]}/${item.data.split('-')[1]}`;
+        diasProjeto.forEach(dia => {
+            const dataObj = parseDataManual(dia);
+            const diaSemana = dataObj.getDay();
+            let labelDia = '';
+            if (diaSemana === 2) labelDia = 'TER';
+            else if (diaSemana === 5) labelDia = 'SEX';
+            else if (diaSemana === 6) labelDia = 'SÁB';
+            
+            const th = document.createElement('th'); 
+            th.className = "col-dia"; 
+            th.innerHTML = `${labelDia}<br>${dia.split('-')[2]}/${dia.split('-')[1]}`;
             head.insertBefore(th, head.lastElementChild);
             
             const tdAct = document.createElement('td'); 
-            tdAct.innerHTML = `<div class="btn-action-group"><button class="btn-all" onclick="cicloColuna('${item.data}')">ALL</button><i class="fas fa-share-alt btn-share" onclick="compartilharDia('${item.data}')"></i></div>`;
+            tdAct.innerHTML = `<div class="btn-action-group"><button class="btn-all" id="btn-all-${dia}" onclick="cicloColuna('${dia}')">ALL</button><i class="fas fa-share-alt btn-share" onclick="compartilharDia('${dia}')"></i></div>`;
             rowActions.insertBefore(tdAct, rowActions.lastElementChild);
 
             const tdFoot = document.createElement('td'); 
-            tdFoot.id = `total-dia-${item.data}`; tdFoot.className = "val-total"; tdFoot.innerText = "0";
+            tdFoot.id = `total-dia-${dia}`; 
+            tdFoot.className = "val-total"; 
+            tdFoot.innerText = "0";
             foot.insertBefore(tdFoot, foot.lastElementChild);
         });
 
@@ -206,45 +327,88 @@
             const dados = await resp.json();
             listaAlunosCache = dados.alunos;
             freqCache = dados.frequencia;
+            
+            listaAlunosCache.sort((a, b) => {
+                const nomeA = (a.nome || '').toUpperCase();
+                const nomeB = (b.nome || '').toUpperCase();
+                return nomeA.localeCompare(nomeB, 'pt-BR');
+            });
+            
             const listaAlunosFiltrados = listaAlunosCache.filter(a => turmaFiltro === "" || a.turma === turmaFiltro);
             body.innerHTML = '';
 
-            listaAlunosFiltrados.forEach(aluno => {
+            listaAlunosFiltrados.forEach((aluno) => {
                 const dMat = parseDataManual(aluno.data_matricula);
-                const dVal = parseDataManual(aluno.data_de_validade_fim);
+                const dValAtual = parseDataManual(aluno.data_de_validade_fim);
                 const dRemat = parseDataManual(aluno.data_rematricula);
+                const dValAnterior = parseDataManual(aluno.validade_anterior);
+                
+                const numMat = dataParaNumero(dMat);
+                const numValAtual = dataParaNumero(dValAtual);
+                const numRemat = dataParaNumero(dRemat);
+                const numValAnterior = dataParaNumero(dValAnterior);
 
-                if (dMat && dMat.getTime() > fimMes) return;
-                if (dVal && dVal.getTime() < inicioMes && (!dRemat || dRemat.getTime() > fimMes)) return;
+                if (numMat && numMat > numFimMes) return;
+                if (!numRemat && numValAtual && numValAtual < numInicioMes) return;
 
                 let tr = document.createElement('tr');
+                tr.setAttribute('data-nome', aluno.nome);
+                
                 let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome}</span><span class="aluno-turma">♦ ${aluno.turma}</span></td>`;
                 
-                diasDoMes.forEach(item => {
-                    const dDia = parseDataManual(item.data).getTime();
+                diasProjeto.forEach(diaStr => {
+                    const dSab = parseDataManual(diaStr);
+                    const numSab = dataParaNumero(dSab);
+                    
                     let bloqueado = false;
-
-                    if (dMat && dDia < dMat.getTime()) {
+                    let motivo = '';
+                    
+                    if (!numSab) {
                         bloqueado = true;
-                    } else if (dVal && dDia > dVal.getTime()) {
-                        if (!dRemat || dDia < dRemat.getTime()) {
+                        motivo = 'sem_data';
+                    }
+                    else if (numMat && numSab < numMat) {
+                        bloqueado = true;
+                        motivo = 'antes_matricula';
+                    } 
+                    else if (numRemat && numValAnterior) {
+                        if (numSab > numValAnterior && numSab < numRemat) {
                             bloqueado = true;
+                            motivo = 'VACUO';
                         }
+                        else if (numSab >= numRemat && numSab <= numValAtual) {
+                            bloqueado = false;
+                        }
+                        else if (numSab > numValAtual) {
+                            bloqueado = true;
+                            motivo = 'nova_validade_expirada';
+                        }
+                    }
+                    else if (numValAtual && numSab > numValAtual) {
+                        bloqueado = true;
+                        motivo = 'validade_expirada';
                     }
 
                     if (bloqueado) {
-                        html += `<td><div class="box st-nm">N/M</div></td>`;
+                        html += `<td><div class="box st-nm" title="${motivo}">N/M</div></td>`;
                     } else {
-                        const f = freqCache.find(x => x.aluno === aluno.nome && x.data.includes(item.data));
+                        const f = freqCache.find(x => x.aluno === aluno.nome && x.data.includes(diaStr));
                         const st = f ? f.status : '';
-                        html += `<td><div id="btn-${aluno.nome.replace(/\s/g,'')}-${item.data}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome}','${item.data}')">${getIcon(st)}</div></td>`;
+                        const alunoIndex = listaAlunosCache.findIndex(a => a.nome === aluno.nome);
+                        html += `<td><div id="btn-idx-${alunoIndex}-${diaStr}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome.replace(/'/g, "\\'")}','${diaStr}')">${getIcon(st)}</div></td>`;
                     }
                 });
-                html += `<td><div id="faltas-${aluno.nome.replace(/\s/g,'')}" class="falta-badge">0</div></td>`;
-                tr.innerHTML = html; body.appendChild(tr);
+                html += `<td><div id="faltas-idx-${listaAlunosCache.findIndex(a => a.nome === aluno.nome)}" class="falta-badge">0</div></td>`;
+                tr.innerHTML = html; 
+                body.appendChild(tr);
             });
             atualizarSomatorias();
-        } catch (e) { body.innerHTML = '<tr><td colspan="30" style="text-align:center;">Erro ao carregar dados.</td></tr>'; }
+        } catch (e) { 
+            console.error(e);
+            body.innerHTML = '<tr><td colspan="15" style="text-align:center;">Erro ao carregar dados.</td></tr>'; 
+        } finally {
+            hideLoading();
+        }
     }
 
     function getIcon(st) {
@@ -256,71 +420,132 @@
     }
 
     function atualizarSomatorias() {
-        diasDoMes.forEach(item => {
+        diasProjeto.forEach(dia => {
             let p = 0;
-            document.querySelectorAll(`[id$='-${item.data}']`).forEach(el => {
+            document.querySelectorAll(`[id$='-${dia}']`).forEach(el => {
                 if (el.classList.contains('st-presente') || el.classList.contains('st-atraso')) p++;
             });
-            let c = document.getElementById(`total-dia-${item.data}`); if(c) c.innerText = p;
+            let c = document.getElementById(`total-dia-${dia}`); if(c) c.innerText = p;
         });
 
-        document.querySelectorAll('#b-table tr').forEach(tr => {
-            const nomeSpan = tr.querySelector('.aluno-nome');
-            if(!nomeSpan) return;
-            const nome = nomeSpan.innerText;
-            let f = 0; const id = nome.replace(/\s/g,'');
-            diasDoMes.forEach(item => {
-                const el = document.getElementById(`btn-${id}-${item.data}`);
+        document.querySelectorAll('#b-table tr').forEach((tr) => {
+            const nome = tr.getAttribute('data-nome');
+            if(!nome) return;
+            let f = 0;
+            diasProjeto.forEach(dia => {
+                const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+                const el = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
                 if (el && (el.classList.contains('st-falta') || el.classList.contains('st-justificado'))) f++;
             });
-            let b = document.getElementById(`faltas-${id}`); if(b) b.innerText = f;
+            const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+            let b = document.getElementById(`faltas-idx-${alunoIndex}`); 
+            if(b) b.innerText = f;
         });
     }
 
     async function cicloIndividual(nome, dia) {
-        const el = document.getElementById(`btn-${nome.replace(/\s/g,'')}-${dia}`);
+        if (isProcessing) return;
+        
+        const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nome);
+        const el = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
         if(!el) return;
+        
         const ciclo = ['', 'falta', 'presente', 'atraso', 'justificado'];
         let atual = ''; ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
         let obs = "";
+        
         if (prox === 'justificado') {
             obs = prompt("JUSTIFICATIVA:") || "Sem justificativa";
             if (obs === null) return;
         }
-        el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
-        enviarDados(nome, dia, prox, obs);
+        
+        el.className = `box st-${prox}`; 
+        el.innerHTML = getIcon(prox);
+        
         const fIdx = freqCache.findIndex(x => x.aluno === nome && x.data.includes(dia));
-        if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = obs; }
-        else { freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); }
+        if(fIdx > -1) { 
+            freqCache[fIdx].status = prox; 
+            freqCache[fIdx].obs = obs; 
+        } else { 
+            freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); 
+        }
+        
+        await addToQueue(nome, dia, prox, obs);
+        
         showToast(); 
         atualizarSomatorias();
     }
 
-    function cicloColuna(dia) {
+    async function cicloColuna(dia) {
+        if (isProcessing) return;
+        
+        const btnAll = document.getElementById(`btn-all-${dia}`);
+        if (btnAll) btnAll.disabled = true;
+        
+        showLoading('MARCANDO TODOS...');
+        
         const boxes = Array.from(document.querySelectorAll(`[id$='-${dia}']`)).filter(el => !el.classList.contains('st-nm'));
-        if (!boxes.length) return;
+        if (!boxes.length) {
+            hideLoading();
+            if (btnAll) btnAll.disabled = false;
+            return;
+        }
+        
         const ciclo = ['', 'falta', 'presente'];
-        let atual = ''; ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
+        let atual = ''; 
+        ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-        boxes.forEach(el => {
-            const nomeRaw = el.id.replace('btn-', '').replace('-'+dia, '');
-            const alunoOriginal = listaAlunosCache.find(a => a.nome.replace(/\s/g,'') === nomeRaw);
-            if (alunoOriginal) {
-                el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
-                enviarDados(alunoOriginal.nome, dia, prox, "");
-                const fIdx = freqCache.findIndex(x => x.aluno === alunoOriginal.nome && x.data.includes(dia));
-                if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = ""; }
-                else { freqCache.push({ aluno: alunoOriginal.nome, data: dia, status: prox, obs: "" }); }
+        
+        const linhas = document.querySelectorAll('#b-table tr');
+        let count = 0;
+        
+        for (const tr of linhas) {
+            const nomeAluno = tr.getAttribute('data-nome');
+            if (!nomeAluno) continue;
+            
+            const alunoIndex = listaAlunosCache.findIndex(a => a.nome === nomeAluno);
+            const btn = document.getElementById(`btn-idx-${alunoIndex}-${dia}`);
+            
+            if (btn && !btn.classList.contains('st-nm')) {
+                btn.className = `box st-${prox}`; 
+                btn.innerHTML = getIcon(prox);
+                
+                const fIdx = freqCache.findIndex(x => x.aluno === nomeAluno && x.data.includes(dia));
+                if(fIdx > -1) { 
+                    freqCache[fIdx].status = prox; 
+                    freqCache[fIdx].obs = ""; 
+                } else { 
+                    freqCache.push({ aluno: nomeAluno, data: dia, status: prox, obs: "" }); 
+                }
+                
+                await addToQueue(nomeAluno, dia, prox, "");
+                count++;
+                
+                document.getElementById('loading-text').innerText = `MARCANDO... ${count}/${linhas.length}`;
             }
-        });
+        }
+        
+        while (requestQueue.length > 0 || isQueueRunning) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        
         showToast(); 
-        setTimeout(atualizarSomatorias, 500);
+        atualizarSomatorias();
+        hideLoading();
+        if (btnAll) btnAll.disabled = false;
     }
 
     async function compartilharDia(dia) {
+        const dataObj = parseDataManual(dia);
+        const diaSemana = dataObj.getDay();
+        let nomeDia = '';
+        if (diaSemana === 2) nomeDia = 'TERÇA';
+        else if (diaSemana === 5) nomeDia = 'SEXTA';
+        else if (diaSemana === 6) nomeDia = 'SÁBADO';
+        
         const dataFormatada = dia.split('-').reverse().join('/');
-        let mensagem = `*Frequência PROJETO*\nDia: ${dataFormatada}\n\n`;
+        let mensagem = `*Frequência PROJETO - ${nomeDia}*\nDia: ${dataFormatada}\n\n`;
         const turmasMap = {}; const justificados = []; let totalGeral = 0;
         listaAlunosCache.forEach(aluno => {
             const freq = freqCache.find(f => f.aluno === aluno.nome && f.data.includes(dia));
@@ -346,17 +571,27 @@
         }
     }
 
-    function enviarDados(nome, dia, status, obs) {
-        fetch(URL_SISTEMA, { 
-            method: 'POST', mode: 'no-cors', 
-            body: JSON.stringify({ action: "upsert", data: { nome_aluno: nome, data: dia, status: status, obs: obs } }) 
-        });
+    async function navegarMes(dir) {
+        if (isProcessing) {
+            alert('Aguarde o processamento atual terminar...');
+            return;
+        }
+        
+        if (requestQueue.length > 0 || isQueueRunning) {
+            showLoading('AGUARDANDO SALVAMENTO...');
+            while (requestQueue.length > 0 || isQueueRunning) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            hideLoading();
+        }
+        
+        dataFoco.setMonth(dataFoco.getMonth() + dir); 
+        atualizarDiasProjeto(); 
+        await carregarProjeto();
     }
 
-    async function navegarMes(dir) { dataFoco.setMonth(dataFoco.getMonth() + dir); atualizarDias(); await carregarProjeto(); }
-
     window.onload = async () => {
-        atualizarDias();
+        atualizarDiasProjeto();
         try {
             const respT = await fetch(URL_TURMAS + "?table=turmas").then(r => r.json());
             const sel = document.getElementById('sel-turma');
