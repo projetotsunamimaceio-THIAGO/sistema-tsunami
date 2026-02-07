@@ -45,18 +45,31 @@
             background: var(--card-bg); border-radius: 12px; 
             overflow-x: auto; border: 1px solid var(--border-color);
             margin-top: 20px;
+            position: relative;
         }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border-bottom: 1px solid var(--border-color); text-align: center; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { border-bottom: 1px solid var(--border-color); text-align: center; background: var(--card-bg); }
 
-        .td-aluno { text-align: left !important; padding-left: 25px; width: auto; }
-        .col-dia { width: 60px; }
-        .col-faltas { width: 80px; }
+        .td-aluno { 
+            text-align: left !important; 
+            padding-left: 15px; 
+            position: sticky; 
+            left: 0; 
+            z-index: 10; 
+            width: 180px; 
+            min-width: 180px;
+            border-right: 2px solid var(--border-color);
+        }
 
-        td { padding: 10px 0; }
+        th.td-aluno { z-index: 11; }
 
-        .aluno-nome { font-weight: 600; font-size: 13px; display: block; color: #f1f5f9; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .col-dia { width: 65px; min-width: 65px; }
+        .col-faltas { width: 70px; min-width: 70px; }
+
+        td { padding: 12px 0; }
+
+        .aluno-nome { font-weight: 600; font-size: 12px; display: block; color: #f1f5f9; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .aluno-turma { font-size: 9px; color: var(--accent-blue); font-weight: bold; }
 
         .btn-action-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -64,7 +77,7 @@
         .btn-share { color: var(--accent-blue); font-size: 13px; cursor: pointer; padding: 4px; }
 
         .box { 
-            width: 25px; height: 25px; border-radius: 6px; border: none;
+            width: 28px; height: 28px; border-radius: 6px; border: none;
             display: flex; align-items: center; justify-content: center;
             font-size: 11px; margin: 0 auto; cursor: pointer;
             background: #1e293b; color: #475569;
@@ -79,11 +92,34 @@
         .falta-badge { width: 24px; height: 24px; border-radius: 50%; background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; margin: 0 auto; }
         .val-total { color: #10b981; font-weight: bold; font-size: 13px; }
         #toast { position: fixed; bottom: 30px; right: 30px; background: #10b981; color: white; padding: 12px 25px; border-radius: 10px; display: none; font-weight: bold; z-index: 1000;}
+        
+        /* Painel de debug - oculto por padrão */
+        #debug-panel { 
+            position: fixed; bottom: 10px; left: 10px; 
+            background: rgba(0,0,0,0.9); color: #0f0; 
+            padding: 10px; border-radius: 5px; 
+            font-family: monospace; font-size: 11px;
+            max-width: 600px; max-height: 300px; overflow: auto;
+            display: none; z-index: 9999;
+        }
+        
+        /* Botão para ativar/desativar debug */
+        .debug-toggle {
+            position: fixed; bottom: 10px; right: 10px;
+            background: #1a2a3a; color: #64748b;
+            border: 1px solid var(--border-color);
+            padding: 5px 10px; border-radius: 5px;
+            font-size: 10px; cursor: pointer;
+            z-index: 10000;
+        }
+        .debug-toggle:hover { color: white; }
     </style>
 </head>
 <body>
 
 <div id="toast">SALVO!</div>
+<div id="debug-panel"></div>
+<button class="debug-toggle" onclick="toggleDebug()" title="Ativar/Desativar Debug">DEBUG</button>
 
 <header>
     <a href="pagina-inicial.html" class="btn-nav"><i class="fas fa-chevron-left"></i></a>
@@ -110,14 +146,14 @@
                 <th class="col-faltas">FALTAS</th>
             </tr>
             <tr id="row-all-actions">
-                <td class="td-aluno" style="font-weight: bold; font-size: 13px; color: white;">MARCAR TODOS</td>
+                <td class="td-aluno" style="font-weight: bold; font-size: 11px; color: white;">MARCAR TODOS</td>
                 <td>—</td>
             </tr>
         </thead>
         <tbody id="b-table"></tbody>
         <tfoot>
             <tr id="f-total">
-                <td class="td-aluno" style="text-align:right !important; padding-right: 20px; font-size:12px; color:#64748b;">PRESENÇAS:</td>
+                <td class="td-aluno" style="text-align:right !important; padding-right: 15px; font-size:11px; color:#64748b;">PRESENÇAS:</td>
                 <td>—</td>
             </tr>
         </tfoot>
@@ -132,6 +168,23 @@
     let sabadosDoMes = [];
     let listaAlunosCache = [];
     let freqCache = [];
+    let debugMode = false; // DEBUG DESATIVADO por padrão
+
+    function toggleDebug() {
+        debugMode = !debugMode;
+        const panel = document.getElementById('debug-panel');
+        panel.style.display = debugMode ? 'block' : 'none';
+        if (!debugMode) panel.innerHTML = '';
+        alert('Debug ' + (debugMode ? 'ATIVADO' : 'DESATIVADO'));
+    }
+
+    function log(msg) {
+        if (!debugMode) return;
+        console.log(msg);
+        const panel = document.getElementById('debug-panel');
+        panel.innerHTML += msg + '<br>';
+        panel.scrollTop = panel.scrollHeight;
+    }
 
     function showToast() {
         const t = document.getElementById('toast');
@@ -153,24 +206,55 @@
     }
 
     function parseDataManual(valor) {
-        if (!valor) return null;
-        let s = valor.toString().split('T')[0];
-        let partes = s.includes('-') ? s.split('-') : s.split('/');
-        let d = (partes[0].length === 4) ? new Date(partes[0], partes[1] - 1, partes[2]) : new Date(partes[2], partes[1] - 1, partes[0]);
-        if (isNaN(d.getTime())) return null;
-        d.setHours(0,0,0,0); return d;
+        if (!valor || valor === '-' || valor === '' || valor === 'undefined' || valor === 'null') return null;
+        
+        let s = valor.toString().trim().split('T')[0];
+        let dia, mes, ano;
+        
+        if (s.includes('-') && s.split('-')[0].length === 4) {
+            let partes = s.split('-');
+            ano = parseInt(partes[0]); 
+            mes = parseInt(partes[1]) - 1; 
+            dia = parseInt(partes[2]);
+        }
+        else if (s.includes('/') || (s.includes('-') && s.split('-')[2] && s.split('-')[2].length === 4)) {
+            let sep = s.includes('/') ? '/' : '-';
+            let partes = s.split(sep);
+            dia = parseInt(partes[0]); 
+            mes = parseInt(partes[1]) - 1; 
+            ano = parseInt(partes[2]);
+        } else { 
+            return null; 
+        }
+        
+        if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return null;
+        
+        let data = new Date(ano, mes, dia);
+        if (isNaN(data.getTime())) return null;
+        
+        data.setHours(0, 0, 0, 0);
+        return data;
+    }
+
+    function dataParaNumero(data) {
+        if (!data) return null;
+        return data.getFullYear() * 10000 + (data.getMonth() + 1) * 100 + data.getDate();
     }
 
     async function carregarArena() {
         const body = document.getElementById('b-table'), head = document.getElementById('h-days'), rowActions = document.getElementById('row-all-actions'), foot = document.getElementById('f-total'), turmaFiltro = document.getElementById('sel-turma').value;
         body.innerHTML = '<tr><td colspan="15" style="padding:50px; color:gray; text-align:center;">CARREGANDO...</td></tr>';
         
+        if (debugMode) document.getElementById('debug-panel').innerHTML = '';
+        
         while(head.children.length > 2) head.removeChild(head.children[1]);
         while(rowActions.children.length > 2) rowActions.removeChild(rowActions.children[1]);
         while(foot.children.length > 2) foot.removeChild(foot.children[1]);
 
-        const inicioMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth(), 1).getTime();
-        const fimMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth() + 1, 0).getTime();
+        const inicioMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth(), 1);
+        const fimMes = new Date(dataFoco.getFullYear(), dataFoco.getMonth() + 1, 0);
+        const numInicioMes = dataParaNumero(inicioMes);
+        const numFimMes = dataParaNumero(fimMes);
 
         sabadosDoMes.forEach(dia => {
             const th = document.createElement('th'); th.className = "col-dia"; th.innerHTML = `SÁB<br>${dia.split('-')[2]}/${dia.split('-')[1]}`;
@@ -190,47 +274,94 @@
             const dados = await resp.json();
             listaAlunosCache = dados.alunos;
             freqCache = dados.frequencia;
+            
+            log(`<strong>Total alunos: ${listaAlunosCache.length}</strong>`);
+            
+            // ORDENAÇÃO ALFABÉTICA AQUI ✅
+            listaAlunosCache.sort((a, b) => {
+                const nomeA = (a.nome || '').toUpperCase();
+                const nomeB = (b.nome || '').toUpperCase();
+                return nomeA.localeCompare(nomeB, 'pt-BR');
+            });
+            
             const listaAlunosFiltrados = listaAlunosCache.filter(a => turmaFiltro === "" || a.turma === turmaFiltro);
             body.innerHTML = '';
 
-            listaAlunosFiltrados.forEach(aluno => {
+            listaAlunosFiltrados.forEach((aluno, idx) => {
                 const dMat = parseDataManual(aluno.data_matricula);
-                const dVal = parseDataManual(aluno.data_de_validade_fim);
+                const dValAtual = parseDataManual(aluno.data_de_validade_fim);
                 const dRemat = parseDataManual(aluno.data_rematricula);
+                const dValAnterior = parseDataManual(aluno.validade_anterior);
+                
+                const numMat = dataParaNumero(dMat);
+                const numValAtual = dataParaNumero(dValAtual);
+                const numRemat = dataParaNumero(dRemat);
+                const numValAnterior = dataParaNumero(dValAnterior);
 
-                if (dMat && dMat.getTime() > fimMes) return;
-                if (dVal && dVal.getTime() < inicioMes && (!dRemat || dRemat.getTime() > fimMes)) return;
+                if (idx === 0 && debugMode) {
+                    log(`<hr><strong>Aluno: ${aluno.nome}</strong>`);
+                    log(`Parsed - Mat: ${numMat}, ValAtual: ${numValAtual}, Remat: ${numRemat}, ValAnt: ${numValAnterior}`);
+                }
+
+                if (numMat && numMat > numFimMes) return;
+                
+                if (!numRemat && numValAtual && numValAtual < numInicioMes) return;
 
                 let tr = document.createElement('tr');
                 let html = `<td class="td-aluno"><span class="aluno-nome">${aluno.nome}</span><span class="aluno-turma">♦ ${aluno.turma}</span></td>`;
                 
-                sabadosDoMes.forEach(dia => {
-                    const dSab = parseDataManual(dia).getTime();
+                sabadosDoMes.forEach(diaStr => {
+                    const dSab = parseDataManual(diaStr);
+                    const numSab = dataParaNumero(dSab);
+                    
                     let bloqueado = false;
-
-                    // LÓGICA DE BLOQUEIO (N/M)
-                    if (dMat && dSab < dMat.getTime()) {
-                        bloqueado = true; // Antes da matrícula
-                    } else if (dVal && dSab > dVal.getTime()) {
-                        // Se passou da validade, só libera se houver rematricula e o sábado for igual ou após ela
-                        if (!dRemat || dSab < dRemat.getTime()) {
+                    let motivo = '';
+                    
+                    if (!numSab) {
+                        bloqueado = true;
+                        motivo = 'sem_data';
+                    }
+                    else if (numMat && numSab < numMat) {
+                        bloqueado = true;
+                        motivo = 'antes_matricula';
+                    } 
+                    else if (numRemat && numValAnterior) {
+                        if (numSab > numValAnterior && numSab < numRemat) {
                             bloqueado = true;
+                            motivo = 'VACUO';
+                            if (idx === 0 && debugMode) log(`DIA ${numSab}: VÁCUO`);
                         }
+                        else if (numSab >= numRemat && numSab <= numValAtual) {
+                            bloqueado = false;
+                            if (idx === 0 && debugMode) log(`DIA ${numSab}: LIBERADO`);
+                        }
+                        else if (numSab > numValAtual) {
+                            bloqueado = true;
+                            motivo = 'nova_validade_expirada';
+                            if (idx === 0 && debugMode) log(`DIA ${numSab}: BLOQUEADO (expirado)`);
+                        }
+                    }
+                    else if (numValAtual && numSab > numValAtual) {
+                        bloqueado = true;
+                        motivo = 'validade_expirada';
                     }
 
                     if (bloqueado) {
-                        html += `<td><div class="box st-nm">N/M</div></td>`;
+                        html += `<td><div class="box st-nm" title="${motivo}">N/M</div></td>`;
                     } else {
-                        const f = freqCache.find(x => x.aluno === aluno.nome && x.data.includes(dia));
+                        const f = freqCache.find(x => x.aluno === aluno.nome && x.data.includes(diaStr));
                         const st = f ? f.status : '';
-                        html += `<td><div id="btn-${aluno.nome.replace(/\s/g,'')}-${dia}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome}','${dia}')">${getIcon(st)}</div></td>`;
+                        html += `<td><div id="btn-${aluno.nome.replace(/\s/g,'')}-${diaStr}" class="box st-${st}" onclick="cicloIndividual('${aluno.nome}','${diaStr}')">${getIcon(st)}</div></td>`;
                     }
                 });
                 html += `<td><div id="faltas-${aluno.nome.replace(/\s/g,'')}" class="falta-badge">0</div></td>`;
                 tr.innerHTML = html; body.appendChild(tr);
             });
             atualizarSomatorias();
-        } catch (e) { body.innerHTML = '<tr><td colspan="15" style="text-align:center;">Erro ao carregar dados.</td></tr>'; }
+        } catch (e) { 
+            console.error(e);
+            body.innerHTML = '<tr><td colspan="15" style="text-align:center;">Erro ao carregar dados.</td></tr>'; 
+        }
     }
 
     function getIcon(st) {
@@ -266,24 +397,19 @@
     async function cicloIndividual(nome, dia) {
         const el = document.getElementById(`btn-${nome.replace(/\s/g,'')}-${dia}`);
         if(!el) return;
-
         const ciclo = ['', 'falta', 'presente', 'atraso', 'justificado'];
         let atual = ''; ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-        
         let obs = "";
         if (prox === 'justificado') {
             obs = prompt("JUSTIFICATIVA:") || "Sem justificativa";
             if (obs === null) return;
         }
-
         el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
         enviarDados(nome, dia, prox, obs);
-        
         const fIdx = freqCache.findIndex(x => x.aluno === nome && x.data.includes(dia));
         if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = obs; }
         else { freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); }
-
         showToast(); 
         atualizarSomatorias();
     }
@@ -291,18 +417,15 @@
     function cicloColuna(dia) {
         const boxes = Array.from(document.querySelectorAll(`[id$='-${dia}']`)).filter(el => !el.classList.contains('st-nm'));
         if (!boxes.length) return;
-
         const ciclo = ['', 'falta', 'presente'];
         let atual = ''; ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-
         boxes.forEach(el => {
             const nomeRaw = el.id.replace('btn-', '').replace('-'+dia, '');
             const alunoOriginal = listaAlunosCache.find(a => a.nome.replace(/\s/g,'') === nomeRaw);
             if (alunoOriginal) {
                 el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
                 enviarDados(alunoOriginal.nome, dia, prox, "");
-                
                 const fIdx = freqCache.findIndex(x => x.aluno === alunoOriginal.nome && x.data.includes(dia));
                 if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = ""; }
                 else { freqCache.push({ aluno: alunoOriginal.nome, data: dia, status: prox, obs: "" }); }
@@ -315,15 +438,10 @@
     async function compartilharDia(dia) {
         const dataFormatada = dia.split('-').reverse().join('/');
         let mensagem = `*Frequência ARENA*\nDia: ${dataFormatada}\n\n`;
-        
-        const turmasMap = {};
-        const justificados = [];
-        let totalGeral = 0;
-
+        const turmasMap = {}; const justificados = []; let totalGeral = 0;
         listaAlunosCache.forEach(aluno => {
             const freq = freqCache.find(f => f.aluno === aluno.nome && f.data.includes(dia));
             if (!freq) return;
-
             if (freq.status === 'presente' || freq.status === 'atraso') {
                 if (!turmasMap[aluno.turma]) turmasMap[aluno.turma] = [];
                 const icon = freq.status === 'atraso' ? ' ⚠️' : '';
@@ -333,21 +451,13 @@
                 justificados.push(`*${aluno.nome}*\n(${freq.obs || 'Sem justificativa'})`);
             }
         });
-
         for (const turma in turmasMap) {
             mensagem += `*TURMA*\n${turmasMap[turma].join('\n')}\n-Total: ${turmasMap[turma].length} alunos\n\n`;
         }
-
         mensagem += `#Total/ARENA: ${totalGeral} alunos\n\n`;
-
-        if (justificados.length > 0) {
-            mensagem += `🗣️ - Justificados\n${justificados.join('\n\n')}`;
-        }
-
+        if (justificados.length > 0) { mensagem += `🗣️ - Justificados\n${justificados.join('\n\n')}`; }
         if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Frequência ARENA', text: mensagem });
-            } catch (err) { console.log("Compartilhamento cancelado"); }
+            try { await navigator.share({ title: 'Frequência ARENA', text: mensagem }); } catch (err) {}
         } else {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
         }
@@ -355,8 +465,7 @@
 
     function enviarDados(nome, dia, status, obs) {
         fetch(URL_SISTEMA, { 
-            method: 'POST', 
-            mode: 'no-cors', 
+            method: 'POST', mode: 'no-cors', 
             body: JSON.stringify({ action: "upsert", data: { nome_aluno: nome, data: dia, status: status, obs: obs } }) 
         });
     }

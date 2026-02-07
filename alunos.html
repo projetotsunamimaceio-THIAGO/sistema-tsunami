@@ -26,6 +26,8 @@
         .actions { display: flex; gap: 10px; }
         .btn-icon { background: #1a2a3a; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; }
         .remat-badge { background: #00ff88; color: #030b16; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 10px; }
+        .data-matricula { color: #00d4ff; }
+        .data-validade { color: #ffd400; }
     </style>
 </head>
 <body>
@@ -92,12 +94,22 @@
             const busca = document.getElementById('search').value.toUpperCase();
             const container = document.getElementById('alunos-list');
             container.innerHTML = '';
-            listaAlunosGeral.filter(a => a.nome && a.nome.toUpperCase().includes(busca)).forEach(a => {
+            
+            // ORDENAR ALFABETICAMENTE antes de filtrar e exibir
+            const alunosOrdenados = listaAlunosGeral
+                .filter(a => a.nome && a.nome.toUpperCase().includes(busca))
+                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+            
+            alunosOrdenados.forEach(a => {
                 container.innerHTML += `
                     <div class="aluno-card">
                         <div class="aluno-info">
                             <h4>${a.nome} ${a.data_rematricula ? '<span class="remat-badge">REMAT</span>' : ''}</h4>
-                            <p><i class="fas fa-users"></i> ${a.turma} • Validade: ${a.data_de_validade_fim}</p>
+                            <p>
+                                <i class="fas fa-users"></i> ${a.turma} • 
+                                <span class="data-matricula"><i class="fas fa-calendar-plus"></i> Matrícula: ${a.data_matricula || '-'}</span> • 
+                                <span class="data-validade"><i class="fas fa-calendar-check"></i> Validade: ${a.data_de_validade_fim || '-'}</span>
+                            </p>
                         </div>
                         <div class="actions">
                             <button class="btn-icon" onclick="prepararEdicao('${a.linha_ref}','${a.nome}','${a.turma}','${a.data_matricula}','${a.data_rematricula}','${a.data_de_validade_fim}')"><i class="fas fa-pencil"></i></button>

@@ -41,22 +41,37 @@
             padding: 10px 15px; border-radius: 10px; outline: none; width: 220px; font-size: 14px;
         }
 
+        /* AJUSTE PARA VISUALIZAÇÃO MOBILE: COLUNA FIXA */
         .projeto-container { 
             background: var(--card-bg); border-radius: 12px; 
             overflow-x: auto; border: 1px solid var(--border-color);
             margin-top: 20px;
+            position: relative;
         }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border-bottom: 1px solid var(--border-color); text-align: center; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { border-bottom: 1px solid var(--border-color); text-align: center; background: var(--card-bg); }
 
-        .td-aluno { text-align: left !important; padding-left: 25px; width: auto; min-width: 200px;}
-        .col-dia { width: 60px; }
-        .col-faltas { width: 80px; }
+        /* FIXANDO A COLUNA DO NOME */
+        .td-aluno { 
+            text-align: left !important; 
+            padding-left: 15px; 
+            position: sticky; 
+            left: 0; 
+            z-index: 10; 
+            width: 180px; 
+            min-width: 180px;
+            border-right: 2px solid var(--border-color);
+        }
 
-        td { padding: 10px 0; }
+        th.td-aluno { z-index: 11; }
 
-        .aluno-nome { font-weight: 600; font-size: 13px; display: block; color: #f1f5f9; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .col-dia { width: 65px; min-width: 65px; }
+        .col-faltas { width: 70px; min-width: 70px; }
+
+        td { padding: 12px 0; }
+
+        .aluno-nome { font-weight: 600; font-size: 12px; display: block; color: #f1f5f9; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .aluno-turma { font-size: 9px; color: var(--accent-blue); font-weight: bold; }
 
         .btn-action-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -64,7 +79,7 @@
         .btn-share { color: var(--accent-blue); font-size: 13px; cursor: pointer; padding: 4px; }
 
         .box { 
-            width: 25px; height: 25px; border-radius: 6px; border: none;
+            width: 28px; height: 28px; border-radius: 6px; border: none;
             display: flex; align-items: center; justify-content: center;
             font-size: 11px; margin: 0 auto; cursor: pointer;
             background: #1e293b; color: #475569;
@@ -110,14 +125,14 @@
                 <th class="col-faltas">FALTAS</th>
             </tr>
             <tr id="row-all-actions">
-                <td class="td-aluno" style="font-weight: bold; font-size: 13px; color: white;">MARCAR TODOS</td>
+                <td class="td-aluno" style="font-weight: bold; font-size: 11px; color: white;">MARCAR TODOS</td>
                 <td>—</td>
             </tr>
         </thead>
         <tbody id="b-table"></tbody>
         <tfoot>
             <tr id="f-total">
-                <td class="td-aluno" style="text-align:right !important; padding-right: 20px; font-size:12px; color:#64748b;">PRESENÇAS:</td>
+                <td class="td-aluno" style="text-align:right !important; padding-right: 15px; font-size:11px; color:#64748b;">PRESENÇAS:</td>
                 <td>—</td>
             </tr>
         </tfoot>
@@ -144,7 +159,6 @@
         diasDoMes = [];
         let d = new Date(ano, mes, 1);
         while (d.getMonth() === mes) {
-            // 2 = Terça, 5 = Sexta, 6 = Sábado
             if (d.getDay() === 2 || d.getDay() === 5 || d.getDay() === 6) {
                 let y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
                 let label = d.getDay() === 2 ? "TER" : d.getDay() === 5 ? "SEX" : "SÁB";
@@ -266,24 +280,19 @@
     async function cicloIndividual(nome, dia) {
         const el = document.getElementById(`btn-${nome.replace(/\s/g,'')}-${dia}`);
         if(!el) return;
-
         const ciclo = ['', 'falta', 'presente', 'atraso', 'justificado'];
         let atual = ''; ciclo.forEach(s => { if(el.classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-        
         let obs = "";
         if (prox === 'justificado') {
             obs = prompt("JUSTIFICATIVA:") || "Sem justificativa";
             if (obs === null) return;
         }
-
         el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
         enviarDados(nome, dia, prox, obs);
-        
         const fIdx = freqCache.findIndex(x => x.aluno === nome && x.data.includes(dia));
         if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = obs; }
         else { freqCache.push({ aluno: nome, data: dia, status: prox, obs: obs }); }
-
         showToast(); 
         atualizarSomatorias();
     }
@@ -291,18 +300,15 @@
     function cicloColuna(dia) {
         const boxes = Array.from(document.querySelectorAll(`[id$='-${dia}']`)).filter(el => !el.classList.contains('st-nm'));
         if (!boxes.length) return;
-
         const ciclo = ['', 'falta', 'presente'];
         let atual = ''; ciclo.forEach(s => { if(boxes[0].classList.contains('st-'+s)) atual = s; });
         let prox = ciclo[(ciclo.indexOf(atual) + 1) % ciclo.length];
-
         boxes.forEach(el => {
             const nomeRaw = el.id.replace('btn-', '').replace('-'+dia, '');
             const alunoOriginal = listaAlunosCache.find(a => a.nome.replace(/\s/g,'') === nomeRaw);
             if (alunoOriginal) {
                 el.className = `box st-${prox}`; el.innerHTML = getIcon(prox);
                 enviarDados(alunoOriginal.nome, dia, prox, "");
-                
                 const fIdx = freqCache.findIndex(x => x.aluno === alunoOriginal.nome && x.data.includes(dia));
                 if(fIdx > -1) { freqCache[fIdx].status = prox; freqCache[fIdx].obs = ""; }
                 else { freqCache.push({ aluno: alunoOriginal.nome, data: dia, status: prox, obs: "" }); }
@@ -315,15 +321,10 @@
     async function compartilharDia(dia) {
         const dataFormatada = dia.split('-').reverse().join('/');
         let mensagem = `*Frequência PROJETO*\nDia: ${dataFormatada}\n\n`;
-        
-        const turmasMap = {};
-        const justificados = [];
-        let totalGeral = 0;
-
+        const turmasMap = {}; const justificados = []; let totalGeral = 0;
         listaAlunosCache.forEach(aluno => {
             const freq = freqCache.find(f => f.aluno === aluno.nome && f.data.includes(dia));
             if (!freq) return;
-
             if (freq.status === 'presente' || freq.status === 'atraso') {
                 if (!turmasMap[aluno.turma]) turmasMap[aluno.turma] = [];
                 const icon = freq.status === 'atraso' ? ' ⚠️' : '';
@@ -333,21 +334,13 @@
                 justificados.push(`*${aluno.nome}*\n(${freq.obs || 'Sem justificativa'})`);
             }
         });
-
         for (const turma in turmasMap) {
             mensagem += `*TURMA*\n${turmasMap[turma].join('\n')}\n-Total: ${turmasMap[turma].length} alunos\n\n`;
         }
-
         mensagem += `#Total/PROJETO: ${totalGeral} alunos\n\n`;
-
-        if (justificados.length > 0) {
-            mensagem += `🗣️ - Justificados\n${justificados.join('\n\n')}`;
-        }
-
+        if (justificados.length > 0) { mensagem += `🗣️ - Justificados\n${justificados.join('\n\n')}`; }
         if (navigator.share) {
-            try {
-                await navigator.share({ title: 'Frequência PROJETO', text: mensagem });
-            } catch (err) { console.log("Compartilhamento cancelado"); }
+            try { await navigator.share({ title: 'Frequência PROJETO', text: mensagem }); } catch (err) {}
         } else {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
         }
@@ -355,8 +348,7 @@
 
     function enviarDados(nome, dia, status, obs) {
         fetch(URL_SISTEMA, { 
-            method: 'POST', 
-            mode: 'no-cors', 
+            method: 'POST', mode: 'no-cors', 
             body: JSON.stringify({ action: "upsert", data: { nome_aluno: nome, data: dia, status: status, obs: obs } }) 
         });
     }
