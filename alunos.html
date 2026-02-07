@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alunos - TSUNAMI</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #030b16; color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .header-nav { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .btn-danger { background: #3d141a; color: #ff4b4b; border: 1px solid #5a1e26; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .main-container { display: flex; gap: 30px; width: 100%; max-width: 1100px; align-items: flex-start; }
         .sidebar-form { width: 350px; background: #0d2137; padding: 25px; border-radius: 20px; border: 1px solid #1a3a5a; position: sticky; top: 20px; }
@@ -27,13 +26,11 @@
         .actions { display: flex; gap: 10px; }
         .btn-icon { background: #1a2a3a; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; }
         .remat-badge { background: #00ff88; color: #030b16; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 10px; }
-        .validade-destaque { color: #ffd400 !important; font-weight: bold; border-color: #ffd400 !important; }
     </style>
 </head>
 <body>
-
     <div class="header-nav">
-        <a href="pagina-inicial.html" class="back-btn"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <div onclick="window.location.href='pagina-inicial.html'" class="back-btn"><i class="fas fa-arrow-left"></i> VOLTAR</div>
         <button class="btn-danger" onclick="limparBase()">LIMPAR BASE</button>
     </div>
 
@@ -42,149 +39,146 @@
             <h3 id="form-title" style="margin-bottom: 15px; color: #00d4ff; font-size: 18px;">Novo Cadastro</h3>
             
             <label>Turma Destino</label>
-            <select id="select-turma"><option value="">Selecione...</option></select>
+            <select id="select-turma"><option value="">Carregando turmas...</option></select>
 
             <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;">
-                    <label>Matrícula</label>
-                    <input type="date" id="data_matricula">
-                </div>
-                <div style="flex: 1;">
-                    <label style="color: #00ff88;">Rematrícula</label>
-                    <input type="date" id="data_rematricula" style="border-color: #00ff88;">
-                </div>
+                <div style="flex: 1;"><label>Matrícula</label><input type="date" id="data_matricula"></div>
+                <div style="flex: 1;"><label style="color: #00ff88;">Rematrícula</label><input type="date" id="data_rematricula" style="border-color: #00ff88;"></div>
             </div>
 
-            <label style="color: #ffd400;">Validade de Acesso (Vencimento)</label>
-            <input type="date" id="data_validade_fim" class="validade-destaque">
+            <label style="color: #ffd400;">Validade de Acesso</label>
+            <input type="date" id="data_validade_fim" style="color: #ffd400 !important; font-weight: bold; border-color: #ffd400 !important;">
 
             <label id="label-nomes">Nomes (Um por linha)</label>
-            <textarea id="input_nomes" style="height: 100px;" placeholder="João Silva..."></textarea>
+            <textarea id="input_nomes" style="height: 100px;" placeholder="Ex: João Silva..."></textarea>
 
             <button class="btn-import" onclick="processarFormulario()" id="btn-principal">
-                <i class="fas fa-save"></i> <span id="text-btn">CADASTRAR LOTE</span>
+                <i class="fas fa-save"></i> <span id="text-btn">CADASTRAR</span>
             </button>
-            
             <button class="btn-cancel" id="btn-cancelar" onclick="cancelarEdicao()">CANCELAR EDIÇÃO</button>
         </div>
 
         <div class="content-list">
-            <input type="text" class="search-bar" id="search" placeholder="Buscar aluno..." oninput="carregarAlunos()">
-            <div id="alunos-list"></div>
+            <input type="text" class="search-bar" id="search" placeholder="Buscar aluno..." oninput="renderizarAlunos()">
+            <div id="alunos-list">Carregando dados...</div>
         </div>
     </div>
 
     <script>
-        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
-        let idEditando = null;
+        const URL_SISTEMA = "https://script.google.com/macros/s/AKfycbzLOv51v8QZhJb4YVVzsq8jluarlT2iato9QKKYnlWoIkgAVec_pX_-mSaybRhh7EB8/exec";
+        const URL_TURMAS = "https://script.google.com/macros/s/AKfycbw3Zy6DuTZO61C-RpD6hrnOFjXkFHNZQYDFKLFQAZ4hFVere7K31Y2W9FCBAhsgfOiSvQ/exec";
+
+        let linhaRef = "novo";
+        let listaAlunosGeral = [];
 
         document.getElementById('data_matricula').valueAsDate = new Date();
 
-        async function carregarTurmas() {
-            const { data } = await _supabase.from('turmas').select('id, nome').order('nome');
-            const select = document.getElementById('select-turma');
-            select.innerHTML = '<option value="">Selecione...</option>';
-            data?.forEach(t => select.innerHTML += `<option value="${t.id}">${t.nome}</option>`);
+        async function carregarDados() {
+            const listContainer = document.getElementById('alunos-list');
+            try {
+                const respT = await fetch(URL_TURMAS + "?table=turmas&_=" + Date.now());
+                const listaTurmas = await respT.json();
+                const select = document.getElementById('select-turma');
+                select.innerHTML = '<option value="">Selecione uma turma...</option>';
+                listaTurmas.forEach(t => { if(t.nome) select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
+
+                const respA = await fetch(URL_SISTEMA + "?table=alunos&_=" + Date.now());
+                listaAlunosGeral = await respA.json();
+                renderizarAlunos();
+            } catch (e) { listContainer.innerHTML = "Erro ao carregar dados."; }
         }
 
-        async function processarFormulario() {
-            const turmaId = document.getElementById('select-turma').value;
-            const dataMat = document.getElementById('data_matricula').value;
-            const dataRemat = document.getElementById('data_rematricula').value;
-            const dataValManual = document.getElementById('data_validade_fim').value;
-            const texto = document.getElementById('input_nomes').value.trim();
-
-            if (!turmaId || !texto) return alert("Preencha Turma e Nomes!");
-
-            let dataValidadeFinal;
-
-            // Lógica: se informada manualmente, ela manda. Se não, calcula automático.
-            if (dataValManual) {
-                dataValidadeFinal = dataValManual;
-            } else {
-                const refDate = dataRemat ? new Date(dataRemat) : new Date(dataMat);
-                const ano = refDate.getFullYear();
-                dataValidadeFinal = refDate.getMonth() <= 5 ? `${ano}-06-30` : `${ano}-12-31`;
-            }
-
-            const payloadBase = { 
-                turma_id: turmaId, 
-                data_matricula: dataMat, 
-                data_rematricula: dataRemat || null,
-                data_validade_fim: dataValidadeFinal 
-            };
-
-            if (idEditando) {
-                await _supabase.from('alunos').update({ nome: texto.toUpperCase(), ...payloadBase }).eq('id', idEditando);
-                alert("Aluno atualizado!");
-            } else {
-                const nomes = texto.split('\n').filter(n => n.trim() !== "");
-                for (let nome of nomes) {
-                    const nomeLimpo = nome.trim().toUpperCase();
-                    const { data: ex } = await _supabase.from('alunos').select('id').ilike('nome', nomeLimpo).maybeSingle();
-                    if (ex) await _supabase.from('alunos').update({ nome: nomeLimpo, ...payloadBase }).eq('id', ex.id);
-                    else await _supabase.from('alunos').insert({ nome: nomeLimpo, ...payloadBase });
-                }
-                alert("Processado com sucesso!");
-            }
-            cancelarEdicao();
-            carregarAlunos();
-        }
-
-        async function carregarAlunos() {
-            const busca = document.getElementById('search').value;
-            let query = _supabase.from('alunos').select('*, turmas(nome)').order('nome');
-            if (busca) query = query.ilike('nome', `%${busca}%`);
-            const { data } = await query;
+        function renderizarAlunos() {
+            const busca = document.getElementById('search').value.toUpperCase();
             const container = document.getElementById('alunos-list');
             container.innerHTML = '';
-            data?.forEach(a => {
-                const validadeStr = a.data_validade_fim ? a.data_validade_fim.split('-').reverse().join('/') : '---';
-                const rematBadge = a.data_rematricula ? `<span class="remat-badge">REMATRICULADO EM ${a.data_rematricula.split('-').reverse().join('/')}</span>` : '';
+            listaAlunosGeral.filter(a => a.nome && a.nome.toUpperCase().includes(busca)).forEach(a => {
                 container.innerHTML += `
                     <div class="aluno-card">
                         <div class="aluno-info">
-                            <h4>${a.nome} ${rematBadge}</h4>
-                            <p><i class="fas fa-users"></i> ${a.turmas?.nome || 'Sem Turma'} • Matrícula: ${a.data_matricula.split('-').reverse().join('/')}</p>
-                            <p style="font-size:11px; color:#ffd400; margin-top:5px;">📅 ACESSO ATÉ: ${validadeStr}</p>
+                            <h4>${a.nome} ${a.data_rematricula ? '<span class="remat-badge">REMAT</span>' : ''}</h4>
+                            <p><i class="fas fa-users"></i> ${a.turma} • Validade: ${a.data_de_validade_fim}</p>
                         </div>
                         <div class="actions">
-                            <button class="btn-icon" onclick="prepararEdicao('${a.id}', '${a.nome}', '${a.turma_id}', '${a.data_matricula}', '${a.data_rematricula || ''}', '${a.data_validade_fim || ''}')"><i class="fas fa-pencil"></i></button>
-                            <button class="btn-icon" onclick="deletarAluno('${a.id}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
+                            <button class="btn-icon" onclick="prepararEdicao('${a.linha_ref}','${a.nome}','${a.turma}','${a.data_matricula}','${a.data_rematricula}','${a.data_de_validade_fim}')"><i class="fas fa-pencil"></i></button>
+                            <button class="btn-icon" onclick="deletarAluno('${a.linha_ref}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
                         </div>
                     </div>`;
             });
         }
 
-        function prepararEdicao(id, nome, turma_id, data, remat, validade) {
-            idEditando = id;
+        async function processarFormulario() {
+            const nomesStr = document.getElementById('input_nomes').value.trim();
+            if (!nomesStr) return alert("Insira os nomes!");
+
+            document.getElementById('btn-principal').disabled = true;
+            document.getElementById('text-btn').innerText = "SALVANDO...";
+
+            const nomes = linhaRef !== "novo" ? [nomesStr] : nomesStr.split('\n');
+            for (let n of nomes) {
+                if (!n.trim()) continue;
+                await fetch(URL_SISTEMA, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: "upsert",
+                        linha: linhaRef,
+                        data: {
+                            nome: n.trim().toUpperCase(),
+                            turma: document.getElementById('select-turma').value,
+                            data_matricula: document.getElementById('data_matricula').value,
+                            data_rematricula: document.getElementById('data_rematricula').value,
+                            data_de_validade_fim: document.getElementById('data_validade_fim').value
+                        }
+                    })
+                });
+            }
+            alert("Concluído!");
+            cancelarEdicao();
+            setTimeout(carregarDados, 1500);
+        }
+
+        function prepararEdicao(linha, nome, turma, mat, remat, val) {
+            linhaRef = linha;
             document.getElementById('form-title').innerText = "Editando Aluno";
-            document.getElementById('text-btn').innerText = "SALVAR ALTERAÇÃO";
             document.getElementById('input_nomes').value = nome;
-            document.getElementById('select-turma').value = turma_id;
-            document.getElementById('data_matricula').value = data;
-            document.getElementById('data_rematricula').value = remat;
-            document.getElementById('data_validade_fim').value = validade; // Agora preenche corretamente!
+            document.getElementById('select-turma').value = turma;
+            document.getElementById('data_matricula').value = formatarDataParaInput(mat);
+            document.getElementById('data_rematricula').value = formatarDataParaInput(remat);
+            document.getElementById('data_validade_fim').value = formatarDataParaInput(val);
             document.getElementById('btn-cancelar').style.display = "block";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('text-btn').innerText = "SALVAR ALTERAÇÃO";
+        }
+
+        function formatarDataParaInput(d) {
+            if (!d || d === "-") return "";
+            const p = d.split('/');
+            return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
         }
 
         function cancelarEdicao() {
-            idEditando = null;
-            document.getElementById('form-title').innerText = "Novo Cadastro";
-            document.getElementById('text-btn').innerText = "CADASTRAR LOTE";
+            linhaRef = "novo";
             document.getElementById('input_nomes').value = '';
             document.getElementById('btn-cancelar').style.display = "none";
-            document.getElementById('data_rematricula').value = '';
-            document.getElementById('data_validade_fim').value = '';
-            document.getElementById('data_matricula').valueAsDate = new Date();
+            document.getElementById('btn-principal').disabled = false;
+            document.getElementById('text-btn').innerText = "CADASTRAR";
         }
 
-        async function deletarAluno(id) { if (confirm("Excluir?")) { await _supabase.from('alunos').delete().eq('id', id); carregarAlunos(); } }
-        async function limparBase() { if (confirm("Apagar tudo?")) { await _supabase.from('alunos').delete().neq('id', '0'); carregarAlunos(); } }
+        async function deletarAluno(linha) {
+            if (confirm("Excluir?")) {
+                await fetch(URL_SISTEMA, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "delete", linha: linha }) });
+                setTimeout(carregarDados, 1500);
+            }
+        }
 
-        carregarTurmas();
-        carregarAlunos();
+        async function limparBase() {
+            if (confirm("Apagar TUDO?")) {
+                await fetch(URL_SISTEMA, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear" }) });
+                setTimeout(carregarDados, 1500);
+            }
+        }
+
+        window.onload = carregarDados;
     </script>
 </body>
 </html>

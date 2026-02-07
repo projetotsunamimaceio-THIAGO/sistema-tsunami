@@ -3,92 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turmas Ativas - TSUNAMI</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Gerenciar Turmas - TSUNAMI</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #030b16; color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .header-nav { width: 100%; max-width: 1100px; display: flex; justify-content: flex-start; margin-bottom: 20px; }
-        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .form-container { background: #0d2137; padding: 30px; border-radius: 20px; border: 1px solid #1a3a5a; width: 100%; max-width: 1100px; margin-bottom: 40px; }
-        .input-group-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end; }
-        .input-item { flex: 1; min-width: 150px; }
+        .input-group-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end; }
+        .input-item { flex: 1; min-width: 140px; }
         label { display: block; font-size: 11px; color: #8da0b1; margin-bottom: 8px; text-transform: uppercase; }
         input { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; }
-        .days-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-        .day-btn { padding: 8px 12px; background: #1a2a3a; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.3s; }
+        .day-btn { padding: 10px 15px; background: #1a2a3a; border-radius: 8px; cursor: pointer; font-size: 10px; border: 1px solid transparent; transition: 0.3s; }
         .day-btn.active { background: #00d4ff; color: #030b16; font-weight: bold; }
         .btn-create { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; height: 45px; }
         .turmas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; width: 100%; max-width: 1100px; }
-        .turma-card { background: #0d2137; border-left: 4px solid #00d4ff; border-radius: 15px; padding: 20px; }
-        .turma-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .turma-card { background: #0d2137; border-left: 5px solid #00d4ff; border-radius: 15px; padding: 20px; }
         .actions { display: flex; gap: 8px; }
-        .btn-icon { background: #1a2a3a; border: none; color: white; padding: 6px; border-radius: 5px; cursor: pointer; }
-        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; margin: 10px 0; }
-        .tag { background: #1a2a3a; color: #00d4ff; padding: 3px 8px; border-radius: 4px; font-size: 10px; }
+        .btn-icon { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
+        .tag { background: rgba(0,212,255,0.1); color: #00d4ff; padding: 4px 8px; border-radius: 5px; font-size: 10px; margin-right: 4px; border: 1px solid rgba(0,212,255,0.2); }
     </style>
 </head>
 <body>
-    <div class="header-nav"><a href="pagina-inicial.html" class="back-btn"><i class="fas fa-arrow-left"></i> Voltar</a></div>
+    <div class="header-nav"><div onclick="window.location.href='pagina-inicial.html'" class="back-btn"><i class="fas fa-arrow-left"></i> VOLTAR</div></div>
+    
     <div class="form-container">
         <div class="input-group-row">
-            <div class="input-item"><label>Turma</label><input type="text" id="nome_turma" placeholder="EX: SUB-15"></div>
+            <div class="input-item"><label>Nome da Turma</label><input type="text" id="nome_turma"></div>
             <div class="input-item"><label>Início</label><input type="time" id="hora_inicio"></div>
             <div class="input-item"><label>Fim</label><input type="time" id="hora_fim"></div>
             <div class="input-item"><label>Vagas</label><input type="number" id="capacidade"></div>
-            <button class="btn-create" onclick="salvarTurma()" id="btn-text">CRIAR</button>
+            <button class="btn-create" onclick="salvarTurma()" id="btn-main"><span id="btn-text">CRIAR TURMA</span></button>
         </div>
-        <label>Dias</label>
-        <div class="days-selector">
-            <div class="day-btn" onclick="toggleDay(this)">SEGUNDA</div><div class="day-btn" onclick="toggleDay(this)">TERÇA</div>
-            <div class="day-btn" onclick="toggleDay(this)">QUARTA</div><div class="day-btn" onclick="toggleDay(this)">QUINTA</div>
-            <div class="day-btn" onclick="toggleDay(this)">SEXTA</div><div class="day-btn" onclick="toggleDay(this)">SÁBADO</div>
-            <div class="day-btn" onclick="toggleDay(this)">DOMINGO</div>
+        <div id="dias-container" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+            <div class="day-btn" onclick="this.classList.toggle('active')">SEGUNDA</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">TERÇA</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">QUARTA</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">QUINTA</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">SEXTA</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">SÁBADO</div>
+            <div class="day-btn" onclick="this.classList.toggle('active')">DOMINGO</div>
         </div>
     </div>
-    <div class="turmas-grid" id="turmas-list"></div>
+
+    <div class="turmas-grid" id="turmas-list">Carregando turmas...</div>
+
     <script>
-        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
-        let editId = null;
-        function toggleDay(btn) { btn.classList.toggle('active'); }
-        async function salvarTurma() {
-            const nome = document.getElementById('nome_turma').value;
-            const inicio = document.getElementById('hora_inicio').value;
-            const fim = document.getElementById('hora_fim').value;
-            const capacidade = document.getElementById('capacidade').value;
-            const dias = Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.innerText).join(',');
-            if (!nome || !inicio || !fim || !dias) { alert("Preencha tudo!"); return; }
-            const dados = { nome, hora_inicio: inicio, hora_fim: fim, capacidade, dias };
-            if (editId) { await _supabase.from('turmas').update(dados).eq('id', editId); editId = null; document.getElementById('btn-text').innerText = "CRIAR"; }
-            else { await _supabase.from('turmas').insert([dados]); }
-            limpar(); carregar();
-        }
+        const API_URL = "https://script.google.com/macros/s/AKfycbw3Zy6DuTZO61C-RpD6hrnOFjXkFHNZQYDFKLFQAZ4hFVere7K31Y2W9FCBAhsgfOiSvQ/exec"; 
+        let linhaSelecionada = "novo";
+        let dadosLocais = [];
+
         async function carregar() {
-            const { data } = await _supabase.from('turmas').select('*').order('nome', { ascending: true });
             const list = document.getElementById('turmas-list');
-            list.innerHTML = '';
-            data?.forEach(t => {
-                list.innerHTML += `<div class="turma-card">
-                    <div class="turma-header"><b>${t.nome}</b>
-                    <div class="actions">
-                        <button class="btn-icon" onclick="editar('${t.id}','${t.nome}','${t.hora_inicio}','${t.hora_fim}','${t.capacidade}','${t.dias}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon" onclick="deletar('${t.id}')"><i class="fas fa-trash" style="color:red"></i></button>
-                    </div></div>
-                    <div class="tag-container">${t.dias.split(',').map(d => `<span class="tag">${d}</span>`).join('')}</div>
-                    <small>${t.hora_inicio} às ${t.hora_fim} | Vagas: ${t.capacidade}</small>
-                </div>`;
+            try {
+                // Técnica para evitar erro de redirecionamento do Google
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                dadosLocais = data;
+                list.innerHTML = '';
+                
+                if(!dadosLocais || dadosLocais.length === 0) { 
+                    list.innerHTML = "Nenhuma turma cadastrada."; 
+                    return; 
+                }
+
+                dadosLocais.forEach(t => {
+                    const diasHTML = t.dias ? t.dias.split(',').map(d => `<span class="tag">${d}</span>`).join('') : '';
+                    list.innerHTML += `
+                    <div class="turma-card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <span style="font-weight:bold">${t.nome || 'Sem Nome'}</span>
+                            <div class="actions">
+                                <button class="btn-icon" onclick="editar('${t.linha_ref}')"><i class="fas fa-edit" style="color:#00d4ff"></i></button>
+                                <button class="btn-icon" onclick="deletar('${t.linha_ref}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:10px;">${diasHTML}</div>
+                        <div style="font-size:0.9em; color:#8da0b1">${t.hora_inicio} - ${t.hora_fim} | Vagas: ${t.capacidade}</div>
+                    </div>`;
+                });
+            } catch (e) { 
+                console.error("Erro no fetch:", e);
+                list.innerHTML = "Erro ao conectar com a planilha. Verifique a publicação do Script.";
+            }
+        }
+
+        async function salvarTurma() {
+            const btn = document.getElementById('btn-main');
+            const nome = document.getElementById('nome_turma').value;
+            if(!nome) return alert("Insira o nome!");
+
+            btn.disabled = true;
+            document.getElementById('btn-text').innerText = "ENVIANDO...";
+
+            const payload = {
+                action: "upsert",
+                linha: linhaSelecionada,
+                data: {
+                    nome: nome,
+                    hora_inicio: document.getElementById('hora_inicio').value,
+                    hora_fim: document.getElementById('hora_fim').value,
+                    capacidade: document.getElementById('capacidade').value,
+                    dias: Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.innerText).join(',')
+                }
+            };
+
+            try {
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(() => { 
+                    alert("Sucesso!"); 
+                    limpar(); 
+                    carregar(); 
+                }, 1000);
+            } catch (e) {
+                alert("Erro ao salvar.");
+                btn.disabled = false;
+            }
+        }
+
+        async function deletar(linha) {
+            if(!confirm("Excluir?")) return;
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "delete", linha: linha.toString() }) });
+            setTimeout(carregar, 1000);
+        }
+
+        function editar(linha) {
+            const t = dadosLocais.find(x => x.linha_ref.toString() === linha.toString());
+            if(!t) return;
+            linhaSelecionada = linha;
+            document.getElementById('nome_turma').value = t.nome || '';
+            document.getElementById('hora_inicio').value = t.hora_inicio || '';
+            document.getElementById('hora_fim').value = t.hora_fim || '';
+            document.getElementById('capacidade').value = t.capacidade || '';
+            document.getElementById('btn-text').innerText = "ATUALIZAR";
+            
+            const diasArr = t.dias ? t.dias.split(',') : [];
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.toggle('active', diasArr.includes(btn.innerText.trim()));
             });
+            window.scrollTo(0,0);
         }
-        async function deletar(id) { if(confirm("Excluir?")) { await _supabase.from('turmas').delete().eq('id', id); carregar(); } }
-        function editar(id, n, i, f, c, d) {
-            editId = id; document.getElementById('nome_turma').value = n; document.getElementById('hora_inicio').value = i;
-            document.getElementById('hora_fim').value = f; document.getElementById('capacidade').value = c;
-            document.getElementById('btn-text').innerText = "SALVAR";
-            document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('active', d.includes(b.innerText)));
+
+        function limpar() {
+            linhaSelecionada = "novo";
+            document.getElementById('nome_turma').value = '';
+            document.getElementById('hora_inicio').value = '';
+            document.getElementById('hora_fim').value = '';
+            document.getElementById('capacidade').value = '';
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-text').innerText = "CRIAR TURMA";
+            document.getElementById('btn-main').disabled = false;
         }
-        function limpar() { document.querySelectorAll('input').forEach(i => i.value = ''); document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active')); }
-        carregar();
+
+        window.onload = carregar;
     </script>
 </body>
 </html>

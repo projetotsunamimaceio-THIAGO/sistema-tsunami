@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSUNAMI - Gestão</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -105,26 +104,26 @@
     <footer>Esporte Cristo • Sistema de Gestão de Frequência</footer>
 
     <script>
-        const _supabase = supabase.createClient('https://ddgflmikxjdvoxmikoha.supabase.co', 'sb_publishable_Sd7UsSwS0J64cY_YgKveMw_9woayJR1');
-
-        async function checkUser() {
-            try {
-                const { data: { user }, error } = await _supabase.auth.getUser();
-                if (error || !user) {
-                    window.location.href = 'index.html';
-                } else {
-                    document.getElementById('user-email').innerText = user.email;
-                }
-            } catch (err) {
+        // Verifica se o usuário está logado através do localStorage definido no index.html
+        function checkUser() {
+            const userSession = localStorage.getItem('user_session');
+            
+            if (!userSession) {
+                // Se não houver sessão, volta para o login
                 window.location.href = 'index.html';
+            } else {
+                // Se houver, exibe o e-mail no cabeçalho
+                document.getElementById('user-email').innerText = userSession;
             }
         }
 
-        async function logout() {
-            await _supabase.auth.signOut();
+        // Remove a sessão e volta para o login
+        function logout() {
+            localStorage.removeItem('user_session');
             window.location.href = 'index.html';
         }
 
+        // Executa a verificação ao carregar a página
         window.onload = checkUser;
     </script>
 </body>
