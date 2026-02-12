@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tsunami - Gestão de Turmas</title>
+    <style>
+        :root {
+            --bg-color: #050a12;
+            --card-bg: #0d1520;
+            --cyan: #00e5ff;
+            --red: #ff4d4d;
+            --yellow: #ffc107;
+            --text: #ffffff;
+            --border: #1a2635;
+        }
+        body { background: var(--bg-color); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .btn-voltar { color: var(--cyan); text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 20px; font-size: 14px; }
+        
+        .cadastro-container { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; }
+        .inputs-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr; gap: 12px; align-items: flex-end; }
+        
+        .input-group label { display: block; font-size: 10px; color: #667681; text-transform: uppercase; margin-bottom: 5px; }
+        .input-group input { width: 100%; background: #09101a; border: 1px solid var(--border); padding: 10px; border-radius: 6px; color: white; box-sizing: border-box; outline: none; }
+        
+        .btn-criar { background: #007bff; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; height: 38px; text-transform: uppercase; }
+        .btn-cancelar { background: #444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; height: 38px; margin-left: 10px; display: none; }
+        
+        .dias-selector { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .dia-btn { background: #1a2635; border: none; color: #a0acb9; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+        .dia-btn.active { background: var(--cyan); color: #000; font-weight: bold; }
+
+        .turmas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+        .turma-card { background: var(--card-bg); padding: 15px; border-radius: 10px; border-left: 4px solid var(--cyan); }
+        
+        .turma-header { display: flex; justify-content: space-between; align-items: center; }
+        .turma-header h3 { margin: 0; font-size: 16px; color: var(--cyan); text-transform: uppercase; }
+        .acoes { display: flex; gap: 15px; }
+        .btn-acao { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0; }
+        
+        .tag-dia { background: rgba(0, 229, 255, 0.1); color: var(--cyan); padding: 2px 6px; border-radius: 4px; font-size: 9px; margin: 5px 3px 0 0; display: inline-block; }
+        .turma-info { margin-top: 12px; font-size: 12px; color: #a0acb9; border-top: 1px solid #1a2635; padding-top: 8px; display: flex; justify-content: space-between; }
+        
+        .loading { text-align: center; color: var(--cyan); padding: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <a href="ts.1pagina-inicial.html" class="btn-voltar">← VOLTAR</a>
+
+    <div class="cadastro-container">
+        <div class="inputs-row">
+            <input type="hidden" id="old_nome">
+            <div class="input-group"><label>Nome</label><input type="text" id="nome" placeholder="Nome da Turma"></div>
+            <div class="input-group"><label>Início</label><input type="time" id="inicio"></div>
+            <div class="input-group"><label>Fim</label><input type="time" id="fim"></div>
+            <div class="input-group"><label>Vagas</label><input type="number" id="vagas"></div>
+            <div style="display: flex;">
+                <button id="btn_main" class="btn-criar" onclick="salvar()">CRIAR TURMA</button>
+                <button id="btn_cancel" class="btn-cancelar" onclick="cancelarEdicao()">X</button>
+            </div>
+        </div>
+        <div class="dias-selector">
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Segunda</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Terça</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Quarta</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Quinta</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Sexta</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Sábado</button>
+            <button class="dia-btn" onclick="this.classList.toggle('active')">Domingo</button>
+        </div>
+    </div>
+
+    <div id="grid" class="turmas-grid"></div>
+
+    <script>
+        // ✅ URL CORRIGIDA (sem espaço no final!)
+        const URL = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+
+        function chamar(params, cb) {
+            const s = document.createElement('script');
+            const cbName = cb + '_' + Date.now();
+            window[cbName] = function(d) { window[cb](d); delete window[cbName]; };
+            s.src = `${URL}?${params}&callback=${cbName}`;
+            document.body.appendChild(s);
+            s.onload = () => document.body.removeChild(s);
+        }
+
+        function salvar() {
+            const nome = document.getElementById('nome').value;
+            const inicio = document.getElementById('inicio').value;
+            const fim = document.getElementById('fim').value;
+            const vagas = document.getElementById('vagas').value;
+            const oldNome = document.getElementById('old_nome').value;
+            const dias = Array.from(document.querySelectorAll('.dia-btn.active')).map(b => b.innerText).join(', ');
+
+            if(!nome || !inicio || !dias) return alert("Preencha os campos!");
+
+            window.resSalvar = function(resp) { 
+                alert(resp.status === "sucesso" ? "Sucesso!" : "Erro: " + resp.mensagem); 
+                location.reload(); 
+            };
+            
+            let p = `action=cadastrarTurma&nome=${encodeURIComponent(nome)}&inicio=${inicio}&fim=${fim}&vagas=${vagas}&dias=${encodeURIComponent(dias)}`;
+            if(oldNome) p += `&oldNome=${encodeURIComponent(oldNome)}`;
+            
+            chamar(p, "resSalvar");
+        }
+
+        function prepararEdicao(nome, inicio, fim, vagas, diasStr) {
+            document.getElementById('nome').value = nome;
+            document.getElementById('old_nome').value = nome;
+            document.getElementById('inicio').value = inicio;
+            document.getElementById('fim').value = fim;
+            document.getElementById('vagas').value = vagas;
+            document.getElementById('btn_main').innerText = "SALVAR ALTERAÇÕES";
+            document.getElementById('btn_cancel').style.display = "block";
+            
+            const diasArr = diasStr.split(', ');
+            document.querySelectorAll('.dia-btn').forEach(btn => {
+                btn.classList.toggle('active', diasArr.includes(btn.innerText));
+            });
+            window.scrollTo(0,0);
+        }
+
+        function cancelarEdicao() { location.reload(); }
+
+        function excluir(nome) {
+            if(!confirm("Excluir " + nome + "?")) return;
+            window.resDel = function() { alert("Removido!"); location.reload(); };
+            chamar(`action=excluirTurma&nome=${encodeURIComponent(nome)}`, "resDel");
+        }
+
+        window.listar = (dados) => {
+            const grid = document.getElementById('grid');
+            if(!dados || dados.length === 0) { grid.innerHTML = "Nenhuma turma."; return; }
+            grid.innerHTML = dados.map(t => `
+                <div class="turma-card">
+                    <div class="turma-header">
+                        <h3>${t.nome}</h3>
+                        <div class="acoes">
+                            <button class="btn-acao" style="color:var(--yellow)" onclick="prepararEdicao('${t.nome}','${t.inicio}','${t.fim}','${t.vagas}','${t.dias}')">✏️</button>
+                            <button class="btn-acao" style="color:var(--red)" onclick="excluir('${t.nome}')">🗑️</button>
+                        </div>
+                    </div>
+                    <div>${t.dias.split(', ').map(d => `<span class="tag-dia">${d}</span>`).join('')}</div>
+                    <div class="turma-info"><span>🕒 ${t.inicio} - ${t.fim}</span><span>👥 Vagas: ${t.vagas}</span></div>
+                </div>
+            `).join('');
+        };
+
+        window.onload = () => {
+            document.getElementById('grid').innerHTML = "<div class='loading'>Carregando turmas...</div>";
+            chamar("action=getTurmas", "listar");
+        };
+    </script>
+</body>
+</html>

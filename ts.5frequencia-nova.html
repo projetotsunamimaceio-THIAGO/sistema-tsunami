@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tsunami - Frequência Arena</title>
+    <style>
+        :root { 
+            --bg: #050a12; 
+            --card: #0d1520; 
+            --cyan: #00e5ff; 
+            --red: #ff4d4d; 
+            --green: #00c851;
+            --yellow: #ffbb33;
+            --purple: #aa66cc;
+            --border: #1a2635; 
+            --text: #fff;
+            --text-muted: #667681;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        
+        /* Header */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-voltar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .titulo-pagina {
+            background: var(--card);
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 1px solid var(--border);
+        }
+        
+        /* Controles */
+        .controles {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .nav-mes {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card);
+            padding: 5px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+        }
+        
+        .btn-nav {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn-nav:hover { background: var(--border); }
+        
+        .mes-display { 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            min-width: 180px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .select-turma {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 200px;
+            margin-left: auto;
+        }
+        
+        /* Tabela */
+        .tabela-container {
+            background: var(--card);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th, td {
+            padding: 12px 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        th {
+            background: rgba(26, 38, 53, 0.5);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        
+        .col-nome {
+            text-align: left;
+            min-width: 280px;
+            padding-left: 20px;
+        }
+        
+        .col-data {
+            min-width: 80px;
+        }
+        
+        .header-data {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .header-dia {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--cyan);
+        }
+        
+        /* Linha de marcar todos */
+        .linha-marcar-todos {
+            background: rgba(0, 229, 255, 0.05);
+        }
+        
+        .linha-marcar-todos td {
+            font-weight: bold;
+            color: var(--cyan);
+        }
+        
+        /* Info aluno */
+        .info-aluno {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .nome-aluno {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .tag-turma {
+            color: var(--cyan);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        /* Botões de status */
+        .btn-status {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: all 0.2s;
+            background: #0a111a;
+        }
+        
+        .btn-status:hover {
+            border-color: var(--cyan);
+            transform: scale(1.05);
+        }
+        
+        .btn-status.vazio { 
+            background: #0a111a; 
+            color: transparent;
+        }
+        .btn-status.vazio::after {
+            content: "—";
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .btn-status.presente { 
+            background: var(--green); 
+            color: white;
+            border-color: var(--green);
+        }
+        
+        .btn-status.falta { 
+            background: var(--red); 
+            color: white;
+            border-color: var(--red);
+        }
+        
+        .btn-status.atraso { 
+            background: var(--yellow); 
+            color: black;
+            border-color: var(--yellow);
+        }
+        
+        .btn-status.justificado { 
+            background: var(--purple); 
+            color: white;
+            border-color: var(--purple);
+            position: relative;
+        }
+        
+        .btn-status.justificado::after {
+            content: "💬";
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            font-size: 10px;
+        }
+        
+        /* N/M */
+        .nao-matriculado {
+            color: #444;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* Botão ALL */
+        .btn-all {
+            background: #007bff;
+            border: none;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .btn-all:hover { background: #0056b3; }
+        
+        /* Contadores */
+        .contador-faltas {
+            background: rgba(255, 77, 77, 0.15);
+            color: var(--red);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .footer-presencas {
+            color: var(--green);
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        /* Botão salvar */
+        .barra-salvar {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn-salvar {
+            background: var(--cyan);
+            color: #000;
+            border: none;
+            padding: 15px 50px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-salvar:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--cyan);
+        }
+        
+        .erro {
+            text-align: center;
+            padding: 40px;
+            color: var(--red);
+        }
+        
+        /* Tooltip justificativa */
+        .tooltip-just {
+            position: fixed;
+            background: var(--purple);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 200px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="btn-voltar" onclick="window.location.href='ts.1pagina-inicial.html'">❮</button>
+        <div class="titulo-pagina">FREQUÊNCIA ARENA</div>
+    </div>
+
+    <div class="controles">
+        <div class="nav-mes">
+            <button class="btn-nav" onclick="mudarMes(-1)">❮</button>
+            <div class="mes-display" id="mesDisplay">JANEIRO DE 2026</div>
+            <button class="btn-nav" onclick="mudarMes(1)">❯</button>
+        </div>
+        
+        <select class="select-turma" id="selectTurma" onchange="carregarDados()">
+            <option value="">Selecione a Turma...</option>
+        </select>
+    </div>
+
+    <div class="tabela-container">
+        <table id="tabelaFreq">
+            <thead>
+                <tr id="headerRow">
+                    <th class="col-nome">NOME / TURMA</th>
+                    <th colspan="5" class="col-data">CARREGANDO...</th>
+                    <th>FALTAS</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela">
+                <tr>
+                    <td colspan="7" class="loading">Selecione uma turma para carregar a frequência</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr id="footerRow">
+                    <td class="col-nome" style="text-align: right; color: var(--text-muted);">PRESENÇAS:</td>
+                    <td colspan="5">—</td>
+                    <td>—</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="barra-salvar">
+        <button class="btn-salvar" onclick="salvarFrequencia()">💾 SALVAR CHAMADA</button>
+    </div>
+
+    <div class="tooltip-just" id="tooltipJust"></div>
+
+    <script>
+        // CONFIGURAÇÃO - URL DO GOOGLE APPS SCRIPT
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+        
+        // ESTADOS DO CICLO
+        const CICLO = [
+            { cod: "", classe: "vazio", label: "" },
+            { cod: "❌", classe: "falta", label: "Faltou" },
+            { cod: "✅", classe: "presente", label: "Presente" },
+            { cod: "⚠️", classe: "atraso", label: "Atraso" },
+            { cod: "🗣️", classe: "justificado", label: "Justificado" }
+        ];
+        
+        let dataAtual = new Date(2026, 0, 1);
+        let sabadosDoMes = [];
+        let alunosAtivos = [];
+        let frequenciasSalvas = {};
+        
+        // FUNÇÃO JSONP
+        function chamarScript(params, callbackName) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const nomeFunc = 'cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                window[nomeFunc] = function(dados) {
+                    delete window[nomeFunc];
+                    document.body.removeChild(script);
+                    resolve(dados);
+                };
+                
+                script.onerror = () => {
+                    delete window[nomeFunc];
+                    reject(new Error('Erro ao carregar'));
+                };
+                
+                script.src = `${URL_SCRIPT}?${params}&callback=${nomeFunc}`;
+                document.body.appendChild(script);
+            });
+        }
+        
+        // GERAR SÁBADOS DO MÊS
+        function gerarSabados(ano, mes) {
+            const sabados = [];
+            const data = new Date(ano, mes, 1);
+            
+            while (data.getMonth() === mes) {
+                if (data.getDay() === 6) { // 6 = Sábado
+                    sabados.push(new Date(data));
+                }
+                data.setDate(data.getDate() + 1);
+            }
+            
+            return sabados;
+        }
+        
+        // FORMATAR DATA
+        function formatarData(data) {
+            return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+        
+        function formatarDataISO(data) {
+            return data.toISOString().split('T')[0];
+        }
+        
+        // MUDAR MÊS
+        function mudarMes(direcao) {
+            dataAtual.setMonth(dataAtual.getMonth() + direcao);
+            atualizarDisplayMes();
+            if (document.getElementById('selectTurma').value) {
+                carregarDados();
+            }
+        }
+        
+        function atualizarDisplayMes() {
+            const meses = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", 
+                          "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+            document.getElementById('mesDisplay').textContent = 
+                `${meses[dataAtual.getMonth()]} DE ${dataAtual.getFullYear()}`;
+        }
+        
+        // VERIFICAR SE ALUNO ESTÁ ATIVO NA DATA
+        function alunoEstaAtivo(aluno, data) {
+            const dataRef = new Date(data);
+            dataRef.setHours(0,0,0,0);
+            
+            // Se não tem matrícula, não aparece
+            if (!aluno.matricula) return false;
+            
+            const dataMat = new Date(aluno.matricula);
+            dataMat.setHours(0,0,0,0);
+            
+            // Antes da matrícula = N/M
+            if (dataRef < dataMat) return 'nm';
+            
+            // Se tem vencimento e já venceu = não aparece
+            if (aluno.vencimento) {
+                const dataVenc = new Date(aluno.vencimento);
+                dataVenc.setHours(0,0,0,0);
+                // Adiciona 1 dia para incluir o dia do vencimento
+                dataVenc.setDate(dataVenc.getDate() + 1);
+                if (dataRef >= dataVenc) return false;
+            }
+            
+            return true;
+        }
+        
+        // CARREGAR TURMAS
+        async function carregarTurmas() {
+            try {
+                const dados = await chamarScript('action=getTurmas');
+                const select = document.getElementById('selectTurma');
+                
+                if (!dados || dados.length === 0) {
+                    select.innerHTML = '<option value="">Nenhuma turma cadastrada</option>';
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Selecione a Turma...</option>';
+                dados.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+                dados.forEach(turma => {
+                    select.innerHTML += `<option value="${turma.nome}">${turma.nome}</option>`;
+                });
+            } catch (erro) {
+                console.error('Erro ao carregar turmas:', erro);
+            }
+        }
+        
+        // CARREGAR DADOS DA CHAMADA
+        async function carregarDados() {
+            const turma = document.getElementById('selectTurma').value;
+            if (!turma) {
+                document.getElementById('corpoTabela').innerHTML = 
+                    '<tr><td colspan="7" class="loading">Selecione uma turma</td></tr>';
+                return;
+            }
+            
+            document.getElementById('corpoTabela').innerHTML = 
+                '<tr><td colspan="7" class="loading">⏳ Carregando alunos...</td></tr>';
+            
+            try {
+                // Gerar sábados do mês
+                sabadosDoMes = gerarSabados(dataAtual.getFullYear(), dataAtual.getMonth());
+                
+                // Carregar alunos e frequências
+                const params = `action=getDadosChamada&turma=${encodeURIComponent(turma)}&mes=${dataAtual.getMonth()}&ano=${dataAtual.getFullYear()}`;
+                const dados = await chamarScript(params);
+                
+                if (dados.erro) {
+                    throw new Error(dados.erro);
+                }
+                
+                frequenciasSalvas = dados.frequencias || {};
+                
+                // Filtrar e ordenar alunos alfabeticamente
+                const todosAlunos = dados.alunos || [];
+                alunosAtivos = todosAlunos
+                    .filter(a => a.nome) // Remove vazios
+                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+                
+                renderizarTabela();
+                
+            } catch (erro) {
+                document.getElementById('corpoTabela').innerHTML = 
+                    `<tr><td colspan="7" class="erro">❌ Erro: ${erro.message}</td></tr>`;
+            }
+        }
+        
+        // RENDERIZAR TABELA
+        function renderizarTabela() {
+            // Atualizar header
+            let headerHTML = '<th class="col-nome">NOME / TURMA</th>';
+            sabadosDoMes.forEach((sab, idx) => {
+                headerHTML += `
+                    <th class="col-data">
+                        <div class="header-data">SÁB</div>
+                        <div class="header-dia">${formatarData(sab)}</div>
+                    </th>
+                `;
+            });
+            headerHTML += '<th>FALTAS</th>';
+            document.getElementById('headerRow').innerHTML = headerHTML;
+            
+            // Se não há alunos ativos
+            if (alunosAtivos.length === 0) {
+                document.getElementById('corpoTabela').innerHTML = 
+                    '<tr><td colspan="7" class="erro">📭 Nenhum aluno ativo nesta turma no período</td></tr>';
+                atualizarFooter([]);
+                return;
+            }
+            
+            // Linha de marcar todos
+            let bodyHTML = '<tr class="linha-marcar-todos">';
+            bodyHTML += '<td class="col-nome">MARCAR TODOS</td>';
+            sabadosDoMes.forEach((_, idx) => {
+                bodyHTML += `
+                    <td>
+                        <button class="btn-all" onclick="marcarTodos(${idx})">ALL</button>
+                    </td>
+                `;
+            });
+            bodyHTML += '<td>—</td></tr>';
+            
+            // Linhas dos alunos
+            alunosAtivos.forEach(aluno => {
+                const safeId = aluno.nome.replace(/[^a-zA-Z0-9]/g, '_');
+                bodyHTML += '<tr>';
+                bodyHTML += `
+                    <td class="col-nome">
+                        <div class="info-aluno">
+                            <div class="nome-aluno">${aluno.nome}</div>
+                            <div class="tag-turma">♦ ${aluno.turma}</div>
+                        </div>
+                    </td>
+                `;
+                
+                sabadosDoMes.forEach(sab => {
+                    const statusAtivo = alunoEstaAtivo(aluno, sab);
+                    const dataStr = formatarData(sab);
+                    const dataKey = formatarDataISO(sab);
+                    
+                    if (statusAtivo === 'nm') {
+                        // Não matriculado
+                        bodyHTML += '<td><span class="nao-matriculado" title="Não Matriculado">N/M</span></td>';
+                    } else if (statusAtivo === false) {
+                        // Vencido - não aparece (célula vazia)
+                        bodyHTML += '<td></td>';
+                    } else {
+                        // Ativo - mostra botão
+                        const freq = frequenciasSalvas[aluno.nome]?.[dataStr] || {};
+                        const estado = CICLO.find(c => c.cod === (freq.status || "")) || CICLO[0];
+                        
+                        bodyHTML += `
+                            <td>
+                                <button 
+                                    class="btn-status ${estado.classe}" 
+                                    data-aluno="${aluno.nome.replace(/"/g, '&quot;')}"
+                                    data-data="${dataKey}"
+                                    data-status="${estado.cod}"
+                                    data-obs="${freq.obs || ''}"
+                                    onclick="alternarStatus(this)"
+                                    onmouseenter="mostrarJust(this)"
+                                    onmouseleave="esconderJust()"
+                                >${estado.cod}</button>
+                            </td>
+                        `;
+                    }
+                });
+                
+                bodyHTML += `<td><span class="contador-faltas" id="faltas_${safeId}">0</span></td>`;
+                bodyHTML += '</tr>';
+            });
+            
+            document.getElementById('corpoTabela').innerHTML = bodyHTML;
+            calcularTotais();
+        }
+        
+        // ALTERNAR STATUS (CICLO)
+        function alternarStatus(botao) {
+            const statusAtual = botao.getAttribute('data-status') || "";
+            const idxAtual = CICLO.findIndex(c => c.cod === statusAtual);
+            const proximo = CICLO[(idxAtual + 1) % CICLO.length];
+            
+            // Se for justificado, pedir observação
+            if (proximo.cod === "🗣️") {
+                const obs = prompt("Justificativa da falta:");
+                if (obs === null) return; // Cancelou
+                botao.setAttribute('data-obs', obs);
+            } else {
+                botao.setAttribute('data-obs', '');
+            }
+            
+            // Atualizar botão
+            botao.className = `btn-status ${proximo.classe}`;
+            botao.textContent = proximo.cod;
+            botao.setAttribute('data-status', proximo.cod);
+            
+            calcularTotais();
+        }
+        
+        // MARCAR TODOS DA COLUNA
+        function marcarTodos(colIdx) {
+            const botoes = document.querySelectorAll(`#corpoTabela tr:not(.linha-marcar-todos) td:nth-child(${colIdx + 2}) .btn-status`);
+            botoes.forEach(btn => {
+                if (!btn.classList.contains('vazio')) return; // Só marca se estiver vazio
+                
+                const proximo = CICLO[1]; // Vai direto para "Faltou"
+                btn.className = `btn-status ${proximo.classe}`;
+                btn.textContent = proximo.cod;
+                btn.setAttribute('data-status', proximo.cod);
+            });
+            calcularTotais();
+        }
+        
+        // MOSTRAR/ESCONDER JUSTIFICATIVA
+        function mostrarJust(botao) {
+            const obs = botao.getAttribute('data-obs');
+            if (!obs) return;
+            
+            const tooltip = document.getElementById('tooltipJust');
+            tooltip.textContent = obs;
+            tooltip.style.display = 'block';
+            
+            const rect = botao.getBoundingClientRect();
+            tooltip.style.left = (rect.left + window.scrollX) + 'px';
+            tooltip.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        }
+        
+        function esconderJust() {
+            document.getElementById('tooltipJust').style.display = 'none';
+        }
+        
+        // CALCULAR TOTAIS
+        function calcularTotais() {
+            const totaisPresenca = new Array(sabadosDoMes.length).fill(0);
+            
+            alunosAtivos.forEach(aluno => {
+                const safeId = aluno.nome.replace(/[^a-zA-Z0-9]/g, '_');
+                let faltasAluno = 0;
+                
+                const botoes = document.querySelectorAll(`button[data-aluno="${aluno.nome.replace(/"/g, '\\"')}"]`);
+                botoes.forEach((btn, idx) => {
+                    const status = btn.getAttribute('data-status');
+                    
+                    // ✅ e ⚠️ = presença
+                    if (status === "✅" || status === "⚠️") {
+                        totaisPresenca[idx]++;
+                    }
+                    // ❌ e 🗣️ = falta
+                    else if (status === "❌" || status === "🗣️") {
+                        faltasAluno++;
+                    }
+                });
+                
+                const elFaltas = document.getElementById(`faltas_${safeId}`);
+                if (elFaltas) elFaltas.textContent = faltasAluno;
+            });
+            
+            atualizarFooter(totaisPresenca);
+        }
+        
+        function atualizarFooter(totais) {
+            let footerHTML = '<td class="col-nome" style="text-align: right; color: var(--text-muted);">PRESENÇAS:</td>';
+            
+            if (totais.length === 0) {
+                footerHTML += '<td colspan="5">—</td>';
+            } else {
+                totais.forEach(total => {
+                    footerHTML += `<td class="footer-presencas">${total}</td>`;
+                });
+            }
+            
+            footerHTML += '<td>—</td>';
+            document.getElementById('footerRow').innerHTML = footerHTML;
+        }
+        
+        // SALVAR FREQUÊNCIA
+        async function salvarFrequencia() {
+            const registros = [];
+            const botoes = document.querySelectorAll('.btn-status[data-status]:not(.vazio)');
+            
+            botoes.forEach(btn => {
+                const status = btn.getAttribute('data-status');
+                if (status) {
+                    registros.push({
+                        nome: btn.getAttribute('data-aluno'),
+                        data: btn.getAttribute('data-data'),
+                        status: status,
+                        justificativa: btn.getAttribute('data-obs') || ""
+                    });
+                }
+            });
+            
+            if (registros.length === 0) {
+                alert("⚠️ Nada para salvar! Marque pelo menos uma presença ou falta.");
+                return;
+            }
+            
+            const btnSalvar = document.querySelector('.btn-salvar');
+            const textoOriginal = btnSalvar.textContent;
+            btnSalvar.textContent = "⏳ SALVANDO...";
+            btnSalvar.disabled = true;
+            
+            try {
+                const payload = encodeURIComponent(JSON.stringify(registros));
+                const params = `action=salvarFrequencia&payload=${payload}`;
+                const resposta = await chamarScript(params);
+                
+                if (resposta.status === "sucesso") {
+                    alert(`✅ ${resposta.quantidade} registros salvos com sucesso!`);
+                } else {
+                    throw new Error(resposta.mensagem || "Erro desconhecido");
+                }
+            } catch (erro) {
+                alert(`❌ Erro ao salvar: ${erro.message}`);
+            } finally {
+                btnSalvar.textContent = textoOriginal;
+                btnSalvar.disabled = false;
+            }
+        }
+        
+        // INICIALIZAR
+        window.onload = function() {
+            atualizarDisplayMes();
+            carregarTurmas();
+        };
+    </script>
+</body>
+</html>

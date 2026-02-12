@@ -3,85 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - TSUNAMI</title>
+    <title>Tsunami Frequência - Acesso</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #030b16; color: white; height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .login-container { background: #0d2137; padding: 40px; border-radius: 20px; border: 1px solid #1a3a5a; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .logo-login { width: 100px; margin-bottom: 20px; }
-        h2 { color: #00d4ff; margin-bottom: 30px; letter-spacing: 2px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #1a3a5a; background: #030b16; color: white; outline: none; }
-        button { width: 100%; padding: 12px; margin-top: 20px; border-radius: 8px; border: none; background: #00d4ff; color: #030b16; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        .toggle-link { margin-top: 20px; font-size: 14px; color: #8da0b1; cursor: pointer; display: block; }
-        .toggle-link b { color: #00d4ff; }
+        :root {
+            --bg-color: #050a12;
+            --card-bg: #0d1520;
+            --input-bg: #09101a;
+            --cyan: #00e5ff;
+            --text-color: #ffffff;
+            --gray-text: #667681;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-card {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #1a2635;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .logo-container img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--cyan);
+            filter: drop-shadow(0 0 10px var(--cyan));
+        }
+
+        h2 {
+            color: var(--cyan);
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            font-weight: 800;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--input-bg);
+            border: 1px solid #1a2635;
+            border-radius: 8px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.3s;
+            text-align: center;
+        }
+
+        .input-group input:focus {
+            border-color: var(--cyan);
+        }
+
+        .btn-entrar {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--cyan);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 16px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-entrar:hover {
+            opacity: 0.9;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            color: var(--gray-text);
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .loader {
+            display: none;
+            margin: 10px auto;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--cyan);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <img src="logo.png" alt="Logo" class="logo-login">
-        <h2 id="auth-title">LOGIN</h2>
-        <input type="email" id="email" placeholder="E-mail">
-        <input type="password" id="password" placeholder="Senha">
-        <button id="auth-btn" onclick="handleAuth()">Entrar</button>
-        <span class="toggle-link" id="toggle-auth" onclick="toggleMode()">Não tem conta? <b>Cadastre-se</b></span>
+
+    <div class="login-card">
+        <div class="logo-container">
+            <img src="logo.png" alt="Logo Tsunami">
+        </div>
+        <h2>ACESSO</h2>
+
+        <div class="input-group">
+            <input type="text" id="usuario" placeholder="Utilizador">
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="senha" placeholder="Palavra-passe">
+        </div>
+
+        <button class="btn-entrar" onclick="realizarLogin()">Entrar</button>
+        <div id="loader" class="loader"></div>
+
+        <div class="footer-text">TSUNAMI FREQUÊNCIA V2.0</div>
     </div>
 
     <script>
-        // URL DA PLANILHA DE USUÁRIOS FORNECIDA
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx926iSDRzRcWDfhWQ_8jXJzuXTkl6ESDXrO0F_vUV6ivH2LDPsOLqst4bCF44xVAjd/exec';
-        let isLogin = true;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
 
-        function toggleMode() {
-            isLogin = !isLogin;
-            document.getElementById('auth-title').innerText = isLogin ? 'LOGIN' : 'CADASTRO';
-            document.getElementById('auth-btn').innerText = isLogin ? 'Entrar' : 'Criar Conta';
-            document.getElementById('toggle-auth').innerHTML = isLogin ? 'Não tem conta? <b>Cadastre-se</b>' : 'Já tem conta? <b>Faça Login</b>';
-        }
+        function realizarLogin() {
+            const nome = document.getElementById('usuario').value;
+            const senha = document.getElementById('senha').value;
+            const loader = document.getElementById('loader');
+            const btn = document.querySelector('.btn-entrar');
 
-        async function handleAuth() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('auth-btn');
-
-            if (!email || !password) { 
-                alert('Preencha todos os campos!'); 
-                return; 
+            if (!nome || !senha) {
+                alert("Por favor, preencha todos os campos.");
+                return;
             }
 
-            btn.disabled = true;
-            btn.innerText = 'Processando...';
+            loader.style.display = "block";
+            btn.style.display = "none";
 
-            const payload = {
-                action: isLogin ? 'login' : 'signup',
-                usuario: email,
-                senha: password
+            const callbackName = 'loginCallback_' + Date.now();
+            
+            window[callbackName] = function(res) {
+                loader.style.display = "none";
+                btn.style.display = "block";
+                
+                if (res.status === "success") {
+                    localStorage.setItem('userLogado', nome);
+                    window.location.href = "ts.1pagina-inicial.html";
+                } else {
+                    alert(res.message || "Erro no login");
+                }
+                
+                delete window[callbackName];
+                if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                }
             };
 
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (result.result === "success") {
-                    localStorage.setItem('user_session', email);
-                    window.location.href = 'pagina-inicial.html';
-                } else {
-                    alert(result.message);
-                    btn.disabled = false;
-                    btn.innerText = isLogin ? 'Entrar' : 'Criar Conta';
-                }
-
-            } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro na conexão. Verifique se o Script foi publicado como "Qualquer pessoa" (Anyone).');
-                btn.disabled = false;
-                btn.innerText = isLogin ? 'Entrar' : 'Criar Conta';
-            }
+            const params = `action=login&nome=${encodeURIComponent(nome)}&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
+            const script = document.createElement('script');
+            script.src = SCRIPT_URL + "?" + params;
+            
+            script.onerror = function() {
+                loader.style.display = "none";
+                btn.style.display = "block";
+                alert("Erro de conexão com o servidor");
+                delete window[callbackName];
+            };
+            
+            document.body.appendChild(script);
         }
+
+        document.getElementById('senha').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') realizarLogin();
+        });
+        document.getElementById('usuario').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') realizarLogin();
+        });
     </script>
 </body>
 </html>
