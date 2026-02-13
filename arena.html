@@ -5,37 +5,685 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSUNAMI - Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
-        .btn-emerald { border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); transition: 0.3s; color: white; }
-        .btn-emerald:hover { background: #10b981; color: black; }
-        .btn-rose { border: 1px solid #f43f5e; background: rgba(244, 63, 94, 0.1); transition: 0.3s; color: white; }
-        .btn-rose:hover { background: #f43f5e; color: black; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            min-height: 100vh;
+        }
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(16, 185, 129, 0.1); 
+        }
+        .btn-emerald { 
+            border: 1px solid #10b981; 
+            background: rgba(16, 185, 129, 0.1); 
+            transition: all 0.3s; 
+            color: #10b981; 
+        }
+        .btn-emerald:hover { 
+            background: #10b981; 
+            color: black; 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        .arena-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(16, 185, 129, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .header-arena {
+            background: rgba(16, 185, 129, 0.1);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .freq-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .freq-btn:hover {
+            transform: scale(1.1);
+        }
+        .freq-vazio {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: transparent;
+        }
+        .freq-falta {
+            background: rgba(244, 63, 94, 0.2);
+            border-color: #f43f5e;
+            color: #f43f5e;
+        }
+        .freq-presente {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            color: #10b981;
+        }
+        .freq-atraso {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        .freq-justificado {
+            background: rgba(6, 182, 212, 0.2);
+            border-color: #06b6d4;
+            color: #06b6d4;
+        }
+        .all-btn {
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .all-btn:hover {
+            background: #2563eb;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .nm-badge {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6b7280;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .contador-faltas {
+            background: rgba(244, 63, 94, 0.1);
+            color: #f43f5e;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .contador-presencas {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .nav-mes {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .nav-mes:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        select {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(16, 185, 129, 0.2) !important;
+            color: white !important;
+        }
+        .loading { 
+            opacity: 0.5; 
+            pointer-events: none; 
+        }
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 md:p-8">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
-            <h1 class="text-2xl font-bold text-emerald-400 tracking-widest uppercase">Arena</h1>
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs uppercase font-bold">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            </a>
+            <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 tracking-widest uppercase text-center flex-1">
+                <i class="fas fa-check-double mr-3"></i>Frequência Arena
+            </h1>
+            <div class="w-20"></div>
         </div>
 
-        <div class="glass p-6 rounded-xl">
-            <input type="text" id="nomeFrequencia" placeholder="Nome do Aluno para Chamada" class="w-full bg-white/5 border border-white/10 p-3 rounded mb-4 outline-none text-white">
-            <div class="flex gap-4">
-                <button onclick="enviarPresenca('Presente')" class="flex-1 btn-emerald p-3 rounded font-bold uppercase">Presente</button>
-                <button onclick="enviarPresenca('Faltou')" class="flex-1 btn-rose p-3 rounded font-bold uppercase">Faltou</button>
+        <!-- Painel Principal -->
+        <div class="arena-card">
+            <!-- Barra Superior -->
+            <div class="header-arena p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="mudarMes(-1)" class="nav-mes">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center">
+                        Fevereiro 2026
+                    </h2>
+                    <button onclick="mudarMes(1)" class="nav-mes">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <select id="filtroTurma" onchange="renderizarTabela()" class="px-4 py-2 rounded-lg text-sm outline-none">
+                    <option value="">TODAS AS TURMAS</option>
+                </select>
+            </div>
+
+            <!-- Tabela de Frequência -->
+            <div class="p-4 overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-emerald-500/20">
+                            <th class="text-left p-3 text-[10px] uppercase tracking-wider text-emerald-400 w-[200px]">Atleta</th>
+                            <th class="text-left p-3 text-[10px] uppercase tracking-wider text-emerald-400">Ações Lote</th>
+                            <th id="headerDias" class="flex">
+                                <!-- Dias gerados dinamicamente -->
+                            </th>
+                            <th class="p-3 text-[10px] uppercase tracking-wider text-emerald-400 text-center">Faltas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabela">
+                        <!-- Alunos gerados dinamicamente -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-t border-emerald-500/20 bg-emerald-500/5">
+                            <td colspan="2" class="p-3 text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
+                                Presenças / Dia
+                            </td>
+                            <td id="footerPresencas" class="flex">
+                                <!-- Contadores gerados dinamicamente -->
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="p-4 border-t border-emerald-500/20 flex flex-col md:flex-row gap-3 justify-end">
+                <button onclick="exportarPresencas()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold tracking-wider">
+                    <i class="fas fa-share-alt mr-2"></i>Compartilhar Presenças
+                </button>
+                <button onclick="salvarFrequencia()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold tracking-wider">
+                    <i class="fas fa-save mr-2"></i>Salvar Frequência
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Justificativa -->
+    <div id="modalJustificativa" class="modal">
+        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500/30">
+            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wider">
+                <i class="fas fa-comment-dots mr-2"></i>Justificar Falta
+            </h3>
+            <input type="hidden" id="justAlunoIndex">
+            <input type="hidden" id="justDiaIndex">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Justificativa</label>
+                    <textarea id="justTexto" class="w-full p-3 rounded-lg outline-none bg-gray-900 text-sm" rows="3" placeholder="Digite o motivo..."></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="fecharModalJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
+                        Cancelar
+                    </button>
+                    <button onclick="salvarJustificativa()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold hover:bg-cyan-400 transition">
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Exportar -->
+    <div id="modalExportar" class="modal">
+        <div class="glass p-6 rounded-2xl max-w-lg w-full mx-4 border border-emerald-500/30">
+            <h3 class="text-xl font-bold text-emerald-400 mb-4 uppercase tracking-wider">
+                <i class="fas fa-share-alt mr-2"></i>Compartilhar Presenças
+            </h3>
+            <div class="space-y-4">
+                <div class="bg-black/30 p-4 rounded-lg max-h-60 overflow-y-auto">
+                    <pre id="exportConteudo" class="text-xs text-emerald-300 font-mono whitespace-pre-wrap"></pre>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="fecharModalExport()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
+                        Fechar
+                    </button>
+                    <button onclick="copiarExport()" class="flex-1 btn-emerald p-3 rounded-lg uppercase text-xs font-bold">
+                        <i class="fas fa-copy mr-2"></i>Copiar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+        
+        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+        let frequencias = JSON.parse(localStorage.getItem('tsunami_frequencias')) || [];
+        
+        let dataAtual = new Date();
+        let alunosAtivos = [];
+        let diasMes = [];
+        let estadoFrequencia = {}; // { "alunoIndex-diaIndex": "F|P|A|J" }
 
-        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
+        // Ciclo de estados
+        const CICLO = ['', 'F', 'P', 'A', 'J'];
+        const CORES = {
+            '': 'freq-vazio',
+            'F': 'freq-falta',
+            'P': 'freq-presente',
+            'A': 'freq-atraso',
+            'J': 'freq-justificado'
+        };
+
+        // Obter sábados do mês
+        function obterSabados(ano, mes) {
+            const sabados = [];
+            const data = new Date(ano, mes, 1);
+            
+            while (data.getDay() !== 6) {
+                data.setDate(data.getDate() + 1);
+            }
+            
+            while (data.getMonth() === mes) {
+                sabados.push(new Date(data));
+                data.setDate(data.getDate() + 7);
+            }
+            
+            return sabados;
+        }
+
+        // Formatar data
+        function formatarData(data) {
+            return data.toLocaleDateString('pt-BR');
+        }
+
+        // Verificar se aluno está ativo
+        function alunoAtivo(aluno, dataReferencia) {
+            const matricula = new Date(aluno.matricula_rematricula);
+            const vencimento = new Date(aluno.data_vencimento);
+            const ref = new Date(dataReferencia);
+            
+            // Reset horas para comparar só datas
+            matricula.setHours(0,0,0,0);
+            vencimento.setHours(0,0,0,0);
+            ref.setHours(0,0,0,0);
+            
+            return matricula <= ref && ref <= vencimento;
+        }
+
+        // Mudar mês
+        function mudarMes(direcao) {
+            dataAtual.setMonth(dataAtual.getMonth() + direcao);
+            renderizarTabela();
+        }
+
+        // Carregar turmas no filtro
+        function carregarTurmas() {
+            const select = document.getElementById('filtroTurma');
+            const atual = select.value;
+            select.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+            
+            turmas.sort((a, b) => a.nome.localeCompare(b.nome));
+            turmas.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.nome;
+                option.textContent = t.nome;
+                select.appendChild(option);
+            });
+            
+            if (atual) select.value = atual;
+        }
+
+        // Renderizar tabela
+        function renderizarTabela() {
+            const ano = dataAtual.getFullYear();
+            const mes = dataAtual.getMonth();
+            
+            // Atualizar título
+            const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            document.getElementById('tituloMes').textContent = `${meses[mes]} ${ano}`;
+            
+            // Obter sábados
+            diasMes = obterSabados(ano, mes);
+            
+            // Renderizar header dos dias
+            const headerDias = document.getElementById('headerDias');
+            headerDias.innerHTML = diasMes.map((dia, i) => `
+                <div class="flex-1 text-center p-2 min-w-[60px]">
+                    <div class="text-[10px] uppercase text-gray-400">Sáb</div>
+                    <div class="text-lg font-bold text-emerald-300">${dia.getDate()}</div>
+                </div>
+            `).join('');
+            
+            // Filtrar alunos ativos
+            const turmaFiltro = document.getElementById('filtroTurma').value;
+            const meioMes = new Date(ano, mes, 15); // Dia 15 como referência
+            
+            alunosAtivos = alunos.filter(a => {
+                if (turmaFiltro && a.turma !== turmaFiltro) return false;
+                return true; // Mostra todos, mas verifica ativo por dia
+            }).sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            // Renderizar alunos
+            const corpo = document.getElementById('corpoTabela');
+            
+            if (alunosAtivos.length === 0) {
+                corpo.innerHTML = `
+                    <tr>
+                        <td colspan="${3 + diasMes.length}" class="p-8 text-center text-gray-500 uppercase text-xs tracking-widest">
+                            <i class="fas fa-inbox text-3xl mb-3 block opacity-30"></i>
+                            Nenhum aluno encontrado
+                        </td>
+                    </tr>
+                `;
+                renderizarFooter();
+                return;
+            }
+            
+            corpo.innerHTML = alunosAtivos.map((aluno, alunoIndex) => {
+                const faltas = calcularFaltas(alunoIndex);
+                
+                return `
+                <tr class="border-b border-emerald-500/10 hover:bg-emerald-500/5">
+                    <td class="p-3">
+                        <div class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</div>
+                        <div class="text-[10px] text-gray-500">${aluno.turma}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="flex gap-1">
+                            ${diasMes.map((_, i) => `
+                                <button onclick="aplicarLote(${i})" class="all-btn" title="Aplicar para todos">ALL</button>
+                            `).join('')}
+                        </div>
+                    </td>
+                    <td class="flex">
+                        ${diasMes.map((dia, diaIndex) => {
+                            const ativo = alunoAtivo(aluno, dia);
+                            const key = `${alunoIndex}-${diaIndex}`;
+                            const estado = estadoFrequencia[key] || '';
+                            
+                            if (!ativo) {
+                                return `<div class="flex-1 flex items-center justify-center p-2 min-w-[60px]"><span class="nm-badge">N/M</span></div>`;
+                            }
+                            
+                            return `
+                                <div class="flex-1 flex items-center justify-center p-2 min-w-[60px]">
+                                    <button onclick="cicloFrequencia(${alunoIndex}, ${diaIndex})" 
+                                            class="freq-btn ${CORES[estado]}" 
+                                            title="${estado === 'J' ? 'Justificado' : ''}">
+                                        ${estado}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </td>
+                    <td class="p-3 text-center">
+                        <span class="contador-faltas">${faltas}</span>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            
+            renderizarFooter();
+        }
+
+        // Calcular faltas do aluno
+        function calcularFaltas(alunoIndex) {
+            let faltas = 0;
+            diasMes.forEach((dia, diaIndex) => {
+                const aluno = alunosAtivos[alunoIndex];
+                if (!alunoAtivo(aluno, dia)) return;
+                
+                const key = `${alunoIndex}-${diaIndex}`;
+                const estado = estadoFrequencia[key] || '';
+                if (estado === 'F' || estado === 'J') faltas++;
+            });
+            return faltas;
+        }
+
+        // Renderizar footer com contadores
+        function renderizarFooter() {
+            const footer = document.getElementById('footerPresencas');
+            
+            footer.innerHTML = diasMes.map((dia, diaIndex) => {
+                let presencas = 0;
+                
+                alunosAtivos.forEach((aluno, alunoIndex) => {
+                    if (!alunoAtivo(aluno, dia)) return;
+                    const key = `${alunoIndex}-${diaIndex}`;
+                    const estado = estadoFrequencia[key] || '';
+                    if (estado === 'P' || estado === 'A') presencas++;
+                });
+                
+                return `
+                    <div class="flex-1 text-center p-2 min-w-[60px]">
+                        <span class="contador-presencas">${presencas}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Ciclo de frequência
+        function cicloFrequencia(alunoIndex, diaIndex) {
+            const key = `${alunoIndex}-${diaIndex}`;
+            const atual = estadoFrequencia[key] || '';
+            const proximoIndex = (CICLO.indexOf(atual) + 1) % CICLO.length;
+            const proximo = CICLO[proximoIndex];
+            
+            // Se for Justificado (J), abre modal
+            if (proximo === 'J') {
+                document.getElementById('justAlunoIndex').value = alunoIndex;
+                document.getElementById('justDiaIndex').value = diaIndex;
+                document.getElementById('justTexto').value = '';
+                document.getElementById('modalJustificativa').classList.add('active');
+                return;
+            }
+            
+            estadoFrequencia[key] = proximo;
+            renderizarTabela();
+        }
+
+        // Aplicar em lote
+        function aplicarLote(diaIndex) {
+            // Pega o estado do primeiro aluno ativo neste dia
+            let estadoReferencia = '';
+            for (let i = 0; i < alunosAtivos.length; i++) {
+                const key = `${i}-${diaIndex}`;
+                if (estadoFrequencia[key]) {
+                    estadoReferencia = estadoFrequencia[key];
+                    break;
+                }
+            }
+            
+            // Próximo estado do ciclo
+            const proximoIndex = (CICLO.indexOf(estadoReferencia) + 1) % CICLO.length;
+            const proximo = CICLO[proximoIndex];
+            
+            // Se for Justificado, não aplica em lote (precisa justificativa individual)
+            if (proximo === 'J') {
+                alert('Justificativa não pode ser aplicada em lote. Clique individualmente.');
+                return;
+            }
+            
+            // Aplica para todos os ativos neste dia
+            alunosAtivos.forEach((aluno, alunoIndex) => {
+                const dia = diasMes[diaIndex];
+                if (alunoAtivo(aluno, dia)) {
+                    const key = `${alunoIndex}-${diaIndex}`;
+                    estadoFrequencia[key] = proximo;
+                }
+            });
+            
+            renderizarTabela();
+        }
+
+        // Modal Justificativa
+        function fecharModalJust() {
+            document.getElementById('modalJustificativa').classList.remove('active');
+        }
+
+        function salvarJustificativa() {
+            const alunoIndex = document.getElementById('justAlunoIndex').value;
+            const diaIndex = document.getElementById('justDiaIndex').value;
+            const texto = document.getElementById('justTexto').value;
+            
+            const key = `${alunoIndex}-${diaIndex}`;
+            estadoFrequencia[key] = 'J';
+            
+            // Salva justificativa separadamente
+            const justKey = `${key}-just`;
+            estadoFrequencia[justKey] = texto;
+            
+            fecharModalJust();
+            renderizarTabela();
+        }
+
+        // Salvar frequência
+        async function salvarFrequencia() {
+            const btn = document.getElementById('btnSalvar');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
+            btn.classList.add('loading');
+            
+            const registros = [];
+            
+            alunosAtivos.forEach((aluno, alunoIndex) => {
+                diasMes.forEach((dia, diaIndex) => {
+                    if (!alunoAtivo(aluno, dia)) return;
+                    
+                    const key = `${alunoIndex}-${diaIndex}`;
+                    const status = estadoFrequencia[key];
+                    
+                    if (status) {
+                        const justKey = `${key}-just`;
+                        const justificativa = estadoFrequencia[justKey] || '';
+                        
+                        // Converte código para texto
+                        const statusTexto = {
+                            'P': 'Presente',
+                            'A': 'Atraso',
+                            'F': 'Faltou',
+                            'J': 'Justificado'
+                        }[status];
+                        
+                        registros.push({
+                            action: "frequencia",
+                            nome: aluno.nome,
+                            data_aula: formatarData(dia),
+                            status: statusTexto,
+                            justificativa: justificativa
+                        });
+                    }
+                });
+            });
+            
+            // Salva local
+            frequencias.push(...registros);
+            localStorage.setItem('tsunami_frequencias', JSON.stringify(frequencias));
+            
+            // Envia para planilha
+            try {
+                for (const reg of registros) {
+                    await enviarParaPlanilha(reg);
+                }
+                alert(`${registros.length} registros salvos com sucesso!`);
+            } catch (err) {
+                console.error('Erro:', err);
+                alert('Salvo localmente. Erro na sincronização.');
+            }
+            
+            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frequência';
+            btn.classList.remove('loading');
+        }
+
+        // Exportar presenças
+        function exportarPresencas() {
+            const turmaFiltro = document.getElementById('filtroTurma').value || 'Todas as Turmas';
+            const mes = dataAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'});
+            
+            let presentes = [];
+            
+            alunosAtivos.forEach((aluno, alunoIndex) => {
+                let presencasAluno = [];
+                
+                diasMes.forEach((dia, diaIndex) => {
+                    if (!alunoAtivo(aluno, dia)) return;
+                    
+                    const key = `${alunoIndex}-${diaIndex}`;
+                    const status = estadoFrequencia[key];
+                    
+                    if (status === 'P' || status === 'A') {
+                        presencasAluno.push(dia.getDate());
+                    }
+                });
+                
+                if (presencasAluno.length > 0) {
+                    presentes.push({
+                        nome: aluno.nome,
+                        turma: aluno.turma,
+                        dias: presencasAluno
+                    });
+                }
+            });
+            
+            const totalPresentes = presentes.length;
+            
+            const conteudo = `FREQUÊNCIA ARENA - ${mes.toUpperCase()}
+Turma: ${turmaFiltro}
+Total de Presentes: ${totalPresentes}
+
+${presentes.map(p => `- ${p.nome} (${p.turma}) - Dias: ${p.dias.join(', ')}`).join('\n')}
+
+---
+Gerado por TSUNAMI System`;
+
+            document.getElementById('exportConteudo').textContent = conteudo;
+            document.getElementById('modalExportar').classList.add('active');
+        }
+
+        function fecharModalExport() {
+            document.getElementById('modalExportar').classList.remove('active');
+        }
+
+        function copiarExport() {
+            const texto = document.getElementById('exportConteudo').textContent;
+            navigator.clipboard.writeText(texto).then(() => {
+                alert('Copiado para a área de transferência!');
+            });
+        }
+
+        // Função auxiliar
         async function enviarParaPlanilha(dados) {
             const formData = new FormData();
             for (const [chave, valor] of Object.entries(dados)) {
@@ -55,27 +703,9 @@
             }
         }
 
-        async function enviarPresenca(status) {
-            const nome = document.getElementById('nomeFrequencia').value;
-            if(!nome) return alert("Digite o nome do aluno");
-
-            const dados = {
-                action: "frequencia",
-                nome: nome,
-                status: status,
-                justificativa: "Arena"
-            };
-
-            try {
-                const resultado = await enviarParaPlanilha(dados);
-                console.log("Resposta:", resultado);
-                alert("Frequência registrada: " + status);
-                document.getElementById('nomeFrequencia').value = "";
-            } catch (e) {
-                console.error("Erro:", e);
-                alert("Erro ao registrar frequência");
-            }
-        }
+        // Inicializa
+        carregarTurmas();
+        renderizarTabela();
     </script>
 </body>
 </html>

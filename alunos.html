@@ -5,37 +5,552 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSUNAMI - Alunos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 255, 0.1); }
-        .btn-fuchsia { border: 1px solid #f5f; background: rgba(255, 0, 255, 0.1); transition: 0.3s; color: white; }
-        .btn-fuchsia:hover { background: #f5f; color: black; }
-        input { background: rgba(255, 255, 255, 0.05)!important; border: 1px solid rgba(255, 0, 255, 0.2)!important; color: white!important; padding: 12px; border-radius: 8px; outline: none; }
-        .loading { opacity: 0.5; pointer-events: none; }
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            min-height: 100vh;
+        }
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 0, 255, 0.1); 
+        }
+        .btn-fuchsia { 
+            border: 1px solid #ff00ff; 
+            background: rgba(255, 0, 255, 0.1); 
+            transition: all 0.3s; 
+            color: #ff00ff; 
+        }
+        .btn-fuchsia:hover { 
+            background: #ff00ff; 
+            color: black; 
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+        }
+        input, select, textarea { 
+            background: rgba(255, 255, 255, 0.05) !important; 
+            border: 1px solid rgba(255, 0, 255, 0.2) !important; 
+            color: white !important; 
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #ff00ff !important;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .aluno-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 0, 255, 0.1);
+            border-left: 4px solid #ff00ff;
+            transition: all 0.3s;
+        }
+        .aluno-card:hover {
+            background: rgba(255, 0, 255, 0.05);
+            transform: translateX(5px);
+        }
+        .edit-btn {
+            color: #fbbf24;
+            transition: 0.3s;
+        }
+        .edit-btn:hover {
+            color: #f59e0b;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+        .delete-btn {
+            color: #f43f5e;
+            transition: 0.3s;
+        }
+        .delete-btn:hover {
+            color: #e11d48;
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+        }
+        .search-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 0, 255, 0.2);
+        }
+        .search-box:focus {
+            border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+        }
+        .lote-badge {
+            background: rgba(255, 0, 255, 0.2);
+            color: #ff00ff;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .tab-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            color: #ff00ff;
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .tab-btn:hover {
+            background: rgba(255, 0, 255, 0.1);
+        }
+        .tab-btn.active {
+            background: rgba(255, 0, 255, 0.2);
+            border-bottom: 2px solid #ff00ff;
+        }
+        .empty-state {
+            color: rgba(255, 0, 255, 0.4);
+            font-style: italic;
+        }
+        .loading { 
+            opacity: 0.5; 
+            pointer-events: none; 
+        }
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 md:p-8">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <a href="index.html" class="btn-fuchsia px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
-            <h1 class="text-2xl font-bold text-fuchsia-400 tracking-widest uppercase">Matrícula de Alunos</h1>
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <a href="index.html" class="btn-fuchsia px-4 py-2 rounded-lg text-xs uppercase font-bold">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            </a>
+            <h1 class="text-2xl md:text-3xl font-bold text-fuchsia-400 tracking-widest uppercase text-center flex-1">
+                <i class="fas fa-user-plus mr-3"></i>Gerenciar Alunos
+            </h1>
+            <div class="w-20"></div>
         </div>
 
-        <form id="formAluno" class="glass p-6 rounded-xl grid grid-cols-1 gap-4">
-            <input type="text" id="nome" placeholder="Nome Completo do Aluno" required>
-            <input type="text" id="turma" placeholder="Nome da Turma" required>
-            <input type="text" id="matricula" placeholder="Número de Matrícula / Rematrícula" required>
-            <input type="date" id="vencimento" required>
-            <button type="submit" id="saveBtn" class="btn-fuchsia p-4 rounded-lg font-bold uppercase">Cadastrar Aluno</button>
-        </form>
+        <!-- Abas -->
+        <div class="flex gap-2 mb-0">
+            <button onclick="switchTab('individual')" id="tabIndividual" class="tab-btn active">
+                <i class="fas fa-user mr-2"></i>Individual
+            </button>
+            <button onclick="switchTab('lote')" id="tabLote" class="tab-btn">
+                <i class="fas fa-layer-group mr-2"></i>Cadastro em Lote
+            </button>
+        </div>
+
+        <!-- Formulário Individual -->
+        <div id="formIndividual" class="glass p-6 rounded-b-2xl rounded-tr-2xl mb-8">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 mb-6 border-b border-fuchsia-500/20 pb-2">
+                Novo Aluno
+            </h2>
+            
+            <form id="formAluno" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <!-- Nome -->
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome Completo</label>
+                    <input type="text" id="nome" placeholder="Ex: João Silva" class="w-full p-3 rounded-lg outline-none uppercase" required>
+                </div>
+
+                <!-- Turma -->
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
+                    <select id="turma" class="w-full p-3 rounded-lg outline-none bg-gray-900" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+
+                <!-- Data Matrícula -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula/Rematrícula</label>
+                    <input type="date" id="matricula" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Vencimento -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
+                    <input type="date" id="vencimento" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Botão -->
+                <div class="md:col-span-1">
+                    <button type="submit" id="saveBtn" class="w-full btn-fuchsia p-3 rounded-lg uppercase font-bold text-xs h-[46px] flex items-center justify-center">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Formulário em Lote (inicialmente oculto) -->
+        <div id="formLote" class="glass p-6 rounded-b-2xl rounded-tr-2xl mb-8 hidden">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 mb-6 border-b border-fuchsia-500/20 pb-2 flex justify-between items-center">
+                <span>Cadastro em Lote</span>
+                <span class="text-xs text-gray-400 font-normal normal-case">Um nome por linha</span>
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                <!-- Turma -->
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
+                    <select id="turmaLote" class="w-full p-3 rounded-lg outline-none bg-gray-900" required>
+                        <option value="">Selecione a turma...</option>
+                    </select>
+                </div>
+
+                <!-- Data Matrícula -->
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula/Rematrícula</label>
+                    <input type="date" id="matriculaLote" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Vencimento -->
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
+                    <input type="date" id="vencimentoLote" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+            </div>
+
+            <!-- Área de nomes -->
+            <div class="mb-4">
+                <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Lista de Nomes (um por linha)</label>
+                <textarea id="listaNomesLote" placeholder="Carlos Silva&#10;Maria Oliveira&#10;João Santos..." class="w-full p-4 rounded-lg outline-none font-mono text-sm"></textarea>
+            </div>
+
+            <button onclick="cadastrarLote()" id="btnCadastrarLote" class="w-full btn-fuchsia p-4 rounded-lg uppercase font-bold tracking-wider flex items-center justify-center gap-2">
+                <i class="fas fa-users"></i> Cadastrar Todos
+            </button>
+        </div>
+
+        <!-- Busca e Lista -->
+        <div class="glass p-6 rounded-2xl">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-fuchsia-500/20 pb-4">
+                <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 flex items-center gap-2">
+                    <i class="fas fa-users"></i>
+                    Alunos Cadastrados
+                    <span id="totalAlunos" class="text-xs bg-fuchsia-500/20 px-3 py-1 rounded-full">0 alunos</span>
+                </h2>
+                
+                <div class="relative w-full md:w-72">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-fuchsia-400"></i>
+                    <input type="text" id="busca" placeholder="Buscar aluno..." class="search-box w-full p-3 pl-10 rounded-lg outline-none text-sm">
+                </div>
+            </div>
+            
+            <div id="listaAlunos" class="space-y-3">
+                <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
+                    <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
+                    Nenhum aluno registrado no sistema.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 border border-fuchsia-500/30">
+            <h3 class="text-xl font-bold text-fuchsia-400 mb-4 uppercase tracking-wider">Editar Aluno</h3>
+            <input type="hidden" id="editIndex">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome</label>
+                    <input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase bg-gray-900">
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
+                    <select id="editTurma" class="w-full p-3 rounded-lg outline-none bg-gray-900"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label>
+                        <input type="date" id="editMatricula" class="w-full p-3 rounded-lg outline-none bg-gray-900">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
+                        <input type="date" id="editVencimento" class="w-full p-3 rounded-lg outline-none bg-gray-900">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
+                        Cancelar
+                    </button>
+                    <button onclick="salvarEdicao()" class="flex-1 btn-fuchsia p-3 rounded-lg uppercase text-xs font-bold">
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
 
-        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
+        // Alternar abas
+        function switchTab(tab) {
+            document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
+            document.getElementById('tabLote').classList.toggle('active', tab === 'lote');
+            document.getElementById('formIndividual').classList.toggle('hidden', tab !== 'individual');
+            document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
+        }
+
+        // Carregar turmas nos selects
+        function carregarTurmas() {
+            const selects = [document.getElementById('turma'), document.getElementById('turmaLote'), document.getElementById('editTurma')];
+            selects.forEach(select => {
+                if (!select) return;
+                const atual = select.value;
+                select.innerHTML = '<option value="">Selecione...</option>';
+                turmas.sort((a, b) => a.nome.localeCompare(b.nome));
+                turmas.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.nome;
+                    option.textContent = t.nome;
+                    select.appendChild(option);
+                });
+                if (atual) select.value = atual;
+            });
+        }
+
+        // Cadastrar em lote
+        async function cadastrarLote() {
+            const turma = document.getElementById('turmaLote').value;
+            const matricula = document.getElementById('matriculaLote').value;
+            const vencimento = document.getElementById('vencimentoLote').value;
+            const nomesTexto = document.getElementById('listaNomesLote').value.trim();
+
+            if (!turma || !matricula || !vencimento) {
+                return alert('Preencha turma, matrícula e vencimento!');
+            }
+            if (!nomesTexto) {
+                return alert('Digite pelo menos um nome na lista!');
+            }
+
+            // Processa nomes (um por linha)
+            const nomes = nomesTexto.split('\n')
+                .map(n => n.trim().toUpperCase())
+                .filter(n => n.length > 0);
+
+            if (nomes.length === 0) return alert('Nenhum nome válido encontrado!');
+
+            const btn = document.getElementById('btnCadastrarLote');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando ' + nomes.length + ' alunos...';
+            btn.classList.add('loading');
+
+            let sucessos = 0;
+
+            for (const nome of nomes) {
+                const novoAluno = {
+                    nome: nome,
+                    turma: turma,
+                    matricula_rematricula: matricula,
+                    data_vencimento: vencimento
+                };
+                
+                // Verifica duplicado
+                const existe = alunos.find(a => a.nome === nome && a.turma === turma);
+                if (existe) continue;
+                
+                alunos.push(novoAluno);
+                
+                // Envia para planilha
+                try {
+                    await enviarParaPlanilha({
+                        action: "alunos",
+                        ...novoAluno
+                    });
+                    sucessos++;
+                } catch (err) {
+                    console.error('Erro ao cadastrar:', nome, err);
+                }
+            }
+            
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            
+            // Limpa
+            document.getElementById('listaNomesLote').value = '';
+            
+            renderizarAlunos();
+            
+            btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
+            btn.classList.remove('loading');
+            
+            alert(`${sucessos} de ${nomes.length} alunos cadastrados com sucesso!`);
+            
+            // Volta para aba individual
+            switchTab('individual');
+        }
+
+        // Renderizar alunos
+        function renderizarAlunos(filtro = '') {
+            const container = document.getElementById('listaAlunos');
+            const totalEl = document.getElementById('totalAlunos');
+            
+            let lista = alunos.filter(a => 
+                a.nome.toLowerCase().includes(filtro.toLowerCase()) ||
+                a.turma.toLowerCase().includes(filtro.toLowerCase())
+            );
+            lista.sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            totalEl.textContent = `${lista.length} aluno${lista.length !== 1 ? 's' : ''}`;
+            
+            if (lista.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
+                        <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
+                        ${filtro ? 'Nenhum aluno encontrado para "' + filtro + '"' : 'Nenhum aluno registrado no sistema.'}
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = lista.map((aluno, index) => {
+                const alunoIndex = alunos.findIndex(a => a.nome === aluno.nome && a.turma === aluno.turma);
+                const hoje = new Date();
+                const venc = new Date(aluno.data_vencimento);
+                const vencido = venc < hoje;
+                
+                return `
+                <div class="aluno-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-fuchsia-300 uppercase tracking-wider mb-1 flex items-center">
+                            ${aluno.nome}
+                            ${vencido ? '<span class="lote-badge bg-rose-500/20 text-rose-400">Vencido</span>' : ''}
+                        </h3>
+                        <div class="flex flex-wrap gap-3 text-xs text-gray-400">
+                            <span><i class="fas fa-users mr-1 text-fuchsia-500"></i>${aluno.turma}</span>
+                            <span><i class="far fa-calendar-check mr-1 text-fuchsia-500"></i>Matrícula: ${formatarData(aluno.matricula_rematricula)}</span>
+                            <span class="${vencido ? 'text-rose-400' : 'text-emerald-400'}">
+                                <i class="far fa-calendar-times mr-1"></i>Vence: ${formatarData(aluno.data_vencimento)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="editarAluno(${alunoIndex})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="excluirAluno(${alunoIndex})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function formatarData(data) {
+            if (!data) return '-';
+            const d = new Date(data);
+            return d.toLocaleDateString('pt-BR');
+        }
+
+        // Cadastrar individual
+        document.getElementById('formAluno').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            
+            const nome = document.getElementById('nome').value.toUpperCase();
+            const turma = document.getElementById('turma').value;
+            const matricula = document.getElementById('matricula').value;
+            const vencimento = document.getElementById('vencimento').value;
+            
+            if (!turma) return alert('Selecione uma turma!');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.classList.add('loading');
+
+            const novoAluno = {
+                nome: nome,
+                turma: turma,
+                matricula_rematricula: matricula,
+                data_vencimento: vencimento
+            };
+
+            alunos.push(novoAluno);
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+
+            try {
+                await enviarParaPlanilha({
+                    action: "alunos",
+                    ...novoAluno
+                });
+            } catch (err) {
+                console.error('Erro ao sincronizar:', err);
+            }
+
+            e.target.reset();
+            renderizarAlunos();
+            
+            btn.innerHTML = '<i class="fas fa-plus"></i>';
+            btn.classList.remove('loading');
+        });
+
+        // Editar
+        function editarAluno(index) {
+            const aluno = alunos[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editNome').value = aluno.nome;
+            document.getElementById('editTurma').value = aluno.turma;
+            document.getElementById('editMatricula').value = aluno.matricula_rematricula;
+            document.getElementById('editVencimento').value = aluno.data_vencimento;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function fecharModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        async function salvarEdicao() {
+            const index = document.getElementById('editIndex').value;
+            
+            alunos[index] = {
+                nome: document.getElementById('editNome').value.toUpperCase(),
+                turma: document.getElementById('editTurma').value,
+                matricula_rematricula: document.getElementById('editMatricula').value,
+                data_vencimento: document.getElementById('editVencimento').value
+            };
+            
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            
+            await enviarParaPlanilha({
+                action: "alunos",
+                ...alunos[index],
+                observacao: "EDITADO"
+            });
+            
+            renderizarAlunos();
+            fecharModal();
+        }
+
+        // Excluir
+        async function excluirAluno(index) {
+            if (!confirm(`Tem certeza que deseja excluir "${alunos[index].nome}"?`)) return;
+            
+            alunos.splice(index, 1);
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            renderizarAlunos();
+        }
+
+        // Busca
+        document.getElementById('busca').addEventListener('input', (e) => {
+            renderizarAlunos(e.target.value);
+        });
+
+        // Função auxiliar
         async function enviarParaPlanilha(dados) {
             const formData = new FormData();
             for (const [chave, valor] of Object.entries(dados)) {
@@ -55,33 +570,9 @@
             }
         }
 
-        document.getElementById('formAluno').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('saveBtn');
-            btn.innerText = "ENVIANDO...";
-            btn.classList.add('loading');
-
-            const dados = {
-                action: "alunos",
-                nome: document.getElementById('nome').value,
-                turma: document.getElementById('turma').value,
-                matricula_rematricula: document.getElementById('matricula').value,
-                data_vencimento: document.getElementById('vencimento').value
-            };
-
-            try {
-                const resultado = await enviarParaPlanilha(dados);
-                console.log("Resposta:", resultado);
-                alert("Aluno cadastrado com sucesso na planilha!");
-                e.target.reset();
-            } catch (err) {
-                console.error("Erro:", err);
-                alert("Erro ao enviar. Verifique o console.");
-            } finally {
-                btn.innerText = "Cadastrar Aluno";
-                btn.classList.remove('loading');
-            }
-        });
+        // Inicializa
+        carregarTurmas();
+        renderizarAlunos();
     </script>
 </body>
 </html>
