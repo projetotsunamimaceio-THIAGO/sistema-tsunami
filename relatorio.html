@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSUNAMI - Relatórios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.1); }
+        .neon-violet { color: #8b5cf6; text-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+        .btn-violet { border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); transition: 0.3s; }
+        .btn-violet:hover { background: #8b5cf6; color: white; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="btn-violet px-4 py-2 rounded-lg text-sm uppercase font-bold text-white">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <h1 class="text-3xl font-bold neon-violet tracking-widest uppercase">Estatísticas</h1>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass p-8 rounded-2xl text-center border-b-4 border-violet-500">
+                <h3 class="text-xs uppercase text-violet-400 mb-2">Total de Alunos</h3>
+                <p id="totalAlunos" class="text-5xl font-bold">0</p>
+            </div>
+            <div class="glass p-8 rounded-2xl text-center border-b-4 border-cyan-500">
+                <h3 class="text-xs uppercase text-cyan-400 mb-2">Turmas Ativas</h3>
+                <p id="totalTurmas" class="text-5xl font-bold">0</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('totalAlunos').innerText = (JSON.parse(localStorage.getItem('tsunami_alunos')) || []).length;
+        document.getElementById('totalTurmas').innerText = (JSON.parse(localStorage.getItem('tsunami_turmas')) || []).length;
+    </script>
+</body>
+</html>

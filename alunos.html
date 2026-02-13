@@ -3,194 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alunos - TSUNAMI</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>TSUNAMI - Alunos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #030b16; color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .header-nav { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .btn-danger { background: #3d141a; color: #ff4b4b; border: 1px solid #5a1e26; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .main-container { display: flex; gap: 30px; width: 100%; max-width: 1100px; align-items: flex-start; }
-        .sidebar-form { width: 350px; background: #0d2137; padding: 25px; border-radius: 20px; border: 1px solid #1a3a5a; position: sticky; top: 20px; }
-        label { display: block; font-size: 11px; color: #8da0b1; margin-bottom: 8px; text-transform: uppercase; }
-        select, input, textarea { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; margin-bottom: 15px; }
-        .btn-import { background: #00d4ff; color: #030b16; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
-        .btn-cancel { background: #1a2a3a; color: white; margin-top: 10px; font-size: 12px; display: none; width: 100%; padding: 10px; border-radius: 10px; border: none; cursor: pointer; }
-        .content-list { flex: 1; }
-        .search-bar { width: 100%; padding: 12px; background: #0d2137; border: 1px solid #1a3a5a; border-radius: 12px; color: white; margin-bottom: 20px; }
-        .aluno-card { background: #0d2137; border: 1px solid #1a3a5a; padding: 15px 20px; border-radius: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; border-left: 4px solid #00d4ff; }
-        .aluno-info { flex: 1; }
-        .aluno-info h4 { font-size: 16px; text-transform: uppercase; color: #fff; }
-        .aluno-info p { font-size: 12px; color: #8da0b1; margin-top: 4px; }
-        .actions { display: flex; gap: 10px; }
-        .btn-icon { background: #1a2a3a; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; }
-        .remat-badge { background: #00ff88; color: #030b16; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 10px; }
-        .data-matricula { color: #00d4ff; }
-        .data-validade { color: #ffd400; }
+        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 255, 0.1); }
+        .btn-fuchsia { border: 1px solid #f5f; background: rgba(255, 0, 255, 0.1); transition: 0.3s; color: white; }
+        .btn-fuchsia:hover { background: #f5f; color: black; }
+        input { background: rgba(255, 255, 255, 0.05)!important; border: 1px solid rgba(255, 0, 255, 0.2)!important; color: white!important; padding: 12px; border-radius: 8px; outline: none; }
+        .loading { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
-<body>
-    <div class="header-nav">
-        <div onclick="window.location.href='pagina-inicial.html'" class="back-btn"><i class="fas fa-arrow-left"></i> VOLTAR</div>
-        <button class="btn-danger" onclick="limparBase()">LIMPAR BASE</button>
-    </div>
+<body class="p-8">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
-    <div class="main-container">
-        <div class="sidebar-form">
-            <h3 id="form-title" style="margin-bottom: 15px; color: #00d4ff; font-size: 18px;">Novo Cadastro</h3>
-            
-            <label>Turma Destino</label>
-            <select id="select-turma"><option value="">Carregando turmas...</option></select>
-
-            <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;"><label>Matrícula</label><input type="date" id="data_matricula"></div>
-                <div style="flex: 1;"><label style="color: #00ff88;">Rematrícula</label><input type="date" id="data_rematricula" style="border-color: #00ff88;"></div>
-            </div>
-
-            <label style="color: #ffd400;">Validade de Acesso</label>
-            <input type="date" id="data_validade_fim" style="color: #ffd400 !important; font-weight: bold; border-color: #ffd400 !important;">
-
-            <label id="label-nomes">Nomes (Um por linha)</label>
-            <textarea id="input_nomes" style="height: 100px;" placeholder="Ex: João Silva..."></textarea>
-
-            <button class="btn-import" onclick="processarFormulario()" id="btn-principal">
-                <i class="fas fa-save"></i> <span id="text-btn">CADASTRAR</span>
-            </button>
-            <button class="btn-cancel" id="btn-cancelar" onclick="cancelarEdicao()">CANCELAR EDIÇÃO</button>
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="btn-fuchsia px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
+            <h1 class="text-2xl font-bold text-fuchsia-400 tracking-widest uppercase">Matrícula de Alunos</h1>
         </div>
 
-        <div class="content-list">
-            <input type="text" class="search-bar" id="search" placeholder="Buscar aluno..." oninput="renderizarAlunos()">
-            <div id="alunos-list">Carregando dados...</div>
-        </div>
+        <form id="formAluno" class="glass p-6 rounded-xl grid grid-cols-1 gap-4">
+            <input type="text" id="nome" placeholder="Nome Completo do Aluno" required>
+            <input type="text" id="turma" placeholder="Nome da Turma" required>
+            <input type="text" id="matricula" placeholder="Número de Matrícula / Rematrícula" required>
+            <input type="date" id="vencimento" required>
+            <button type="submit" id="saveBtn" class="btn-fuchsia p-4 rounded-lg font-bold uppercase">Cadastrar Aluno</button>
+        </form>
     </div>
 
     <script>
-        const URL_SISTEMA = "https://script.google.com/macros/s/AKfycbzLOv51v8QZhJb4YVVzsq8jluarlT2iato9QKKYnlWoIkgAVec_pX_-mSaybRhh7EB8/exec";
-        const URL_TURMAS = "https://script.google.com/macros/s/AKfycbw3Zy6DuTZO61C-RpD6hrnOFjXkFHNZQYDFKLFQAZ4hFVere7K31Y2W9FCBAhsgfOiSvQ/exec";
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
 
-        let linhaRef = "novo";
-        let listaAlunosGeral = [];
-
-        document.getElementById('data_matricula').valueAsDate = new Date();
-
-        async function carregarDados() {
-            const listContainer = document.getElementById('alunos-list');
-            try {
-                const respT = await fetch(URL_TURMAS + "?table=turmas&_=" + Date.now());
-                const listaTurmas = await respT.json();
-                const select = document.getElementById('select-turma');
-                select.innerHTML = '<option value="">Selecione uma turma...</option>';
-                listaTurmas.forEach(t => { if(t.nome) select.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
-
-                const respA = await fetch(URL_SISTEMA + "?table=alunos&_=" + Date.now());
-                listaAlunosGeral = await respA.json();
-                renderizarAlunos();
-            } catch (e) { listContainer.innerHTML = "Erro ao carregar dados."; }
-        }
-
-        function renderizarAlunos() {
-            const busca = document.getElementById('search').value.toUpperCase();
-            const container = document.getElementById('alunos-list');
-            container.innerHTML = '';
+        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
+        async function enviarParaPlanilha(dados) {
+            const formData = new FormData();
+            for (const [chave, valor] of Object.entries(dados)) {
+                formData.append(chave, valor);
+            }
             
-            // ORDENAR ALFABETICAMENTE antes de filtrar e exibir
-            const alunosOrdenados = listaAlunosGeral
-                .filter(a => a.nome && a.nome.toUpperCase().includes(busca))
-                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
-            
-            alunosOrdenados.forEach(a => {
-                container.innerHTML += `
-                    <div class="aluno-card">
-                        <div class="aluno-info">
-                            <h4>${a.nome} ${a.data_rematricula ? '<span class="remat-badge">REMAT</span>' : ''}</h4>
-                            <p>
-                                <i class="fas fa-users"></i> ${a.turma} • 
-                                <span class="data-matricula"><i class="fas fa-calendar-plus"></i> Matrícula: ${a.data_matricula || '-'}</span> • 
-                                <span class="data-validade"><i class="fas fa-calendar-check"></i> Validade: ${a.data_de_validade_fim || '-'}</span>
-                            </p>
-                        </div>
-                        <div class="actions">
-                            <button class="btn-icon" onclick="prepararEdicao('${a.linha_ref}','${a.nome}','${a.turma}','${a.data_matricula}','${a.data_rematricula}','${a.data_de_validade_fim}')"><i class="fas fa-pencil"></i></button>
-                            <button class="btn-icon" onclick="deletarAluno('${a.linha_ref}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
-                        </div>
-                    </div>`;
+            const resposta = await fetch(URL_SCRIPT, {
+                method: 'POST',
+                body: formData
             });
-        }
-
-        async function processarFormulario() {
-            const nomesStr = document.getElementById('input_nomes').value.trim();
-            if (!nomesStr) return alert("Insira os nomes!");
-
-            document.getElementById('btn-principal').disabled = true;
-            document.getElementById('text-btn').innerText = "SALVANDO...";
-
-            const nomes = linhaRef !== "novo" ? [nomesStr] : nomesStr.split('\n');
-            for (let n of nomes) {
-                if (!n.trim()) continue;
-                await fetch(URL_SISTEMA, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
-                        action: "upsert",
-                        linha: linhaRef,
-                        data: {
-                            nome: n.trim().toUpperCase(),
-                            turma: document.getElementById('select-turma').value,
-                            data_matricula: document.getElementById('data_matricula').value,
-                            data_rematricula: document.getElementById('data_rematricula').value,
-                            data_de_validade_fim: document.getElementById('data_validade_fim').value
-                        }
-                    })
-                });
-            }
-            alert("Concluído!");
-            cancelarEdicao();
-            setTimeout(carregarDados, 1500);
-        }
-
-        function prepararEdicao(linha, nome, turma, mat, remat, val) {
-            linhaRef = linha;
-            document.getElementById('form-title').innerText = "Editando Aluno";
-            document.getElementById('input_nomes').value = nome;
-            document.getElementById('select-turma').value = turma;
-            document.getElementById('data_matricula').value = formatarDataParaInput(mat);
-            document.getElementById('data_rematricula').value = formatarDataParaInput(remat);
-            document.getElementById('data_validade_fim').value = formatarDataParaInput(val);
-            document.getElementById('btn-cancelar').style.display = "block";
-            document.getElementById('text-btn').innerText = "SALVAR ALTERAÇÃO";
-        }
-
-        function formatarDataParaInput(d) {
-            if (!d || d === "-") return "";
-            const p = d.split('/');
-            return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : d;
-        }
-
-        function cancelarEdicao() {
-            linhaRef = "novo";
-            document.getElementById('input_nomes').value = '';
-            document.getElementById('btn-cancelar').style.display = "none";
-            document.getElementById('btn-principal').disabled = false;
-            document.getElementById('text-btn').innerText = "CADASTRAR";
-        }
-
-        async function deletarAluno(linha) {
-            if (confirm("Excluir?")) {
-                await fetch(URL_SISTEMA, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "delete", linha: linha }) });
-                setTimeout(carregarDados, 1500);
+            
+            const texto = await resposta.text();
+            try {
+                return JSON.parse(texto);
+            } catch (e) {
+                return { result: "success" };
             }
         }
 
-        async function limparBase() {
-            if (confirm("Apagar TUDO?")) {
-                await fetch(URL_SISTEMA, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "clear" }) });
-                setTimeout(carregarDados, 1500);
-            }
-        }
+        document.getElementById('formAluno').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "ENVIANDO...";
+            btn.classList.add('loading');
 
-        window.onload = carregarDados;
+            const dados = {
+                action: "alunos",
+                nome: document.getElementById('nome').value,
+                turma: document.getElementById('turma').value,
+                matricula_rematricula: document.getElementById('matricula').value,
+                data_vencimento: document.getElementById('vencimento').value
+            };
+
+            try {
+                const resultado = await enviarParaPlanilha(dados);
+                console.log("Resposta:", resultado);
+                alert("Aluno cadastrado com sucesso na planilha!");
+                e.target.reset();
+            } catch (err) {
+                console.error("Erro:", err);
+                alert("Erro ao enviar. Verifique o console.");
+            } finally {
+                btn.innerText = "Cadastrar Aluno";
+                btn.classList.remove('loading');
+            }
+        });
     </script>
 </body>
 </html>

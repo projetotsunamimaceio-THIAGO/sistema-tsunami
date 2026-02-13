@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>TSUNAMI - Projeto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(251, 191, 36, 0.2); }
+        .btn-amber { border: 1px solid #fbbf24; background: rgba(251, 191, 36, 0.1); color: #fbbf24; transition: 0.3s; }
+        .btn-amber:hover { background: #fbbf24; color: black; }
+    </style>
+</head>
+<body class="p-8">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') window.location.href = 'login.html';</script>
+
+    <div class="max-w-xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="btn-amber px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
+            <h1 class="text-2xl font-bold text-amber-400 tracking-widest uppercase">Projeto</h1>
+        </div>
+
+        <div class="glass p-6 rounded-xl space-y-4">
+            <h2 class="text-center text-xs uppercase tracking-[0.3em] text-gray-400">Lançar Frequência</h2>
+            <input type="text" id="nomeAluno" placeholder="Nome do Aluno" class="w-full p-3 bg-white/5 border border-amber-500/30 rounded outline-none text-white">
+            
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="enviarFrequencia('Terça')" class="btn-amber p-2 rounded text-[10px] font-bold">TERÇA</button>
+                <button onclick="enviarFrequencia('Sexta')" class="btn-amber p-2 rounded text-[10px] font-bold">SEXTA</button>
+                <button onclick="enviarFrequencia('Sábado')" class="btn-amber p-2 rounded text-[10px] font-bold">SÁBADO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+
+        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
+        async function enviarParaPlanilha(dados) {
+            const formData = new FormData();
+            for (const [chave, valor] of Object.entries(dados)) {
+                formData.append(chave, valor);
+            }
+            
+            const resposta = await fetch(URL_SCRIPT, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const texto = await resposta.text();
+            try {
+                return JSON.parse(texto);
+            } catch (e) {
+                return { result: "success" };
+            }
+        }
+
+        async function enviarFrequencia(dia) {
+            const nome = document.getElementById('nomeAluno').value;
+            if(!nome) return alert("Por favor, digite o nome do aluno.");
+
+            const status = confirm(`Confirmar presença para ${nome} na ${dia}?`) ? "Presente" : "Faltou";
+
+            const dados = {
+                action: "frequencia",
+                nome: nome,
+                status: status,
+                justificativa: "Projeto - " + dia
+            };
+
+            try {
+                const resultado = await enviarParaPlanilha(dados);
+                console.log("Resposta:", resultado);
+                alert("Frequência de " + dia + " enviada com sucesso!");
+                document.getElementById('nomeAluno').value = "";
+            } catch (e) {
+                console.error("Erro:", e);
+                alert("Erro ao conectar com a planilha.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSUNAMI - Alertas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+            color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh;
+        }
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); 
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+        .neon-text-red { color: #f43f5e; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+        .btn-red {
+            border: 1px solid #f43f5e; background: rgba(244, 63, 94, 0.1); transition: all 0.3s;
+        }
+        .btn-red:hover { background: #f43f5e; color: white; box-shadow: 0 0 15px rgba(244, 63, 94, 0.5); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="btn-red px-4 py-2 rounded-lg text-sm uppercase font-bold text-white">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <h1 class="text-3xl font-bold neon-text-red tracking-widest uppercase">Alertas de Evasão</h1>
+        </div>
+
+        <div class="glass p-6 rounded-2xl border-l-4 border-rose-500 mb-6">
+            <h2 class="text-rose-400 font-bold mb-2 uppercase text-sm">Monitoramento Automático</h2>
+            <p class="text-gray-400 text-xs">Alunos com mais de 5 faltas consecutivas aparecem aqui.</p>
+        </div>
+
+        <div id="listaAlertas" class="grid grid-cols-1 gap-4">
+            </div>
+    </div>
+
+    <script>
+        function carregarAlertas() {
+            const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+            const lista = document.getElementById('listaAlertas');
+            
+            // Simulação de lógica: alunos com campo 'faltas' > 5
+            const evasao = alunos.filter(a => a.faltas >= 5);
+
+            if(evasao.length === 0) {
+                lista.innerHTML = `<div class="text-center p-10 text-gray-500 uppercase text-xs tracking-widest">Nenhum alerta crítico no momento</div>`;
+                return;
+            }
+
+            lista.innerHTML = evasao.map(a => `
+                <div class="glass p-5 rounded-xl border-l-4 border-rose-500 flex justify-between items-center animate-pulse">
+                    <div>
+                        <h3 class="font-bold text-white uppercase">${a.nome}</h3>
+                        <p class="text-rose-400 text-xs">${a.turma} — ${a.faltas} FALTAS SEGUIDAS</p>
+                    </div>
+                    <i class="fas fa-exclamation-triangle text-rose-500 text-xl"></i>
+                </div>
+            `).join('');
+        }
+        carregarAlertas();
+    </script>
+</body>
+</html>

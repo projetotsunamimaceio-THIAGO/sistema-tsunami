@@ -3,204 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tsunami Frequência - Acesso</title>
+    <title>TSUNAMI - Gestão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --bg-color: #050a12;
-            --card-bg: #0d1520;
-            --input-bg: #09101a;
-            --cyan: #00e5ff;
-            --text-color: #ffffff;
-            --gray-text: #667681;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .login-card {
-            background-color: var(--card-bg);
-            padding: 40px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #1a2635;
-        }
-
-        .logo-container {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .logo-container img {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid var(--cyan);
-            filter: drop-shadow(0 0 10px var(--cyan));
-        }
-
-        h2 {
-            color: var(--cyan);
-            letter-spacing: 2px;
-            margin-bottom: 30px;
-            font-weight: 800;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            position: relative;
-            text-align: left;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--input-bg);
-            border: 1px solid #1a2635;
-            border-radius: 8px;
-            color: white;
-            box-sizing: border-box;
-            outline: none;
-            transition: border 0.3s;
-            text-align: center;
-        }
-
-        .input-group input:focus {
-            border-color: var(--cyan);
-        }
-
-        .btn-entrar {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--cyan);
-            border: none;
-            border-radius: 8px;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 16px;
-            transition: opacity 0.3s;
-        }
-
-        .btn-entrar:hover {
-            opacity: 0.9;
-        }
-
-        .footer-text {
-            margin-top: 30px;
-            color: var(--gray-text);
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-
-        .loader {
-            display: none;
-            margin: 10px auto;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--cyan);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; min-height: 100vh; align-items: center; justify-content: center; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 255, 0.1); }
+        .nav-card { transition: all 0.2s ease; cursor: pointer; }
+        .nav-card:hover { transform: scale(1.03); background: rgba(0, 255, 255, 0.08); border-color: rgba(0, 255, 255, 0.3); }
+        .logo-img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 3px solid #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); }
+        .neon-text { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
     </style>
 </head>
-<body>
+<body class="p-6">
+    <script>
+        if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }
+        function logout() { sessionStorage.removeItem('tsunami_logged'); window.location.href = 'login.html'; }
+    </script>
 
-    <div class="login-card">
-        <div class="logo-container">
-            <img src="logo.png" alt="Logo Tsunami">
+    <header class="text-center mb-10">
+        <div class="flex justify-center mb-4">
+            <img src="logo.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/130?text=LOGO'">
         </div>
-        <h2>ACESSO</h2>
+        <h1 class="text-5xl md:text-7xl font-bold tracking-[0.2em] border-b-2 border-cyan-400 inline-block mb-2 neon-text">TSUNAMI</h1>
+        <p class="text-sm md:text-md uppercase tracking-[0.5em] text-cyan-300">FREQUÊNCIA - GESTÃO</p>
+    </header>
 
-        <div class="input-group">
-            <input type="text" id="usuario" placeholder="Utilizador">
-        </div>
-
-        <div class="input-group">
-            <input type="password" id="senha" placeholder="Palavra-passe">
-        </div>
-
-        <button class="btn-entrar" onclick="realizarLogin()">Entrar</button>
-        <div id="loader" class="loader"></div>
-
-        <div class="footer-text">TSUNAMI FREQUÊNCIA V2.0</div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl">
+        <a href="turmas.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-cyan-400 text-center">
+            <i class="fas fa-users-cog text-2xl mb-2 text-cyan-400"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-300">Turmas</h3>
+        </a>
+        <a href="alunos.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-fuchsia-500 text-center">
+            <i class="fas fa-user-plus text-2xl mb-2 text-fuchsia-400"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Alunos</h3>
+        </a>
+        <a href="alerta.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-rose-500 text-center">
+            <i class="fas fa-exclamation-triangle text-2xl mb-2 text-rose-500"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">Alertas</h3>
+        </a>
+        <a href="arena.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-emerald-400 text-center">
+            <i class="fas fa-check-double text-2xl mb-2 text-emerald-400"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Arena</h3>
+        </a>
+        <a href="projeto.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-amber-400 text-center">
+            <i class="fas fa-project-diagram text-2xl mb-2 text-amber-400"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">Projeto</h3>
+        </a>
+        <a href="relatorio.html" class="nav-card glass p-5 rounded-lg flex flex-col items-center border-l-4 border-violet-500 text-center">
+            <i class="fas fa-chart-pie text-2xl mb-2 text-violet-400"></i>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-violet-300">Relatórios</h3>
+        </a>
     </div>
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
-
-        function realizarLogin() {
-            const nome = document.getElementById('usuario').value;
-            const senha = document.getElementById('senha').value;
-            const loader = document.getElementById('loader');
-            const btn = document.querySelector('.btn-entrar');
-
-            if (!nome || !senha) {
-                alert("Por favor, preencha todos os campos.");
-                return;
-            }
-
-            loader.style.display = "block";
-            btn.style.display = "none";
-
-            const callbackName = 'loginCallback_' + Date.now();
-            
-            window[callbackName] = function(res) {
-                loader.style.display = "none";
-                btn.style.display = "block";
-                
-                if (res.status === "success") {
-                    localStorage.setItem('userLogado', nome);
-                    window.location.href = "ts.1pagina-inicial.html";
-                } else {
-                    alert(res.message || "Erro no login");
-                }
-                
-                delete window[callbackName];
-                if (script.parentNode) {
-                    script.parentNode.removeChild(script);
-                }
-            };
-
-            const params = `action=login&nome=${encodeURIComponent(nome)}&senha=${encodeURIComponent(senha)}&callback=${callbackName}`;
-            const script = document.createElement('script');
-            script.src = SCRIPT_URL + "?" + params;
-            
-            script.onerror = function() {
-                loader.style.display = "none";
-                btn.style.display = "block";
-                alert("Erro de conexão com o servidor");
-                delete window[callbackName];
-            };
-            
-            document.body.appendChild(script);
-        }
-
-        document.getElementById('senha').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') realizarLogin();
-        });
-        document.getElementById('usuario').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') realizarLogin();
-        });
-    </script>
+    <button onclick="logout()" class="mt-12 text-rose-500 font-bold text-[10px] uppercase tracking-widest hover:underline">Sair do Sistema</button>
 </body>
 </html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSUNAMI - Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
+        .btn-emerald { border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); transition: 0.3s; color: white; }
+        .btn-emerald:hover { background: #10b981; color: black; }
+        .btn-rose { border: 1px solid #f43f5e; background: rgba(244, 63, 94, 0.1); transition: 0.3s; color: white; }
+        .btn-rose:hover { background: #f43f5e; color: black; }
+    </style>
+</head>
+<body class="p-8">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
+            <h1 class="text-2xl font-bold text-emerald-400 tracking-widest uppercase">Arena</h1>
+        </div>
+
+        <div class="glass p-6 rounded-xl">
+            <input type="text" id="nomeFrequencia" placeholder="Nome do Aluno para Chamada" class="w-full bg-white/5 border border-white/10 p-3 rounded mb-4 outline-none text-white">
+            <div class="flex gap-4">
+                <button onclick="enviarPresenca('Presente')" class="flex-1 btn-emerald p-3 rounded font-bold uppercase">Presente</button>
+                <button onclick="enviarPresenca('Faltou')" class="flex-1 btn-rose p-3 rounded font-bold uppercase">Faltou</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+
+        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
+        async function enviarParaPlanilha(dados) {
+            const formData = new FormData();
+            for (const [chave, valor] of Object.entries(dados)) {
+                formData.append(chave, valor);
+            }
+            
+            const resposta = await fetch(URL_SCRIPT, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const texto = await resposta.text();
+            try {
+                return JSON.parse(texto);
+            } catch (e) {
+                return { result: "success" };
+            }
+        }
+
+        async function enviarPresenca(status) {
+            const nome = document.getElementById('nomeFrequencia').value;
+            if(!nome) return alert("Digite o nome do aluno");
+
+            const dados = {
+                action: "frequencia",
+                nome: nome,
+                status: status,
+                justificativa: "Arena"
+            };
+
+            try {
+                const resultado = await enviarParaPlanilha(dados);
+                console.log("Resposta:", resultado);
+                alert("Frequência registrada: " + status);
+                document.getElementById('nomeFrequencia').value = "";
+            } catch (e) {
+                console.error("Erro:", e);
+                alert("Erro ao registrar frequência");
+            }
+        }
+    </script>
+</body>
+</html>

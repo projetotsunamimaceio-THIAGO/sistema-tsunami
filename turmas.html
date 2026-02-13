@@ -3,161 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Turmas - TSUNAMI</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>TSUNAMI - Turmas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #030b16; color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .header-nav { width: 100%; max-width: 1100px; display: flex; justify-content: flex-start; margin-bottom: 20px; }
-        .back-btn { color: #00d4ff; text-decoration: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .form-container { background: #0d2137; padding: 30px; border-radius: 20px; border: 1px solid #1a3a5a; width: 100%; max-width: 1100px; margin-bottom: 40px; }
-        .input-group-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end; }
-        .input-item { flex: 1; min-width: 140px; }
-        label { display: block; font-size: 11px; color: #8da0b1; margin-bottom: 8px; text-transform: uppercase; }
-        input { width: 100%; padding: 12px; background: #030b16; border: 1px solid #1a3a5a; border-radius: 10px; color: white; outline: none; }
-        .day-btn { padding: 10px 15px; background: #1a2a3a; border-radius: 8px; cursor: pointer; font-size: 10px; border: 1px solid transparent; transition: 0.3s; }
-        .day-btn.active { background: #00d4ff; color: #030b16; font-weight: bold; }
-        .btn-create { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; height: 45px; }
-        .turmas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; width: 100%; max-width: 1100px; }
-        .turma-card { background: #0d2137; border-left: 5px solid #00d4ff; border-radius: 15px; padding: 20px; }
-        .actions { display: flex; gap: 8px; }
-        .btn-icon { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
-        .tag { background: rgba(0,212,255,0.1); color: #00d4ff; padding: 4px 8px; border-radius: 5px; font-size: 10px; margin-right: 4px; border: 1px solid rgba(0,212,255,0.2); }
+        body { 
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            min-height: 100vh;
+        }
+        .glass { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(0, 255, 255, 0.1); 
+        }
+        .btn-cyan { 
+            border: 1px solid #00ffff; 
+            background: rgba(0, 255, 255, 0.1); 
+            transition: all 0.3s; 
+            color: #00ffff; 
+        }
+        .btn-cyan:hover { 
+            background: #00ffff; 
+            color: black; 
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        .btn-cyan.active {
+            background: #00ffff;
+            color: black;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        input { 
+            background: rgba(255, 255, 255, 0.05) !important; 
+            border: 1px solid rgba(0, 255, 255, 0.2) !important; 
+            color: white !important; 
+        }
+        input:focus {
+            border-color: #00ffff !important;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        .day-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .day-btn:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+        .day-btn.selected {
+            background: #00ffff;
+            color: black;
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+        .turma-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-left: 4px solid #00ffff;
+            transition: all 0.3s;
+        }
+        .turma-card:hover {
+            background: rgba(0, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+        .loading { 
+            opacity: 0.5; 
+            pointer-events: none; 
+        }
+        .empty-state {
+            color: rgba(0, 255, 255, 0.4);
+            font-style: italic;
+        }
+        .edit-btn {
+            color: #fbbf24;
+            transition: 0.3s;
+        }
+        .edit-btn:hover {
+            color: #f59e0b;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+        .delete-btn {
+            color: #f43f5e;
+            transition: 0.3s;
+        }
+        .delete-btn:hover {
+            color: #e11d48;
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
     </style>
 </head>
-<body>
-    <div class="header-nav"><div onclick="window.location.href='pagina-inicial.html'" class="back-btn"><i class="fas fa-arrow-left"></i> VOLTAR</div></div>
-    
-    <div class="form-container">
-        <div class="input-group-row">
-            <div class="input-item"><label>Nome da Turma</label><input type="text" id="nome_turma"></div>
-            <div class="input-item"><label>Início</label><input type="time" id="hora_inicio"></div>
-            <div class="input-item"><label>Fim</label><input type="time" id="hora_fim"></div>
-            <div class="input-item"><label>Vagas</label><input type="number" id="capacidade"></div>
-            <button class="btn-create" onclick="salvarTurma()" id="btn-main"><span id="btn-text">CRIAR TURMA</span></button>
+<body class="p-4 md:p-8">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <a href="index.html" class="btn-cyan px-4 py-2 rounded-lg text-xs uppercase font-bold">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            </a>
+            <h1 class="text-2xl md:text-3xl font-bold text-cyan-400 tracking-widest uppercase text-center flex-1">
+                <i class="fas fa-users-cog mr-3"></i>Gerenciar Turmas
+            </h1>
+            <div class="w-20"></div>
         </div>
-        <div id="dias-container" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
-            <div class="day-btn" onclick="this.classList.toggle('active')">SEGUNDA</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">TERÇA</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">QUARTA</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">QUINTA</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">SEXTA</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">SÁBADO</div>
-            <div class="day-btn" onclick="this.classList.toggle('active')">DOMINGO</div>
+
+        <!-- Formulário de Cadastro -->
+        <div class="glass p-6 rounded-2xl mb-8">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-cyan-300 mb-6 border-b border-cyan-500/20 pb-2">
+                Nova Turma
+            </h2>
+            
+            <form id="formTurma" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <!-- Nome -->
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Nome da Turma</label>
+                    <input type="text" id="nome" placeholder="Ex: SUB-15" class="w-full p-3 rounded-lg outline-none uppercase" required>
+                </div>
+
+                <!-- Horário Início -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Horário Início</label>
+                    <input type="time" id="inicio" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Horário Fim -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Horário Término</label>
+                    <input type="time" id="fim" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Vagas -->
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Capacidade</label>
+                    <input type="number" id="vagas" placeholder="20" min="1" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+
+                <!-- Botão Criar -->
+                <div class="md:col-span-3">
+                    <button type="submit" id="saveBtn" class="w-full btn-cyan p-3 rounded-lg uppercase font-bold tracking-wider flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i> Criar Turma
+                    </button>
+                </div>
+
+                <!-- Dias da Semana -->
+                <div class="md:col-span-12 mt-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-3">Dias de Treino</label>
+                    <div class="flex flex-wrap gap-2" id="diasContainer">
+                        <button type="button" class="day-btn" data-dia="Seg">Segunda</button>
+                        <button type="button" class="day-btn" data-dia="Ter">Terça</button>
+                        <button type="button" class="day-btn" data-dia="Qua">Quarta</button>
+                        <button type="button" class="day-btn" data-dia="Qui">Quinta</button>
+                        <button type="button" class="day-btn" data-dia="Sex">Sexta</button>
+                        <button type="button" class="day-btn" data-dia="Sáb">Sábado</button>
+                        <button type="button" class="day-btn" data-dia="Dom">Domingo</button>
+                    </div>
+                    <input type="hidden" id="dias" required>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lista de Turmas -->
+        <div class="glass p-6 rounded-2xl">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-cyan-300 mb-6 border-b border-cyan-500/20 pb-2 flex justify-between items-center">
+                <span>Turmas Cadastradas</span>
+                <span id="totalTurmas" class="text-xs bg-cyan-500/20 px-3 py-1 rounded-full">0 turmas</span>
+            </h2>
+            
+            <div id="listaTurmas" class="space-y-3">
+                <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
+                    <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
+                    Nenhuma turma registrada no sistema.
+                </p>
+            </div>
         </div>
     </div>
 
-    <div class="turmas-grid" id="turmas-list">Carregando turmas...</div>
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wider">Editar Turma</h3>
+            <input type="hidden" id="editIndex">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Novo Nome</label>
+                    <input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase">
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
+                        Cancelar
+                    </button>
+                    <button onclick="salvarEdicao()" class="flex-1 btn-cyan p-3 rounded-lg uppercase text-xs font-bold">
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbw3Zy6DuTZO61C-RpD6hrnOFjXkFHNZQYDFKLFQAZ4hFVere7K31Y2W9FCBAhsgfOiSvQ/exec"; 
-        let linhaSelecionada = "novo";
-        let dadosLocais = [];
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
 
-        async function carregar() {
-            const list = document.getElementById('turmas-list');
-            try {
-                // Técnica para evitar erro de redirecionamento do Google
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                
-                dadosLocais = data;
-                list.innerHTML = '';
-                
-                if(!dadosLocais || dadosLocais.length === 0) { 
-                    list.innerHTML = "Nenhuma turma cadastrada."; 
-                    return; 
-                }
+        // Seleção de dias
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('selected');
+                atualizarCampoDias();
+            });
+        });
 
-                dadosLocais.forEach(t => {
-                    const diasHTML = t.dias ? t.dias.split(',').map(d => `<span class="tag">${d}</span>`).join('') : '';
-                    list.innerHTML += `
-                    <div class="turma-card">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="font-weight:bold">${t.nome || 'Sem Nome'}</span>
-                            <div class="actions">
-                                <button class="btn-icon" onclick="editar('${t.linha_ref}')"><i class="fas fa-edit" style="color:#00d4ff"></i></button>
-                                <button class="btn-icon" onclick="deletar('${t.linha_ref}')"><i class="fas fa-trash" style="color:#ff4b4b"></i></button>
-                            </div>
-                        </div>
-                        <div style="margin-bottom:10px;">${diasHTML}</div>
-                        <div style="font-size:0.9em; color:#8da0b1">${t.hora_inicio} - ${t.hora_fim} | Vagas: ${t.capacidade}</div>
-                    </div>`;
-                });
-            } catch (e) { 
-                console.error("Erro no fetch:", e);
-                list.innerHTML = "Erro ao conectar com a planilha. Verifique a publicação do Script.";
-            }
+        function atualizarCampoDias() {
+            const selecionados = Array.from(document.querySelectorAll('.day-btn.selected'))
+                .map(btn => btn.dataset.dia);
+            document.getElementById('dias').value = selecionados.join('/');
         }
 
-        async function salvarTurma() {
-            const btn = document.getElementById('btn-main');
-            const nome = document.getElementById('nome_turma').value;
-            if(!nome) return alert("Insira o nome!");
+        // Renderizar lista
+        function renderizarTurmas() {
+            const container = document.getElementById('listaTurmas');
+            const totalEl = document.getElementById('totalTurmas');
+            
+            // Ordenar alfabeticamente
+            turmas.sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            totalEl.textContent = `${turmas.length} turma${turmas.length !== 1 ? 's' : ''}`;
+            
+            if (turmas.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
+                        <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
+                        Nenhuma turma registrada no sistema.
+                    </p>
+                `;
+                return;
+            }
 
-            btn.disabled = true;
-            document.getElementById('btn-text').innerText = "ENVIANDO...";
+            container.innerHTML = turmas.map((turma, index) => `
+                <div class="turma-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-cyan-300 uppercase tracking-wider mb-1">${turma.nome}</h3>
+                        <div class="flex flex-wrap gap-3 text-xs text-gray-400">
+                            <span><i class="far fa-clock mr-1 text-cyan-500"></i>${turma.inicio} às ${turma.fim}</span>
+                            <span><i class="far fa-calendar mr-1 text-cyan-500"></i>${turma.dias}</span>
+                            <span><i class="fas fa-users mr-1 text-cyan-500"></i>${turma.vagas} vagas</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="editarTurma(${index})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30" title="Editar nome">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="excluirTurma(${index})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30" title="Excluir turma">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-            const payload = {
-                action: "upsert",
-                linha: linhaSelecionada,
-                data: {
-                    nome: nome,
-                    hora_inicio: document.getElementById('hora_inicio').value,
-                    hora_fim: document.getElementById('hora_fim').value,
-                    capacidade: document.getElementById('capacidade').value,
-                    dias: Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.innerText).join(',')
-                }
+        // Cadastrar
+        document.getElementById('formTurma').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            
+            const dias = document.getElementById('dias').value;
+            if (!dias) {
+                alert('Selecione pelo menos um dia da semana!');
+                return;
+            }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+            btn.classList.add('loading');
+
+            const novaTurma = {
+                action: "turmas",
+                nome: document.getElementById('nome').value.toUpperCase(),
+                inicio: document.getElementById('inicio').value,
+                fim: document.getElementById('fim').value,
+                vagas: document.getElementById('vagas').value,
+                dias: dias
             };
 
+            // Salva localmente
+            turmas.push({
+                nome: novaTurma.nome,
+                inicio: novaTurma.inicio,
+                fim: novaTurma.fim,
+                vagas: novaTurma.vagas,
+                dias: novaTurma.dias
+            });
+            localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+
+            // Envia para planilha
             try {
-                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                setTimeout(() => { 
-                    alert("Sucesso!"); 
-                    limpar(); 
-                    carregar(); 
-                }, 1000);
+                await enviarParaPlanilha(novaTurma);
+            } catch (err) {
+                console.error('Erro ao sincronizar:', err);
+            }
+
+            // Limpa e atualiza
+            e.target.reset();
+            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected'));
+            atualizarCampoDias();
+            renderizarTurmas();
+            
+            btn.innerHTML = '<i class="fas fa-plus"></i> Criar Turma';
+            btn.classList.remove('loading');
+        });
+
+        // Editar
+        function editarTurma(index) {
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editNome').value = turmas[index].nome;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function fecharModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        async function salvarEdicao() {
+            const index = document.getElementById('editIndex').value;
+            const novoNome = document.getElementById('editNome').value.toUpperCase();
+            
+            if (!novoNome) return alert('Digite um nome válido!');
+            
+            turmas[index].nome = novoNome;
+            localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+            
+            // Atualiza na planilha (envia turma completa como nova linha - simplificado)
+            await enviarParaPlanilha({
+                action: "turmas",
+                nome: novoNome,
+                inicio: turmas[index].inicio,
+                fim: turmas[index].fim,
+                vagas: turmas[index].vagas,
+                dias: turmas[index].dias,
+                observacao: "EDITADO"
+            });
+            
+            renderizarTurmas();
+            fecharModal();
+        }
+
+        // Excluir
+        async function excluirTurma(index) {
+            if (!confirm(`Tem certeza que deseja excluir a turma "${turmas[index].nome}"?`)) return;
+            
+            turmas.splice(index, 1);
+            localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+            renderizarTurmas();
+        }
+
+        // Função auxiliar para enviar
+        async function enviarParaPlanilha(dados) {
+            const formData = new FormData();
+            for (const [chave, valor] of Object.entries(dados)) {
+                formData.append(chave, valor);
+            }
+            
+            const resposta = await fetch(URL_SCRIPT, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const texto = await resposta.text();
+            try {
+                return JSON.parse(texto);
             } catch (e) {
-                alert("Erro ao salvar.");
-                btn.disabled = false;
+                return { result: "success" };
             }
         }
 
-        async function deletar(linha) {
-            if(!confirm("Excluir?")) return;
-            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: "delete", linha: linha.toString() }) });
-            setTimeout(carregar, 1000);
-        }
-
-        function editar(linha) {
-            const t = dadosLocais.find(x => x.linha_ref.toString() === linha.toString());
-            if(!t) return;
-            linhaSelecionada = linha;
-            document.getElementById('nome_turma').value = t.nome || '';
-            document.getElementById('hora_inicio').value = t.hora_inicio || '';
-            document.getElementById('hora_fim').value = t.hora_fim || '';
-            document.getElementById('capacidade').value = t.capacidade || '';
-            document.getElementById('btn-text').innerText = "ATUALIZAR";
-            
-            const diasArr = t.dias ? t.dias.split(',') : [];
-            document.querySelectorAll('.day-btn').forEach(btn => {
-                btn.classList.toggle('active', diasArr.includes(btn.innerText.trim()));
-            });
-            window.scrollTo(0,0);
-        }
-
-        function limpar() {
-            linhaSelecionada = "novo";
-            document.getElementById('nome_turma').value = '';
-            document.getElementById('hora_inicio').value = '';
-            document.getElementById('hora_fim').value = '';
-            document.getElementById('capacidade').value = '';
-            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-text').innerText = "CRIAR TURMA";
-            document.getElementById('btn-main').disabled = false;
-        }
-
-        window.onload = carregar;
+        // Inicializa
+        renderizarTurmas();
     </script>
 </body>
 </html>
