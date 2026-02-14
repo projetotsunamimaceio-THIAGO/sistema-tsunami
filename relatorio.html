@@ -15,6 +15,9 @@
         .btn-violet:hover { background: #8b5cf6; color: white; }
         .chart-container { position: relative; height: 350px; width: 100%; }
         select, input[type="month"] { background: #1a1a2e; border: 1px solid #8b5cf6; color: white; padding: 5px 10px; border-radius: 8px; outline: none; font-size: 12px; }
+        .table-ranking { width: 100%; font-size: 13px; }
+        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -30,14 +33,12 @@
                     <option value="periodo">Por Período</option>
                     <option value="especifico">Mês Específico</option>
                 </select>
-                
                 <select id="filtroPeriodo" onchange="processarDados()">
                     <option value="30">Últimos 30 dias</option>
                     <option value="90">Últimos 90 dias</option>
                     <option value="180">Últimos 180 dias</option>
                     <option value="365">Último Ano</option>
                 </select>
-
                 <input type="month" id="filtroMes" class="hidden" onchange="processarDados()">
             </div>
         </div>
@@ -53,20 +54,35 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div class="glass p-6 rounded-2xl">
                 <h3 class="text-sm font-bold uppercase mb-4 text-violet-300">Alunos por Turma</h3>
                 <div class="chart-container"><canvas id="chartPizza"></canvas></div>
             </div>
-
             <div class="glass p-6 rounded-2xl">
                 <h3 class="text-sm font-bold uppercase mb-4 text-cyan-300">Presença vs Faltas</h3>
                 <div class="chart-container"><canvas id="chartColunas"></canvas></div>
             </div>
-
             <div class="glass p-6 rounded-2xl md:col-span-2">
                 <h3 class="text-sm font-bold uppercase mb-4 text-emerald-300">Evolução de Presenças</h3>
                 <div class="chart-container"><canvas id="chartLinhas"></canvas></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="glass p-6 rounded-2xl border-t-2 border-emerald-500">
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Mais Frequentes</h3>
+                <table class="table-ranking" id="rankingPresenca">
+                    <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="glass p-6 rounded-2xl border-t-2 border-rose-500">
+                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Mais Faltas</h3>
+                <table class="table-ranking" id="rankingFaltas">
+                    <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -84,36 +100,12 @@
 
         function initCharts() {
             const config = { 
-                plugins: { 
-                    legend: { labels: { color: 'white', font: { size: 10 }, usePointStyle: true } },
-                    tooltip: { mode: 'index', intersect: false }
-                }, 
+                plugins: { legend: { labels: { color: 'white', font: { size: 10 }, usePointStyle: true } } }, 
                 maintainAspectRatio: false 
             };
-            
-            charts.pizza = new Chart(document.getElementById('chartPizza'), {
-                type: 'pie',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: CORES_PALETA }] },
-                options: config
-            });
-
-            charts.colunas = new Chart(document.getElementById('chartColunas'), {
-                type: 'bar',
-                data: { labels: [], datasets: [{ label: 'Presenças', backgroundColor: '#10b981', data: [] }, { label: 'Faltas', backgroundColor: '#f43f5e', data: [] }] },
-                options: { ...config, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' }, beginAtZero: true } } }
-            });
-
-            charts.linhas = new Chart(document.getElementById('chartLinhas'), {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: { 
-                    ...config, 
-                    scales: { 
-                        x: { ticks: { color: 'white' } }, 
-                        y: { ticks: { color: 'white' }, beginAtZero: true, stepSize: 1 } 
-                    } 
-                }
-            });
+            charts.pizza = new Chart(document.getElementById('chartPizza'), { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: CORES_PALETA }] }, options: config });
+            charts.colunas = new Chart(document.getElementById('chartColunas'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Presenças', backgroundColor: '#10b981', data: [] }, { label: 'Faltas', backgroundColor: '#f43f5e', data: [] }] }, options: { ...config, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' }, beginAtZero: true } } } });
+            charts.linhas = new Chart(document.getElementById('chartLinhas'), { type: 'line', data: { labels: [], datasets: [] }, options: { ...config, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' }, beginAtZero: true, stepSize: 1 } } } });
         }
 
         function processarDados() {
@@ -123,7 +115,13 @@
             const agora = new Date();
             
             const mapaAlunos = {};
-            alunos.forEach(a => { mapaAlunos[a.nome.trim().toUpperCase()] = a.turma || "S/T"; });
+            const statsIndividuais = {}; // { NOME: { P: 0, F: 0, turma: "" } }
+
+            alunos.forEach(a => { 
+                const nomeKey = a.nome.trim().toUpperCase();
+                mapaAlunos[nomeKey] = a.turma || "S/T";
+                statsIndividuais[nomeKey] = { P: 0, F: 0, turma: a.turma || "S/T", nomeOriginal: a.nome };
+            });
             
             const turmasUnicas = [...new Set(alunos.map(a => a.turma || "S/T"))].sort();
             document.getElementById('totalAlunos').innerText = alunos.length;
@@ -150,8 +148,7 @@
                 let incluir = false;
                 if (tipoFiltro === 'periodo') {
                     const dias = parseInt(document.getElementById('filtroPeriodo').value);
-                    const limite = new Date();
-                    limite.setDate(agora.getDate() - dias);
+                    const limite = new Date(); limite.setDate(agora.getDate() - dias);
                     if (dataF >= limite) incluir = true;
                 } else {
                     const mesSel = document.getElementById('filtroMes').value;
@@ -166,12 +163,15 @@
                     if (status === 'P' || status === 'A') {
                         dadosTurmaColunas[tNome].P++;
                         evolucaoPorData[dataISO][tNome] = (evolucaoPorData[dataISO][tNome] || 0) + 1;
+                        if (statsIndividuais[nomeRaw]) statsIndividuais[nomeRaw].P++;
                     } else if (status === 'F') {
                         dadosTurmaColunas[tNome].F++;
+                        if (statsIndividuais[nomeRaw]) statsIndividuais[nomeRaw].F++;
                     }
                 }
             });
 
+            // Gráficos de Colunas e Linhas
             charts.colunas.data.labels = Object.keys(dadosTurmaColunas);
             charts.colunas.data.datasets[0].data = Object.values(dadosTurmaColunas).map(d => d.P);
             charts.colunas.data.datasets[1].data = Object.values(dadosTurmaColunas).map(d => d.F);
@@ -179,48 +179,24 @@
 
             const datasOrd = Object.keys(evolucaoPorData).sort();
             charts.linhas.data.labels = datasOrd.map(d => d.split('-').reverse().slice(0,2).join('/'));
+            const dataPointsGeral = datasOrd.map(dt => turmasUnicas.reduce((s, t) => s + (evolucaoPorData[dt][t] || 0), 0));
 
-            const datasetsFinal = [];
-            
-            // CORREÇÃO FINAL: O Geral é a soma rigorosa apenas das turmas processadas
-            const dataPointsGeral = datasOrd.map(dt => {
-                let somaDoDia = 0;
-                turmasUnicas.forEach(t => {
-                    somaDoDia += (evolucaoPorData[dt][t] || 0);
-                });
-                return somaDoDia;
-            });
-
-            datasetsFinal.push({
-                label: "TOTAL GERAL",
-                data: dataPointsGeral,
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 4,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 6,
-                order: 1
-            });
-
+            const datasetsFinal = [{ label: "TOTAL GERAL", data: dataPointsGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 4, fill: true, tension: 0.3, pointRadius: 5 }];
             turmasUnicas.forEach((t, idx) => {
-                const pontosTurma = datasOrd.map(dt => evolucaoPorData[dt][t] || 0);
-                if (pontosTurma.some(v => v > 0)) {
-                    datasetsFinal.push({
-                        label: t,
-                        data: pontosTurma,
-                        borderColor: CORES_PALETA[idx % CORES_PALETA.length],
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 4,
-                        order: 2
-                    });
-                }
+                const pts = datasOrd.map(dt => evolucaoPorData[dt][t] || 0);
+                if (pts.some(v => v > 0)) datasetsFinal.push({ label: t, data: pts, borderColor: CORES_PALETA[idx % CORES_PALETA.length], backgroundColor: 'transparent', borderWidth: 2, tension: 0.3 });
             });
-
             charts.linhas.data.datasets = datasetsFinal;
             charts.linhas.update();
+
+            // Renderizar Rankings
+            const listaStats = Object.values(statsIndividuais);
+            
+            const maisFreq = [...listaStats].sort((a, b) => b.P - a.P).slice(0, 5);
+            document.querySelector('#rankingPresenca tbody').innerHTML = maisFreq.map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-emerald-400">${a.P}</td></tr>`).join('');
+
+            const maisFaltas = [...listaStats].sort((a, b) => b.F - a.F).slice(0, 5);
+            document.querySelector('#rankingFaltas tbody').innerHTML = maisFaltas.map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-rose-400">${a.F}</td></tr>`).join('');
         }
 
         initCharts();
