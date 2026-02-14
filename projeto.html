@@ -2,83 +2,316 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSUNAMI - Projeto</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(251, 191, 36, 0.2); }
-        .btn-amber { border: 1px solid #fbbf24; background: rgba(251, 191, 36, 0.1); color: #fbbf24; transition: 0.3s; }
-        .btn-amber:hover { background: #fbbf24; color: black; }
+        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        
+        /* DESIGN DO PROJETO (AMARELO/AMBER) */
+        .btn-projeto { border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.1); transition: all 0.3s; color: #f59e0b; }
+        .btn-projeto:hover { background: #f59e0b; color: black; }
+        
+        .projeto-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 158, 11, 0.1); border-radius: 16px; }
+        .header-projeto { background: rgba(245, 158, 11, 0.1); border-bottom: 1px solid rgba(245, 158, 11, 0.2); }
+        
+        /* CORES DE STATUS (IGUAL À ARENA) */
+        .freq-btn { width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+        .freq-vazio { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: transparent; }
+        .freq-falta { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; color: #f43f5e; }
+        .freq-presente { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981; }
+        .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
+        .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
+        
+        .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
+        .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+        .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid rgba(245, 158, 11, 0.1); text-align: center; padding: 8px; }
+        .col-atleta { width: 250px; text-align: left; }
+        .col-dia { width: 60px; }
+        .col-faltas { width: 80px; }
+        select { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); color: white; }
     </style>
 </head>
-<body class="p-8">
-    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') window.location.href = 'login.html';</script>
+<body class="p-4 md:p-8">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
-    <div class="max-w-xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <a href="index.html" class="btn-amber px-4 py-2 rounded-lg text-xs font-bold uppercase">Voltar</a>
-            <h1 class="text-2xl font-bold text-amber-400 tracking-widest uppercase">Projeto</h1>
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <a href="index.html" class="btn-projeto px-4 py-2 rounded-lg text-xs uppercase font-bold"><i class="fas fa-arrow-left mr-2"></i>Voltar</a>
+            <h1 class="text-2xl md:text-3xl font-bold text-amber-500 tracking-widest uppercase text-center flex-1"><i class="fas fa-project-diagram mr-3"></i>Frequência Projeto</h1>
+            <div class="w-20"></div>
         </div>
 
-        <div class="glass p-6 rounded-xl space-y-4">
-            <h2 class="text-center text-xs uppercase tracking-[0.3em] text-gray-400">Lançar Frequência</h2>
-            <input type="text" id="nomeAluno" placeholder="Nome do Aluno" class="w-full p-3 bg-white/5 border border-amber-500/30 rounded outline-none text-white">
-            
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="enviarFrequencia('Terça')" class="btn-amber p-2 rounded text-[10px] font-bold">TERÇA</button>
-                <button onclick="enviarFrequencia('Sexta')" class="btn-amber p-2 rounded text-[10px] font-bold">SEXTA</button>
-                <button onclick="enviarFrequencia('Sábado')" class="btn-amber p-2 rounded text-[10px] font-bold">SÁBADO</button>
+        <div class="projeto-card">
+            <div class="header-projeto p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="mudarMes(-1)" class="btn-projeto w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-amber-400 min-w-[180px] text-center"></h2>
+                    <button onclick="mudarMes(1)" class="btn-projeto w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none"><option value="">TODAS AS TURMAS</option></select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="tabelaFrequencia">
+                    <thead id="theadPrincipal"></thead>
+                    <tbody id="corpoTabela"></tbody>
+                    <tfoot id="tfootPrincipal"></tfoot>
+                </table>
+            </div>
+
+            <div class="p-4 border-t border-amber-500/20 flex flex-col md:flex-row gap-3 justify-end">
+                <button onclick="sincronizar()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold"><i class="fas fa-sync mr-2"></i>Sincronizar</button>
+                <button onclick="salvar()" id="btnSalvar" class="btn-projeto px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalJust" class="modal">
+        <div class="bg-gray-900 p-6 rounded-2xl max-w-md w-full mx-4 border border-amber-500">
+            <h3 class="text-xl font-bold text-amber-500 mb-4 uppercase">Justificar Falta</h3>
+            <input type="hidden" id="jA"><input type="hidden" id="jD">
+            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Motivo..."></textarea>
+            <div class="flex gap-3">
+                <button onclick="fecharJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
+                <button onclick="salvarJust()" class="flex-1 bg-amber-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
             </div>
         </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
+        
+        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; 
+        let dataAtual = new Date();
+        let dias = [];
+        let lista = [];
+        let editando = {}; 
 
-        // FUNÇÃO CORRIGIDA PARA ENVIAR DADOS
-        async function enviarParaPlanilha(dados) {
-            const formData = new FormData();
-            for (const [chave, valor] of Object.entries(dados)) {
-                formData.append(chave, valor);
+        const CICLO = ['', 'F', 'P', 'A', 'J'];
+        const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
+        const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
+        const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
+        const DIAS_NOMES = {2: 'TER', 5: 'SEX', 6: 'SÁB'};
+
+        function getISOString(data) {
+            if (!data) return null;
+            let d;
+            if (typeof data === 'string') {
+                const dataLimpa = data.split(' ')[0];
+                if (dataLimpa.includes('/')) {
+                    const [dia, mes, ano] = dataLimpa.split('/').map(Number);
+                    d = new Date(ano, mes - 1, dia);
+                } else { d = new Date(data); }
+            } else if (data instanceof Date) { d = data; }
+            else { return null; }
+            d.setHours(0,0,0,0);
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function chave(nome, dataISO) { return (nome.trim().toUpperCase() + '|' + dataISO); }
+
+        function ativo(aluno, dataISO) {
+            const mat = getISOString(aluno.matricula_rematricula);
+            const ven = getISOString(aluno.data_vencimento);
+            if (!mat || !ven) return true; 
+            return dataISO >= mat && dataISO <= ven;
+        }
+
+        function noMes(aluno, ano, mes) {
+            const mat = getISOString(aluno.matricula_rematricula);
+            const ven = getISOString(aluno.data_vencimento);
+            if (!mat || !ven) return true; 
+            const iniMes = getISOString(new Date(ano, mes, 1));
+            const fimMes = getISOString(new Date(ano, mes + 1, 0));
+            return mat <= fimMes && ven >= iniMes;
+        }
+
+        function renderizar() {
+            const ano = dataAtual.getFullYear();
+            const mes = dataAtual.getMonth();
+            const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            document.getElementById('tituloMes').textContent = nomesMes[mes] + ' ' + ano;
+
+            dias = [];
+            let dTemp = new Date(ano, mes, 1);
+            while (dTemp.getMonth() === mes) {
+                if ([2, 5, 6].includes(dTemp.getDay())) {
+                    dias.push({iso: getISOString(dTemp), diaSemana: dTemp.getDay()});
+                }
+                dTemp.setDate(dTemp.getDate() + 1);
             }
             
-            const resposta = await fetch(URL_SCRIPT, {
-                method: 'POST',
-                body: formData
+            const filtro = document.getElementById('filtroTurma').value;
+            lista = alunos.filter(a => noMes(a, ano, mes)).sort((a,b) => a.nome.localeCompare(b.nome));
+            if (filtro) lista = lista.filter(a => a.turma === filtro);
+
+            let h = '<tr class="bg-amber-500/5"><th class="col-atleta text-[10px] uppercase text-amber-400 p-3">Atleta</th>';
+            dias.forEach(d => {
+                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">${DIAS_NOMES[d.diaSemana]}</div><div style="font-size:18px;font-weight:bold;color:#f59e0b">${d.iso.split('-')[2]}</div></th>`;
             });
+            h += '<th class="col-faltas text-[10px] uppercase text-amber-400 p-3">Faltas</th></tr>';
             
-            const texto = await resposta.text();
-            try {
-                return JSON.parse(texto);
-            } catch (e) {
-                return { result: "success" };
+            h += '<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Ações Lote</td>';
+            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
+            h += '<td class="col-faltas"></td></tr>';
+            document.getElementById('theadPrincipal').innerHTML = h;
+
+            const tbody = document.getElementById('corpoTabela');
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo</td></tr>`;
+                return;
             }
+
+            tbody.innerHTML = lista.map((aluno, aIdx) => {
+                let r = `<tr><td class="col-atleta px-4 py-3"><div class="font-bold text-amber-300 uppercase text-sm">${aluno.nome}</div><div class="text-[9px] text-gray-500">${aluno.turma||''}</div></td>`;
+                dias.forEach((dObj, dIdx) => {
+                    const dia = dObj.iso;
+                    if (!ativo(aluno, dia)) {
+                        r += `<td class="col-dia p-2"><span class="nm-badge">N/M</span></td>`;
+                    } else {
+                        const kEdit = aIdx + '-' + dIdx;
+                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
+                        r += `<td class="col-dia p-2"><button onclick="ciclo(${aIdx},${dIdx})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
+                    }
+                });
+                let f = 0;
+                dias.forEach((dObj, dIdx) => {
+                    const kEdit = aIdx + '-' + dIdx;
+                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dObj.iso)] || '');
+                    if (s === 'F' || s === 'J') f++;
+                });
+                r += `<td class="col-faltas"><span class="contador-faltas">${f}</span></td></tr>`;
+                return r;
+            }).join('');
+
+            let fRow = '<tr class="bg-amber-500/10"><td class="col-atleta text-[10px] uppercase text-amber-400 font-bold px-4 py-3">Presenças / Dia</td>';
+            dias.forEach((dObj, dIdx) => {
+                let total = 0;
+                lista.forEach((aluno, aIdx) => {
+                    const kEdit = aIdx + '-' + dIdx;
+                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dObj.iso)] || '');
+                    if (s === 'P' || s === 'A') total++;
+                });
+                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${total}</span></td>`;
+            });
+            fRow += '<td class="col-faltas"></td></tr>';
+            document.getElementById('tfootPrincipal').innerHTML = fRow;
         }
 
-        async function enviarFrequencia(dia) {
-            const nome = document.getElementById('nomeAluno').value;
-            if(!nome) return alert("Por favor, digite o nome do aluno.");
-
-            const status = confirm(`Confirmar presença para ${nome} na ${dia}?`) ? "Presente" : "Faltou";
-
-            const dados = {
-                action: "frequencia",
-                nome: nome,
-                status: status,
-                justificativa: "Projeto - " + dia
-            };
-
-            try {
-                const resultado = await enviarParaPlanilha(dados);
-                console.log("Resposta:", resultado);
-                alert("Frequência de " + dia + " enviada com sucesso!");
-                document.getElementById('nomeAluno').value = "";
-            } catch (e) {
-                console.error("Erro:", e);
-                alert("Erro ao conectar com a planilha.");
+        function ciclo(a, d) {
+            const kEdit = a + '-' + d;
+            const aluno = lista[a], dia = dias[d].iso;
+            const atual = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
+            const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
+            if (prox === 'J') {
+                document.getElementById('jA').value = a; document.getElementById('jD').value = d;
+                document.getElementById('modalJust').classList.add('active');
+                return;
             }
+            editando[kEdit] = prox;
+            renderizar();
         }
+
+        function lote(dIdx) {
+            const dia = dias[dIdx].iso;
+            let primeiro = '';
+            for(let i=0; i<lista.length; i++) {
+                if(ativo(lista[i], dia)) {
+                    primeiro = editando[i+'-'+dIdx] !== undefined ? editando[i+'-'+dIdx] : (freq[chave(lista[i].nome, dia)] || '');
+                    break;
+                }
+            }
+            const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
+            if (prox === 'J') return;
+            lista.forEach((aluno, aIdx) => { if(ativo(aluno, dia)) editando[aIdx+'-'+dIdx] = prox; });
+            renderizar();
+        }
+
+        function fecharJust() { document.getElementById('modalJust').classList.remove('active'); }
+        function salvarJust() {
+            const a = document.getElementById('jA').value, d = document.getElementById('jD').value;
+            editando[a+'-'+d] = 'J';
+            editando[a+'-'+d+'-txt'] = document.getElementById('jT').value;
+            fecharJust(); renderizar();
+        }
+
+        async function salvar() {
+            const btn = document.getElementById('btnSalvar');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
+            btn.disabled = true;
+            for (const k in editando) {
+                if (k.includes('-txt')) continue;
+                const [aIdx, dIdx] = k.split('-').map(Number);
+                const aluno = lista[aIdx], dia = dias[dIdx].iso, status = editando[k];
+                const kFreq = chave(aluno.nome, dia);
+                freq[kFreq] = status;
+                if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
+                const fd = new FormData();
+                fd.append('action', 'frequencia');
+                fd.append('nome', aluno.nome);
+                fd.append('data_aula', dia.split('-').reverse().join('/')); 
+                fd.append('status', TEXTO[status] || '');
+                fd.append('justificativa', editando[k+'-txt'] || '');
+                try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
+            }
+            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+            editando = {};
+            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
+            btn.disabled = false;
+            alert('Frequência de Projeto salva!');
+            renderizar();
+        }
+
+        async function sincronizar() {
+            const tbody = document.getElementById('corpoTabela');
+            if(tbody && lista.length === 0) tbody.innerHTML = '<tr><td colspan="20" class="p-8 text-center text-amber-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
+            try {
+                const [rA, rT, rF] = await Promise.all([
+                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
+                ]);
+                if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
+                if (Array.isArray(rT)) { turmas = rT; localStorage.setItem('tsunami_turmas', JSON.stringify(turmas)); }
+                if (Array.isArray(rF)) {
+                    rF.forEach(f => {
+                        const dataISO = getISOString(f.data_aula);
+                        if (dataISO) {
+                            const k = chave(f.nome, dataISO);
+                            if (f.status) {
+                                freq[k] = SIGLAS[f.status] || '';
+                                if (f.justificativa) freq[k + '-txt'] = f.justificativa;
+                            }
+                        }
+                    });
+                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+                }
+            } catch(e) {}
+            const sel = document.getElementById('filtroTurma');
+            const val = sel.value;
+            sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+            turmas.forEach(t => {
+                const o = document.createElement('option');
+                o.value = t.nome; o.textContent = t.nome;
+                sel.appendChild(o);
+            });
+            sel.value = val;
+            renderizar();
+        }
+
+        function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
+        sincronizar();
     </script>
 </body>
 </html>

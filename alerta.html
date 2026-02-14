@@ -20,6 +20,12 @@
             border: 1px solid #f43f5e; background: rgba(244, 63, 94, 0.1); transition: all 0.3s;
         }
         .btn-red:hover { background: #f43f5e; color: white; box-shadow: 0 0 15px rgba(244, 63, 94, 0.5); }
+        
+        .btn-action { font-size: 10px; padding: 6px 12px; border-radius: 6px; font-weight: bold; text-transform: uppercase; transition: all 0.2s; }
+        .btn-rematricular { border: 1px solid #10b981; color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        .btn-rematricular:hover { background: #10b981; color: black; }
+        .btn-desistente { border: 1px solid #6b7280; color: #9ca3af; background: rgba(107, 114, 128, 0.1); }
+        .btn-desistente:hover { background: #6b7280; color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -33,20 +39,35 @@
 
         <div class="glass p-6 rounded-2xl border-l-4 border-rose-500 mb-6">
             <h2 class="text-rose-400 font-bold mb-2 uppercase text-sm">Monitoramento Automático</h2>
-            <p class="text-gray-400 text-xs">Alunos com mais de 5 faltas consecutivas aparecem aqui.</p>
+            <p class="text-gray-400 text-xs">Alunos com 5 ou mais faltas após a última rematrícula.</p>
         </div>
 
-        <div id="listaAlertas" class="grid grid-cols-1 gap-4">
-            </div>
+        <div id="listaAlertas" class="grid grid-cols-1 gap-4"></div>
     </div>
 
     <script>
         function carregarAlertas() {
             const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+            const freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
+            const resets = JSON.parse(localStorage.getItem('tsunami_resets')) || {};
             const lista = document.getElementById('listaAlertas');
             
-            // Simulação de lógica: alunos com campo 'faltas' > 5
-            const evasao = alunos.filter(a => a.faltas >= 5);
+            const evasao = alunos.map(aluno => {
+                let contadorFaltas = 0;
+                const nomeChave = aluno.nome.trim().toUpperCase();
+                const dataReset = resets[nomeChave] ? new Date(resets[nomeChave]) : new Date(0);
+
+                for (let k in freq) {
+                    if (k.startsWith(nomeChave + '|') && !k.endsWith('-txt')) {
+                        const dataFrequencia = new Date(k.split('|')[1]);
+                        // Só conta a falta se ela for DEPOIS da data de rematrícula e status for 'F'
+                        if (dataFrequencia >= dataReset && freq[k] === 'F') {
+                            contadorFaltas++;
+                        }
+                    }
+                }
+                return { ...aluno, totalFaltas: contadorFaltas };
+            }).filter(a => a.totalFaltas >= 5);
 
             if(evasao.length === 0) {
                 lista.innerHTML = `<div class="text-center p-10 text-gray-500 uppercase text-xs tracking-widest">Nenhum alerta crítico no momento</div>`;
@@ -54,15 +75,47 @@
             }
 
             lista.innerHTML = evasao.map(a => `
-                <div class="glass p-5 rounded-xl border-l-4 border-rose-500 flex justify-between items-center animate-pulse">
-                    <div>
+                <div class="glass p-5 rounded-xl border-l-4 border-rose-500 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex-1">
                         <h3 class="font-bold text-white uppercase">${a.nome}</h3>
-                        <p class="text-rose-400 text-xs">${a.turma} — ${a.faltas} FALTAS SEGUIDAS</p>
+                        <p class="text-rose-400 text-xs font-bold">${a.turma} — ${a.totalFaltas} FALTAS RECENTES</p>
                     </div>
-                    <i class="fas fa-exclamation-triangle text-rose-500 text-xl"></i>
+                    <div class="flex gap-2">
+                        <button onclick="rematricular('${a.nome}')" class="btn-action btn-rematricular">
+                            <i class="fas fa-undo mr-1"></i> Rematricular
+                        </button>
+                        <button onclick="marcarDesistente('${a.nome}')" class="btn-action btn-desistente">
+                            <i class="fas fa-user-slash mr-1"></i> Desistente
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
+
+        function rematricular(nome) {
+            if(confirm(`Deseja rematricular ${nome}? O histórico será mantido, mas o contador de alertas voltará a zero a partir de hoje.`)) {
+                let resets = JSON.parse(localStorage.getItem('tsunami_resets')) || {};
+                const hoje = new Date();
+                hoje.setHours(0,0,0,0);
+                
+                // Grava a data de hoje como o novo ponto de partida para este aluno
+                resets[nome.trim().toUpperCase()] = hoje.toISOString();
+                
+                localStorage.setItem('tsunami_resets', JSON.stringify(resets));
+                alert("Aluno rematriculado! Alerta zerado para novas faltas.");
+                carregarAlertas();
+            }
+        }
+
+        function marcarDesistente(nome) {
+            if(confirm(`Confirmar desistência de ${nome}? Ele será removido da lista.`)) {
+                let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+                alunos = alunos.filter(a => a.nome !== nome);
+                localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                carregarAlertas();
+            }
+        }
+
         carregarAlertas();
     </script>
 </body>

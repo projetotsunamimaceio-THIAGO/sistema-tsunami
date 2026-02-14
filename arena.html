@@ -19,6 +19,7 @@
         .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
         .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
         .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
+        .btn-share { background: #25d366; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; }
         .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
         .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
         .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
@@ -84,327 +85,275 @@
         
         let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
         let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
-        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; // Dados locais
+        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; 
         let dataAtual = new Date();
         let dias = [];
         let lista = [];
-        let editando = {}; // Alterações pendentes
+        let editando = {}; 
 
         const CICLO = ['', 'F', 'P', 'A', 'J'];
         const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
         const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
+        const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
 
-        // Converte data string para Date
-        function toDate(str) {
-            if (!str) return null;
-            if (str instanceof Date) {
-                const d = new Date(str);
-                d.setHours(0,0,0,0);
-                return d;
-            }
-            // DD/MM/YYYY
-            if (str.includes('/')) {
-                const [d,m,a] = str.split('/').map(Number);
-                const r = new Date(a, m-1, d);
-                r.setHours(0,0,0,0);
-                return r;
-            }
-            // ISO
-            const d = new Date(str);
-            d.setHours(0,0,0,0);
-            return d;
+        function getISOString(data) {
+            if (!data) return null;
+            let d;
+            if (typeof data === 'string') {
+                const dataLimpa = data.split(' ')[0];
+                if (dataLimpa.includes('/')) {
+                    const [dia, mes, ano] = dataLimpa.split('/').map(Number);
+                    d = new Date(ano, mes - 1, dia);
+                } else { d = new Date(data); }
+            } else if (data instanceof Date) { d = data; }
+            else { return null; }
+            if (isNaN(d.getTime())) return null;
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        // Verifica se data está entre matrícula e vencimento
-        function ativo(aluno, data) {
-            const mat = toDate(aluno.matricula_rematricula);
-            const ven = toDate(aluno.data_vencimento);
-            const ref = new Date(data);
-            ref.setHours(0,0,0,0);
-            if (!mat || !ven) return false;
-            return ref >= mat && ref <= ven;
+        function chave(nome, dataISO) { return (nome.trim().toUpperCase() + '|' + dataISO); }
+
+        function ativo(aluno, dataISO) {
+            const mat = getISOString(aluno.matricula_rematricula);
+            const ven = getISOString(aluno.data_vencimento);
+            if (!mat || !ven) return true; 
+            return dataISO >= mat && dataISO <= ven;
         }
 
-        // Verifica se aluno aparece no mês (há interseção)
         function noMes(aluno, ano, mes) {
-            const mat = toDate(aluno.matricula_rematricula);
-            const ven = toDate(aluno.data_vencimento);
-            if (!mat || !ven) return false;
-            const ini = new Date(ano, mes, 1);
-            const fim = new Date(ano, mes + 1, 0, 23, 59, 59);
-            return mat <= fim && ven >= ini;
+            const mat = getISOString(aluno.matricula_rematricula);
+            const ven = getISOString(aluno.data_vencimento);
+            if (!mat || !ven) return true; 
+            const iniMes = getISOString(new Date(ano, mes, 1));
+            const fimMes = getISOString(new Date(ano, mes + 1, 0));
+            return mat <= fimMes && ven >= iniMes;
         }
 
-        // Chave única para frequência
-        function chave(nome, data) {
-            return nome + '|' + data.getTime();
-        }
+        function compartilhar(dIdx) {
+            const dataISO = dias[dIdx];
+            const dataBR = dataISO.split('-').reverse().join('/');
+            let texto = `*Frequência ARENA*\nDia: ${dataBR}\n\n`;
+            
+            const turmasNoRelatorio = [...new Set(lista.map(a => a.turma))];
+            let totalGeral = 0;
+            let justificativas = [];
 
-        // Busca status (editando primeiro, depois salvo)
-        function getStatus(nome, data, a, d) {
-            const k = chave(nome, data);
-            const k2 = a + '-' + d;
-            if (editando[k2] !== undefined) return editando[k2];
-            if (freq[k]) return freq[k];
-            return '';
-        }
+            turmasNoRelatorio.forEach(turmaNome => {
+                let alunosDaTurma = lista.filter(a => a.turma === turmaNome);
+                let presentesNaTurma = [];
 
-        function sabados(ano, mes) {
-            const r = [];
-            const d = new Date(ano, mes, 1);
-            while (d.getDay() !== 6) d.setDate(d.getDate() + 1);
-            while (d.getMonth() === mes) {
-                const x = new Date(d);
-                x.setHours(0,0,0,0);
-                r.push(x);
-                d.setDate(d.getDate() + 7);
+                alunosDaTurma.forEach(aluno => {
+                    const aIdx = lista.indexOf(aluno);
+                    const kEdit = aIdx + '-' + dIdx;
+                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
+                    
+                    if (s === 'P' || s === 'A') {
+                        let nomeLinha = aluno.nome.toUpperCase();
+                        if (s === 'A') nomeLinha += " ⚠️";
+                        presentesNaTurma.push(nomeLinha);
+                    } else if (s === 'J') {
+                        const motivo = editando[aIdx + '-' + dIdx + '-txt'] || freq[chave(aluno.nome, dataISO) + '-txt'] || 'Não informada';
+                        justificativas.push({nome: aluno.nome.toUpperCase(), motivo: motivo});
+                    }
+                });
+
+                if (presentesNaTurma.length > 0) {
+                    texto += `*🔹(${turmaNome || 'SEM TURMA'})*\n`;
+                    presentesNaTurma.forEach(p => texto += `${p}\n`);
+                    texto += `-Total: ${presentesNaTurma.length} alunos\n\n`;
+                    totalGeral += presentesNaTurma.length;
+                }
+            });
+
+            texto += `#Total: ${totalGeral} alunos\n`;
+            texto += `----------------------\n`;
+            texto += `⚠️ Atrasados ***\n`;
+            
+            if (justificativas.length > 0) {
+                texto += `🗣️Justificados:\n`;
+                justificativas.forEach(j => {
+                    texto += `${j.nome}\n(${j.motivo})\n`;
+                });
             }
-            return r;
-        }
 
-        function mudarMes(dir) {
-            dataAtual.setMonth(dataAtual.getMonth() + dir);
-            editando = {}; // Limpa edições ao mudar mês
-            renderizar();
+            if (navigator.share) {
+                navigator.share({ text: texto });
+            } else {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
+            }
         }
 
         function renderizar() {
             const ano = dataAtual.getFullYear();
             const mes = dataAtual.getMonth();
             const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-            
             document.getElementById('tituloMes').textContent = nomesMes[mes] + ' ' + ano;
-            dias = sabados(ano, mes);
+
+            dias = [];
+            let dTemp = new Date(ano, mes, 1);
+            while (dTemp.getMonth() === mes) {
+                if (dTemp.getDay() === 6) dias.push(getISOString(dTemp));
+                dTemp.setDate(dTemp.getDate() + 1);
+            }
             
             const filtro = document.getElementById('filtroTurma').value;
-            
-            // Filtra alunos ativos no mês
-            lista = alunos.filter(a => noMes(a, ano, mes))
-                          .sort((a,b) => a.nome.localeCompare(b.nome));
-            
+            lista = alunos.filter(a => noMes(a, ano, mes)).sort((a,b) => a.nome.localeCompare(b.nome));
             if (filtro) lista = lista.filter(a => a.turma === filtro);
 
-            // Header
             let h = '<tr class="bg-emerald-500/5"><th class="col-atleta text-[10px] uppercase text-emerald-400 p-3">Atleta</th>';
             dias.forEach(d => {
-                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">SÁB</div><div style="font-size:18px;font-weight:bold;color:#34d399">${d.getDate()}</div></th>`;
+                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">SÁB</div><div style="font-size:18px;font-weight:bold;color:#34d399">${d.split('-')[2]}</div></th>`;
             });
             h += '<th class="col-faltas text-[10px] uppercase text-emerald-400 p-3">Faltas</th></tr>';
             
             h += '<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Ações Lote</td>';
-            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
+            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="compartilhar(${i})" class="btn-share"><i class="fas fa-share-alt"></i></button><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
             h += '<td class="col-faltas"></td></tr>';
-            
             document.getElementById('theadPrincipal').innerHTML = h;
 
-            // Body
             const tbody = document.getElementById('corpoTabela');
             if (lista.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo</td></tr>`;
-                document.getElementById('tfootPrincipal').innerHTML = '';
                 return;
             }
 
-            tbody.innerHTML = lista.map((aluno, a) => {
+            tbody.innerHTML = lista.map((aluno, aIdx) => {
                 let r = `<tr><td class="col-atleta px-4 py-3"><div class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</div><div class="text-[9px] text-gray-500">${aluno.turma||''}</div></td>`;
-                
-                dias.forEach((dia, d) => {
+                dias.forEach((dia, dIdx) => {
                     if (!ativo(aluno, dia)) {
                         r += `<td class="col-dia p-2"><span class="nm-badge">N/M</span></td>`;
                     } else {
-                        const s = getStatus(aluno.nome, dia, a, d);
-                        r += `<td class="col-dia p-2"><button onclick="ciclo(${a},${d})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
+                        const kEdit = aIdx + '-' + dIdx;
+                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
+                        r += `<td class="col-dia p-2"><button onclick="ciclo(${aIdx},${dIdx})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
                     }
                 });
-                
-                // Conta faltas
                 let f = 0;
-                dias.forEach((dia, d) => {
-                    if (ativo(aluno, dia)) {
-                        const s = getStatus(aluno.nome, dia, a, d);
-                        if (s === 'F' || s === 'J') f++;
-                    }
+                dias.forEach((dia, dIdx) => {
+                    const kEdit = aIdx + '-' + dIdx;
+                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
+                    if (s === 'F' || s === 'J') f++;
                 });
-                
                 r += `<td class="col-faltas"><span class="contador-faltas">${f}</span></td></tr>`;
                 return r;
             }).join('');
 
-            // Footer
-            let f = '<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>';
-            dias.forEach((dia, d) => {
-                let t = 0;
-                lista.forEach((aluno, a) => {
-                    if (ativo(aluno, dia)) {
-                        const s = getStatus(aluno.nome, dia, a, d);
-                        if (s === 'P' || s === 'A') t++;
-                    }
+            let fRow = '<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>';
+            dias.forEach((dia, dIdx) => {
+                let total = 0;
+                lista.forEach((aluno, aIdx) => {
+                    const kEdit = aIdx + '-' + dIdx;
+                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
+                    if (s === 'P' || s === 'A') total++;
                 });
-                f += `<td class="col-dia p-2"><span class="contador-presencas">${t}</span></td>`;
+                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${total}</span></td>`;
             });
-            f += '<td class="col-faltas"></td></tr>';
-            document.getElementById('tfootPrincipal').innerHTML = f;
+            fRow += '<td class="col-faltas"></td></tr>';
+            document.getElementById('tfootPrincipal').innerHTML = fRow;
         }
 
         function ciclo(a, d) {
-            const aluno = lista[a];
-            const dia = dias[d];
-            if (!ativo(aluno, dia)) return;
-            
-            const k = a + '-' + d;
-            const atual = editando[k] || getStatus(aluno.nome, dia, a, d) || '';
+            const kEdit = a + '-' + d;
+            const aluno = lista[a], dia = dias[d];
+            const atual = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
             const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
-            
             if (prox === 'J') {
-                document.getElementById('jA').value = a;
-                document.getElementById('jD').value = d;
+                document.getElementById('jA').value = a; document.getElementById('jD').value = d;
                 document.getElementById('modalJust').classList.add('active');
                 return;
             }
-            
-            editando[k] = prox;
+            editando[kEdit] = prox;
             renderizar();
         }
 
-        function lote(d) {
-            const dia = dias[d];
+        function lote(dIdx) {
+            const dia = dias[dIdx];
             let primeiro = '';
-            
-            for (let i = 0; i < lista.length; i++) {
-                if (ativo(lista[i], dia)) {
-                    primeiro = editando[i+'-'+d] || getStatus(lista[i].nome, dia, i, d) || '';
-                    if (primeiro) break;
+            for(let i=0; i<lista.length; i++) {
+                if(ativo(lista[i], dia)) {
+                    primeiro = editando[i+'-'+dIdx] !== undefined ? editando[i+'-'+dIdx] : (freq[chave(lista[i].nome, dia)] || '');
+                    break;
                 }
             }
-            
             const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
-            if (prox === 'J') return alert('Justificativa apenas individual');
-            
-            for (let i = 0; i < lista.length; i++) {
-                if (ativo(lista[i], dia)) {
-                    editando[i+'-'+d] = prox;
-                }
-            }
+            if (prox === 'J') return;
+            lista.forEach((aluno, aIdx) => { if(ativo(aluno, dia)) editando[aIdx+'-'+dIdx] = prox; });
             renderizar();
         }
 
-        function fecharJust() {
-            document.getElementById('modalJust').classList.remove('active');
-        }
-
+        function fecharJust() { document.getElementById('modalJust').classList.remove('active'); }
         function salvarJust() {
-            const a = document.getElementById('jA').value;
-            const d = document.getElementById('jD').value;
+            const a = document.getElementById('jA').value, d = document.getElementById('jD').value;
             editando[a+'-'+d] = 'J';
             editando[a+'-'+d+'-txt'] = document.getElementById('jT').value;
-            fecharJust();
-            renderizar();
+            fecharJust(); renderizar();
         }
 
         async function salvar() {
             const btn = document.getElementById('btnSalvar');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
             btn.disabled = true;
-
-            // Envia para planilha
-            for (let a = 0; a < lista.length; a++) {
-                for (let d = 0; d < dias.length; d++) {
-                    const aluno = lista[a];
-                    const dia = dias[d];
-                    
-                    if (!ativo(aluno, dia)) continue;
-                    
-                    const k = a + '-' + d;
-                    const s = editando[k];
-                    if (!s) continue; // Só salva o que foi editado
-                    
-                    // Atualiza local
-                    freq[chave(aluno.nome, dia)] = s;
-                    if (editando[k+'-txt']) {
-                        freq[chave(aluno.nome, dia)+'-txt'] = editando[k+'-txt'];
-                    }
-                    
-                    // Envia
-                    const fd = new FormData();
-                    fd.append('action', 'frequencia');
-                    fd.append('nome', aluno.nome);
-                    fd.append('data_aula', dia.toLocaleDateString('pt-BR'));
-                    fd.append('status', TEXTO[s]);
-                    fd.append('justificativa', editando[k+'-txt'] || '');
-                    
-                    try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e) {}
-                }
+            for (const k in editando) {
+                if (k.includes('-txt')) continue;
+                const [aIdx, dIdx] = k.split('-').map(Number);
+                const aluno = lista[aIdx], dia = dias[dIdx], status = editando[k];
+                const kFreq = chave(aluno.nome, dia);
+                freq[kFreq] = status;
+                if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
+                const fd = new FormData();
+                fd.append('action', 'frequencia');
+                fd.append('nome', aluno.nome);
+                fd.append('data_aula', dia.split('-').reverse().join('/')); 
+                fd.append('status', TEXTO[status] || '');
+                fd.append('justificativa', editando[k+'-txt'] || '');
+                try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
             }
-            
-            // Salva local
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
             editando = {};
-            
             btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
             btn.disabled = false;
-            alert('Salvo!');
+            alert('Frequência salva!');
             renderizar();
         }
 
         async function sincronizar() {
-            document.getElementById('corpoTabela').innerHTML = '<tr><td colspan="20" class="p-8 text-center text-emerald-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
-            
+            const tbody = document.getElementById('corpoTabela');
+            if(tbody && lista.length === 0) tbody.innerHTML = '<tr><td colspan="20" class="p-8 text-center text-emerald-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
             try {
-                // Alunos
-                const r1 = await fetch(URL_SCRIPT + '?getDados=alunos');
-                const d1 = await r1.json();
-                if (Array.isArray(d1)) {
-                    alunos = d1;
-                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-                }
-                
-                // Turmas
-                const r2 = await fetch(URL_SCRIPT + '?getDados=turmas');
-                const d2 = await r2.json();
-                if (Array.isArray(d2)) {
-                    turmas = d2;
-                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
-                }
-                
-                // Frequência
-                const r3 = await fetch(URL_SCRIPT + '?getDados=frequencia');
-                const d3 = await r3.json();
-                if (Array.isArray(d3)) {
-                    freq = {};
-                    d3.forEach(f => {
-                        const dt = toDate(f.data_aula);
-                        if (dt) {
-                            freq[chave(f.nome, dt)] = (f.status === 'Presente' ? 'P' : 
-                                                       f.status === 'Atraso' ? 'A' : 
-                                                       f.status === 'Faltou' ? 'F' : 
-                                                       f.status === 'Justificado' ? 'J' : '');
-                            if (f.justificativa) {
-                                freq[chave(f.nome, dt)+'-txt'] = f.justificativa;
+                const [rA, rT, rF] = await Promise.all([
+                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
+                ]);
+                if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
+                if (Array.isArray(rT)) { turmas = rT; localStorage.setItem('tsunami_turmas', JSON.stringify(turmas)); }
+                if (Array.isArray(rF)) {
+                    rF.forEach(f => {
+                        const dataISO = getISOString(f.data_aula);
+                        if (dataISO) {
+                            const k = chave(f.nome, dataISO);
+                            if (f.status) {
+                                freq[k] = SIGLAS[f.status] || '';
+                                if (f.justificativa) freq[k + '-txt'] = f.justificativa;
                             }
                         }
                     });
                     localStorage.setItem('tsunami_freq', JSON.stringify(freq));
                 }
-            } catch(e) {
-                console.error(e);
-            }
-            
-            // Atualiza select
+            } catch(e) {}
             const sel = document.getElementById('filtroTurma');
             const val = sel.value;
             sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-            turmas.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(t => {
+            turmas.forEach(t => {
                 const o = document.createElement('option');
-                o.value = t.nome;
-                o.textContent = t.nome;
+                o.value = t.nome; o.textContent = t.nome;
                 sel.appendChild(o);
             });
             sel.value = val;
-            
             renderizar();
         }
 
-        // Inicia
+        function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
         sincronizar();
     </script>
 </body>
