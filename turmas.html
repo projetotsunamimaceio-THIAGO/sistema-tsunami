@@ -29,20 +29,6 @@
             color: black; 
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
         }
-        .btn-cyan.active {
-            background: #00ffff;
-            color: black;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-        }
-        input { 
-            background: rgba(255, 255, 255, 0.05) !important; 
-            border: 1px solid rgba(0, 255, 255, 0.2) !important; 
-            color: white !important; 
-        }
-        input:focus {
-            border-color: #00ffff !important;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-        }
         .day-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 255, 255, 0.2);
@@ -55,13 +41,9 @@
             text-transform: uppercase;
             cursor: pointer;
         }
-        .day-btn:hover {
-            background: rgba(0, 255, 255, 0.1);
-        }
         .day-btn.selected {
             background: #00ffff;
             color: black;
-            border-color: #00ffff;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
         }
         .turma-card {
@@ -73,30 +55,6 @@
         .turma-card:hover {
             background: rgba(0, 255, 255, 0.05);
             transform: translateX(5px);
-        }
-        .loading { 
-            opacity: 0.5; 
-            pointer-events: none; 
-        }
-        .empty-state {
-            color: rgba(0, 255, 255, 0.4);
-            font-style: italic;
-        }
-        .edit-btn {
-            color: #fbbf24;
-            transition: 0.3s;
-        }
-        .edit-btn:hover {
-            color: #f59e0b;
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-        }
-        .delete-btn {
-            color: #f43f5e;
-            transition: 0.3s;
-        }
-        .delete-btn:hover {
-            color: #e11d48;
-            text-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
         }
         .modal {
             display: none;
@@ -111,16 +69,13 @@
             align-items: center;
             justify-content: center;
         }
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
     <div class="max-w-6xl mx-auto">
-        <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <a href="index.html" class="btn-cyan px-4 py-2 rounded-lg text-xs uppercase font-bold">
                 <i class="fas fa-arrow-left mr-2"></i>Voltar
@@ -131,152 +86,139 @@
             <div class="w-20"></div>
         </div>
 
-        <!-- Formulário de Cadastro -->
         <div class="glass p-6 rounded-2xl mb-8">
             <h2 class="text-sm uppercase tracking-[0.3em] text-cyan-300 mb-6 border-b border-cyan-500/20 pb-2">
                 Nova Turma
             </h2>
             
             <form id="formTurma" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                <!-- Nome -->
                 <div class="md:col-span-3">
                     <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Nome da Turma</label>
-                    <input type="text" id="nome" placeholder="Ex: SUB-15" class="w-full p-3 rounded-lg outline-none uppercase" required>
+                    <input type="text" id="nome" placeholder="Ex: SUB-15" class="w-full p-3 rounded-lg outline-none uppercase bg-gray-900 border border-cyan-500/30" required>
                 </div>
-
-                <!-- Horário Início -->
                 <div class="md:col-span-2">
-                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Horário Início</label>
-                    <input type="time" id="inicio" class="w-full p-3 rounded-lg outline-none" required>
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Início</label>
+                    <input type="time" id="inicio" class="w-full p-3 rounded-lg outline-none bg-gray-900 border border-cyan-500/30" required>
                 </div>
-
-                <!-- Horário Fim -->
                 <div class="md:col-span-2">
-                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Horário Término</label>
-                    <input type="time" id="fim" class="w-full p-3 rounded-lg outline-none" required>
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Término</label>
+                    <input type="time" id="fim" class="w-full p-3 rounded-lg outline-none bg-gray-900 border border-cyan-500/30" required>
                 </div>
-
-                <!-- Vagas -->
                 <div class="md:col-span-2">
-                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Capacidade</label>
-                    <input type="number" id="vagas" placeholder="20" min="1" class="w-full p-3 rounded-lg outline-none" required>
+                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Vagas</label>
+                    <input type="number" id="vagas" placeholder="20" min="1" class="w-full p-3 rounded-lg outline-none bg-gray-900 border border-cyan-500/30" required>
                 </div>
-
-                <!-- Botão Criar -->
                 <div class="md:col-span-3">
-                    <button type="submit" id="saveBtn" class="w-full btn-cyan p-3 rounded-lg uppercase font-bold tracking-wider flex items-center justify-center gap-2">
-                        <i class="fas fa-plus"></i> Criar Turma
+                    <button type="submit" id="saveBtn" class="w-full btn-cyan p-3 rounded-lg uppercase font-bold tracking-wider">
+                        <i class="fas fa-plus mr-2"></i>Criar
                     </button>
                 </div>
-
-                <!-- Dias da Semana -->
                 <div class="md:col-span-12 mt-4">
                     <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-3">Dias de Treino</label>
                     <div class="flex flex-wrap gap-2" id="diasContainer">
-                        <button type="button" class="day-btn" data-dia="Seg">Segunda</button>
-                        <button type="button" class="day-btn" data-dia="Ter">Terça</button>
-                        <button type="button" class="day-btn" data-dia="Qua">Quarta</button>
-                        <button type="button" class="day-btn" data-dia="Qui">Quinta</button>
-                        <button type="button" class="day-btn" data-dia="Sex">Sexta</button>
-                        <button type="button" class="day-btn" data-dia="Sáb">Sábado</button>
-                        <button type="button" class="day-btn" data-dia="Dom">Domingo</button>
+                        <button type="button" class="day-btn" data-dia="Seg">Seg</button>
+                        <button type="button" class="day-btn" data-dia="Ter">Ter</button>
+                        <button type="button" class="day-btn" data-dia="Qua">Qua</button>
+                        <button type="button" class="day-btn" data-dia="Qui">Qui</button>
+                        <button type="button" class="day-btn" data-dia="Sex">Sex</button>
+                        <button type="button" class="day-btn" data-dia="Sáb">Sáb</button>
+                        <button type="button" class="day-btn" data-dia="Dom">Dom</button>
                     </div>
                     <input type="hidden" id="dias" required>
                 </div>
             </form>
         </div>
 
-        <!-- Lista de Turmas -->
         <div class="glass p-6 rounded-2xl">
             <h2 class="text-sm uppercase tracking-[0.3em] text-cyan-300 mb-6 border-b border-cyan-500/20 pb-2 flex justify-between items-center">
                 <span>Turmas Cadastradas</span>
-                <span id="totalTurmas" class="text-xs bg-cyan-500/20 px-3 py-1 rounded-full">0 turmas</span>
+                <button onclick="sincronizarTurmas()" class="text-xs bg-cyan-500/20 px-3 py-1 rounded-full hover:bg-cyan-500/30 transition">
+                    <i class="fas fa-sync mr-1"></i>Sincronizar
+                </button>
             </h2>
-            
             <div id="listaTurmas" class="space-y-3">
-                <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
-                    <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
-                    Nenhuma turma registrada no sistema.
+                <p class="text-center py-12 text-cyan-400/40 text-sm uppercase">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Carregando...
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Edição -->
     <div id="editModal" class="modal">
-        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wider">Editar Turma</h3>
+        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500/30">
+            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase">Editar Turma</h3>
             <input type="hidden" id="editIndex">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Novo Nome</label>
-                    <input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase">
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
-                        Cancelar
-                    </button>
-                    <button onclick="salvarEdicao()" class="flex-1 btn-cyan p-3 rounded-lg uppercase text-xs font-bold">
-                        Salvar
-                    </button>
-                </div>
+            <input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase bg-gray-900 border border-cyan-500/30 mb-4">
+            <div class="flex gap-3">
+                <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
+                <button onclick="salvarEdicao()" class="flex-1 btn-cyan p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
             </div>
         </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
-        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+        let turmas = [];
+
+        // ========== SINCRONIZAR TURMAS DA PLANILHA ==========
+        async function sincronizarTurmas() {
+            const container = document.getElementById('listaTurmas');
+            container.innerHTML = '<p class="text-center py-12 text-cyan-400/40 text-sm uppercase"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</p>';
+            
+            try {
+                const resposta = await fetch(URL_SCRIPT + '?getDados=turmas');
+                const dados = await resposta.json();
+                
+                if (Array.isArray(dados)) {
+                    turmas = dados;
+                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                } else {
+                    // Fallback para local
+                    turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+                }
+            } catch (err) {
+                console.log('Erro ao sincronizar:', err);
+                turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+            }
+            
+            renderizarTurmas();
+        }
 
         // Seleção de dias
         document.querySelectorAll('.day-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.classList.toggle('selected');
-                atualizarCampoDias();
+                const selecionados = Array.from(document.querySelectorAll('.day-btn.selected'))
+                    .map(b => b.dataset.dia);
+                document.getElementById('dias').value = selecionados.join('/');
             });
         });
 
-        function atualizarCampoDias() {
-            const selecionados = Array.from(document.querySelectorAll('.day-btn.selected'))
-                .map(btn => btn.dataset.dia);
-            document.getElementById('dias').value = selecionados.join('/');
-        }
-
-        // Renderizar lista
         function renderizarTurmas() {
             const container = document.getElementById('listaTurmas');
-            const totalEl = document.getElementById('totalTurmas');
-            
-            // Ordenar alfabeticamente
-            turmas.sort((a, b) => a.nome.localeCompare(b.nome));
-            
-            totalEl.textContent = `${turmas.length} turma${turmas.length !== 1 ? 's' : ''}`;
             
             if (turmas.length === 0) {
-                container.innerHTML = `
-                    <p class="empty-state text-center py-12 text-sm uppercase tracking-widest">
-                        <i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>
-                        Nenhuma turma registrada no sistema.
-                    </p>
-                `;
+                container.innerHTML = '<p class="text-center py-12 text-cyan-400/40 text-sm uppercase">Nenhuma turma registrada</p>';
                 return;
             }
 
-            container.innerHTML = turmas.map((turma, index) => `
-                <div class="turma-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-cyan-300 uppercase tracking-wider mb-1">${turma.nome}</h3>
-                        <div class="flex flex-wrap gap-3 text-xs text-gray-400">
-                            <span><i class="far fa-clock mr-1 text-cyan-500"></i>${turma.inicio} às ${turma.fim}</span>
-                            <span><i class="far fa-calendar mr-1 text-cyan-500"></i>${turma.dias}</span>
-                            <span><i class="fas fa-users mr-1 text-cyan-500"></i>${turma.vagas} vagas</span>
+            turmas.sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            container.innerHTML = turmas.map((t, i) => `
+                <div class="turma-card p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-cyan-300 uppercase">${t.nome}</h3>
+                        <div class="text-xs text-gray-400 mt-1">
+                            <i class="far fa-clock mr-1"></i>${t.inicio} às ${t.fim} | 
+                            <i class="far fa-calendar mr-1"></i>${t.dias} | 
+                            <i class="fas fa-users mr-1"></i>${t.vagas} vagas
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="editarTurma(${index})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30" title="Editar nome">
+                    <div class="flex gap-2">
+                        <button onclick="editarTurma(${i})" class="p-2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="excluirTurma(${index})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30" title="Excluir turma">
+                        <button onclick="excluirTurma(${i})" class="p-2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/30">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -284,60 +226,39 @@
             `).join('');
         }
 
-        // Cadastrar
+        async function enviarParaPlanilha(dados) {
+            const formData = new FormData();
+            for (const [k, v] of Object.entries(dados)) formData.append(k, v);
+            await fetch(URL_SCRIPT, { method: 'POST', body: formData });
+        }
+
         document.getElementById('formTurma').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('saveBtn');
+            if (!document.getElementById('dias').value) return alert('Selecione os dias!');
             
-            const dias = document.getElementById('dias').value;
-            if (!dias) {
-                alert('Selecione pelo menos um dia da semana!');
-                return;
-            }
-
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
-            btn.classList.add('loading');
-
-            const novaTurma = {
+            const nova = {
                 action: "turmas",
                 nome: document.getElementById('nome').value.toUpperCase(),
                 inicio: document.getElementById('inicio').value,
                 fim: document.getElementById('fim').value,
                 vagas: document.getElementById('vagas').value,
-                dias: dias
+                dias: document.getElementById('dias').value
             };
 
-            // Salva localmente
-            turmas.push({
-                nome: novaTurma.nome,
-                inicio: novaTurma.inicio,
-                fim: novaTurma.fim,
-                vagas: novaTurma.vagas,
-                dias: novaTurma.dias
-            });
+            turmas.push({ nome: nova.nome, inicio: nova.inicio, fim: nova.fim, vagas: nova.vagas, dias: nova.dias });
             localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
-
-            // Envia para planilha
-            try {
-                await enviarParaPlanilha(novaTurma);
-            } catch (err) {
-                console.error('Erro ao sincronizar:', err);
-            }
-
-            // Limpa e atualiza
-            e.target.reset();
-            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('selected'));
-            atualizarCampoDias();
-            renderizarTurmas();
             
-            btn.innerHTML = '<i class="fas fa-plus"></i> Criar Turma';
-            btn.classList.remove('loading');
+            try { await enviarParaPlanilha(nova); } catch (err) { console.error(err); }
+            
+            e.target.reset();
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('dias').value = '';
+            renderizarTurmas();
         });
 
-        // Editar
-        function editarTurma(index) {
-            document.getElementById('editIndex').value = index;
-            document.getElementById('editNome').value = turmas[index].nome;
+        function editarTurma(i) {
+            document.getElementById('editIndex').value = i;
+            document.getElementById('editNome').value = turmas[i].nome;
             document.getElementById('editModal').classList.add('active');
         }
 
@@ -346,60 +267,23 @@
         }
 
         async function salvarEdicao() {
-            const index = document.getElementById('editIndex').value;
-            const novoNome = document.getElementById('editNome').value.toUpperCase();
-            
-            if (!novoNome) return alert('Digite um nome válido!');
-            
-            turmas[index].nome = novoNome;
+            const i = document.getElementById('editIndex').value;
+            turmas[i].nome = document.getElementById('editNome').value.toUpperCase();
             localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
-            
-            // Atualiza na planilha (envia turma completa como nova linha - simplificado)
-            await enviarParaPlanilha({
-                action: "turmas",
-                nome: novoNome,
-                inicio: turmas[index].inicio,
-                fim: turmas[index].fim,
-                vagas: turmas[index].vagas,
-                dias: turmas[index].dias,
-                observacao: "EDITADO"
-            });
-            
-            renderizarTurmas();
+            await enviarParaPlanilha({ ...turmas[i], action: "turmas", observacao: "EDITADO" });
             fecharModal();
-        }
-
-        // Excluir
-        async function excluirTurma(index) {
-            if (!confirm(`Tem certeza que deseja excluir a turma "${turmas[index].nome}"?`)) return;
-            
-            turmas.splice(index, 1);
-            localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
             renderizarTurmas();
         }
 
-        // Função auxiliar para enviar
-        async function enviarParaPlanilha(dados) {
-            const formData = new FormData();
-            for (const [chave, valor] of Object.entries(dados)) {
-                formData.append(chave, valor);
-            }
-            
-            const resposta = await fetch(URL_SCRIPT, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const texto = await resposta.text();
-            try {
-                return JSON.parse(texto);
-            } catch (e) {
-                return { result: "success" };
-            }
+        function excluirTurma(i) {
+            if (!confirm('Excluir turma?')) return;
+            turmas.splice(i, 1);
+            localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+            renderizarTurmas();
         }
 
         // Inicializa
-        renderizarTurmas();
+        sincronizarTurmas();
     </script>
 </body>
 </html>

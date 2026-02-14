@@ -7,279 +7,74 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { 
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); 
-            color: white; 
-            font-family: 'Segoe UI', sans-serif; 
-            min-height: 100vh;
-        }
-        .glass { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(16, 185, 129, 0.1); 
-        }
-        .btn-emerald { 
-            border: 1px solid #10b981; 
-            background: rgba(16, 185, 129, 0.1); 
-            transition: all 0.3s; 
-            color: #10b981; 
-        }
-        .btn-emerald:hover { 
-            background: #10b981; 
-            color: black; 
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        }
-        .arena-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(16, 185, 129, 0.1);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-        .header-arena {
-            background: rgba(16, 185, 129, 0.1);
-            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        .freq-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .freq-btn:hover {
-            transform: scale(1.1);
-        }
-        .freq-vazio {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
-            color: transparent;
-        }
-        .freq-falta {
-            background: rgba(244, 63, 94, 0.2);
-            border-color: #f43f5e;
-            color: #f43f5e;
-        }
-        .freq-presente {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: #10b981;
-            color: #10b981;
-        }
-        .freq-atraso {
-            background: rgba(251, 191, 36, 0.2);
-            border-color: #fbbf24;
-            color: #fbbf24;
-        }
-        .freq-justificado {
-            background: rgba(6, 182, 212, 0.2);
-            border-color: #06b6d4;
-            color: #06b6d4;
-        }
-        .all-btn {
-            background: #3b82f6;
-            color: white;
-            font-size: 10px;
-            padding: 4px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .all-btn:hover {
-            background: #2563eb;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-        .nm-badge {
-            background: rgba(107, 114, 128, 0.2);
-            color: #6b7280;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        .contador-faltas {
-            background: rgba(244, 63, 94, 0.1);
-            color: #f43f5e;
-            font-size: 12px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-        .contador-presencas {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .nav-mes {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .nav-mes:hover {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: #10b981;
-        }
-        select {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(16, 185, 129, 0.2) !important;
-            color: white !important;
-        }
-        .loading { 
-            opacity: 0.5; 
-            pointer-events: none; 
-        }
+        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        .btn-emerald { border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); transition: all 0.3s; color: #10b981; }
+        .btn-emerald:hover { background: #10b981; color: black; }
+        .arena-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 16px; }
+        .header-arena { background: rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.2); }
+        .freq-btn { width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+        .freq-vazio { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: transparent; }
+        .freq-falta { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; color: #f43f5e; }
+        .freq-presente { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981; }
+        .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
+        .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
+        .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
+        .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+        .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid rgba(16, 185, 129, 0.1); text-align: center; padding: 8px; }
+        .col-atleta { width: 250px; text-align: left; }
+        .col-dia { width: 60px; }
+        .col-faltas { width: 80px; }
+        select { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
     <div class="max-w-7xl mx-auto">
-        <!-- Header -->
         <div class="flex justify-between items-center mb-6">
-            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs uppercase font-bold">
-                <i class="fas fa-arrow-left mr-2"></i>Voltar
-            </a>
-            <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 tracking-widest uppercase text-center flex-1">
-                <i class="fas fa-check-double mr-3"></i>Frequência Arena
-            </h1>
+            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs uppercase font-bold"><i class="fas fa-arrow-left mr-2"></i>Voltar</a>
+            <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 tracking-widest uppercase text-center flex-1"><i class="fas fa-check-double mr-3"></i>Frequência Arena</h1>
             <div class="w-20"></div>
         </div>
 
-        <!-- Painel Principal -->
         <div class="arena-card">
-            <!-- Barra Superior -->
             <div class="header-arena p-4 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
-                    <button onclick="mudarMes(-1)" class="nav-mes">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center">
-                        Fevereiro 2026
-                    </h2>
-                    <button onclick="mudarMes(1)" class="nav-mes">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <button onclick="mudarMes(-1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center"></h2>
+                    <button onclick="mudarMes(1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                
-                <select id="filtroTurma" onchange="renderizarTabela()" class="px-4 py-2 rounded-lg text-sm outline-none">
-                    <option value="">TODAS AS TURMAS</option>
-                </select>
+                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none"><option value="">TODAS AS TURMAS</option></select>
             </div>
 
-            <!-- Tabela de Frequência -->
-            <div class="p-4 overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-emerald-500/20">
-                            <th class="text-left p-3 text-[10px] uppercase tracking-wider text-emerald-400 w-[200px]">Atleta</th>
-                            <th class="text-left p-3 text-[10px] uppercase tracking-wider text-emerald-400">Ações Lote</th>
-                            <th id="headerDias" class="flex">
-                                <!-- Dias gerados dinamicamente -->
-                            </th>
-                            <th class="p-3 text-[10px] uppercase tracking-wider text-emerald-400 text-center">Faltas</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabela">
-                        <!-- Alunos gerados dinamicamente -->
-                    </tbody>
-                    <tfoot>
-                        <tr class="border-t border-emerald-500/20 bg-emerald-500/5">
-                            <td colspan="2" class="p-3 text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
-                                Presenças / Dia
-                            </td>
-                            <td id="footerPresencas" class="flex">
-                                <!-- Contadores gerados dinamicamente -->
-                            </td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
+            <div class="overflow-x-auto">
+                <table id="tabelaFrequencia">
+                    <thead id="theadPrincipal"></thead>
+                    <tbody id="corpoTabela"></tbody>
+                    <tfoot id="tfootPrincipal"></tfoot>
                 </table>
             </div>
 
-            <!-- Botões de Ação -->
             <div class="p-4 border-t border-emerald-500/20 flex flex-col md:flex-row gap-3 justify-end">
-                <button onclick="exportarPresencas()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold tracking-wider">
-                    <i class="fas fa-share-alt mr-2"></i>Compartilhar Presenças
-                </button>
-                <button onclick="salvarFrequencia()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold tracking-wider">
-                    <i class="fas fa-save mr-2"></i>Salvar Frequência
-                </button>
+                <button onclick="sincronizar()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold"><i class="fas fa-sync mr-2"></i>Sincronizar</button>
+                <button onclick="salvar()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Justificativa -->
-    <div id="modalJustificativa" class="modal">
-        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500/30">
-            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-wider">
-                <i class="fas fa-comment-dots mr-2"></i>Justificar Falta
-            </h3>
-            <input type="hidden" id="justAlunoIndex">
-            <input type="hidden" id="justDiaIndex">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] uppercase tracking-wider text-cyan-400 mb-2">Justificativa</label>
-                    <textarea id="justTexto" class="w-full p-3 rounded-lg outline-none bg-gray-900 text-sm" rows="3" placeholder="Digite o motivo..."></textarea>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="fecharModalJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
-                        Cancelar
-                    </button>
-                    <button onclick="salvarJustificativa()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold hover:bg-cyan-400 transition">
-                        Salvar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Exportar -->
-    <div id="modalExportar" class="modal">
-        <div class="glass p-6 rounded-2xl max-w-lg w-full mx-4 border border-emerald-500/30">
-            <h3 class="text-xl font-bold text-emerald-400 mb-4 uppercase tracking-wider">
-                <i class="fas fa-share-alt mr-2"></i>Compartilhar Presenças
-            </h3>
-            <div class="space-y-4">
-                <div class="bg-black/30 p-4 rounded-lg max-h-60 overflow-y-auto">
-                    <pre id="exportConteudo" class="text-xs text-emerald-300 font-mono whitespace-pre-wrap"></pre>
-                </div>
-                <div class="flex gap-3">
-                    <button onclick="fecharModalExport()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">
-                        Fechar
-                    </button>
-                    <button onclick="copiarExport()" class="flex-1 btn-emerald p-3 rounded-lg uppercase text-xs font-bold">
-                        <i class="fas fa-copy mr-2"></i>Copiar
-                    </button>
-                </div>
+    <div id="modalJust" class="modal">
+        <div class="bg-gray-900 p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500">
+            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase">Justificar Falta</h3>
+            <input type="hidden" id="jA"><input type="hidden" id="jD">
+            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Motivo..."></textarea>
+            <div class="flex gap-3">
+                <button onclick="fecharJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
+                <button onclick="salvarJust()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
             </div>
         </div>
     </div>
@@ -289,423 +84,328 @@
         
         let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
         let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
-        let frequencias = JSON.parse(localStorage.getItem('tsunami_frequencias')) || [];
-        
+        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; // Dados locais
         let dataAtual = new Date();
-        let alunosAtivos = [];
-        let diasMes = [];
-        let estadoFrequencia = {}; // { "alunoIndex-diaIndex": "F|P|A|J" }
+        let dias = [];
+        let lista = [];
+        let editando = {}; // Alterações pendentes
 
-        // Ciclo de estados
         const CICLO = ['', 'F', 'P', 'A', 'J'];
-        const CORES = {
-            '': 'freq-vazio',
-            'F': 'freq-falta',
-            'P': 'freq-presente',
-            'A': 'freq-atraso',
-            'J': 'freq-justificado'
-        };
+        const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
+        const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
 
-        // Obter sábados do mês
-        function obterSabados(ano, mes) {
-            const sabados = [];
-            const data = new Date(ano, mes, 1);
-            
-            while (data.getDay() !== 6) {
-                data.setDate(data.getDate() + 1);
+        // Converte data string para Date
+        function toDate(str) {
+            if (!str) return null;
+            if (str instanceof Date) {
+                const d = new Date(str);
+                d.setHours(0,0,0,0);
+                return d;
             }
-            
-            while (data.getMonth() === mes) {
-                sabados.push(new Date(data));
-                data.setDate(data.getDate() + 7);
+            // DD/MM/YYYY
+            if (str.includes('/')) {
+                const [d,m,a] = str.split('/').map(Number);
+                const r = new Date(a, m-1, d);
+                r.setHours(0,0,0,0);
+                return r;
             }
-            
-            return sabados;
+            // ISO
+            const d = new Date(str);
+            d.setHours(0,0,0,0);
+            return d;
         }
 
-        // Formatar data
-        function formatarData(data) {
-            return data.toLocaleDateString('pt-BR');
-        }
-
-        // Verificar se aluno está ativo
-        function alunoAtivo(aluno, dataReferencia) {
-            const matricula = new Date(aluno.matricula_rematricula);
-            const vencimento = new Date(aluno.data_vencimento);
-            const ref = new Date(dataReferencia);
-            
-            // Reset horas para comparar só datas
-            matricula.setHours(0,0,0,0);
-            vencimento.setHours(0,0,0,0);
+        // Verifica se data está entre matrícula e vencimento
+        function ativo(aluno, data) {
+            const mat = toDate(aluno.matricula_rematricula);
+            const ven = toDate(aluno.data_vencimento);
+            const ref = new Date(data);
             ref.setHours(0,0,0,0);
-            
-            return matricula <= ref && ref <= vencimento;
+            if (!mat || !ven) return false;
+            return ref >= mat && ref <= ven;
         }
 
-        // Mudar mês
-        function mudarMes(direcao) {
-            dataAtual.setMonth(dataAtual.getMonth() + direcao);
-            renderizarTabela();
+        // Verifica se aluno aparece no mês (há interseção)
+        function noMes(aluno, ano, mes) {
+            const mat = toDate(aluno.matricula_rematricula);
+            const ven = toDate(aluno.data_vencimento);
+            if (!mat || !ven) return false;
+            const ini = new Date(ano, mes, 1);
+            const fim = new Date(ano, mes + 1, 0, 23, 59, 59);
+            return mat <= fim && ven >= ini;
         }
 
-        // Carregar turmas no filtro
-        function carregarTurmas() {
-            const select = document.getElementById('filtroTurma');
-            const atual = select.value;
-            select.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-            
-            turmas.sort((a, b) => a.nome.localeCompare(b.nome));
-            turmas.forEach(t => {
-                const option = document.createElement('option');
-                option.value = t.nome;
-                option.textContent = t.nome;
-                select.appendChild(option);
-            });
-            
-            if (atual) select.value = atual;
+        // Chave única para frequência
+        function chave(nome, data) {
+            return nome + '|' + data.getTime();
         }
 
-        // Renderizar tabela
-        function renderizarTabela() {
+        // Busca status (editando primeiro, depois salvo)
+        function getStatus(nome, data, a, d) {
+            const k = chave(nome, data);
+            const k2 = a + '-' + d;
+            if (editando[k2] !== undefined) return editando[k2];
+            if (freq[k]) return freq[k];
+            return '';
+        }
+
+        function sabados(ano, mes) {
+            const r = [];
+            const d = new Date(ano, mes, 1);
+            while (d.getDay() !== 6) d.setDate(d.getDate() + 1);
+            while (d.getMonth() === mes) {
+                const x = new Date(d);
+                x.setHours(0,0,0,0);
+                r.push(x);
+                d.setDate(d.getDate() + 7);
+            }
+            return r;
+        }
+
+        function mudarMes(dir) {
+            dataAtual.setMonth(dataAtual.getMonth() + dir);
+            editando = {}; // Limpa edições ao mudar mês
+            renderizar();
+        }
+
+        function renderizar() {
             const ano = dataAtual.getFullYear();
             const mes = dataAtual.getMonth();
+            const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
             
-            // Atualizar título
-            const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            document.getElementById('tituloMes').textContent = `${meses[mes]} ${ano}`;
+            document.getElementById('tituloMes').textContent = nomesMes[mes] + ' ' + ano;
+            dias = sabados(ano, mes);
             
-            // Obter sábados
-            diasMes = obterSabados(ano, mes);
+            const filtro = document.getElementById('filtroTurma').value;
             
-            // Renderizar header dos dias
-            const headerDias = document.getElementById('headerDias');
-            headerDias.innerHTML = diasMes.map((dia, i) => `
-                <div class="flex-1 text-center p-2 min-w-[60px]">
-                    <div class="text-[10px] uppercase text-gray-400">Sáb</div>
-                    <div class="text-lg font-bold text-emerald-300">${dia.getDate()}</div>
-                </div>
-            `).join('');
+            // Filtra alunos ativos no mês
+            lista = alunos.filter(a => noMes(a, ano, mes))
+                          .sort((a,b) => a.nome.localeCompare(b.nome));
             
-            // Filtrar alunos ativos
-            const turmaFiltro = document.getElementById('filtroTurma').value;
-            const meioMes = new Date(ano, mes, 15); // Dia 15 como referência
+            if (filtro) lista = lista.filter(a => a.turma === filtro);
+
+            // Header
+            let h = '<tr class="bg-emerald-500/5"><th class="col-atleta text-[10px] uppercase text-emerald-400 p-3">Atleta</th>';
+            dias.forEach(d => {
+                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">SÁB</div><div style="font-size:18px;font-weight:bold;color:#34d399">${d.getDate()}</div></th>`;
+            });
+            h += '<th class="col-faltas text-[10px] uppercase text-emerald-400 p-3">Faltas</th></tr>';
             
-            alunosAtivos = alunos.filter(a => {
-                if (turmaFiltro && a.turma !== turmaFiltro) return false;
-                return true; // Mostra todos, mas verifica ativo por dia
-            }).sort((a, b) => a.nome.localeCompare(b.nome));
+            h += '<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Ações Lote</td>';
+            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
+            h += '<td class="col-faltas"></td></tr>';
             
-            // Renderizar alunos
-            const corpo = document.getElementById('corpoTabela');
-            
-            if (alunosAtivos.length === 0) {
-                corpo.innerHTML = `
-                    <tr>
-                        <td colspan="${3 + diasMes.length}" class="p-8 text-center text-gray-500 uppercase text-xs tracking-widest">
-                            <i class="fas fa-inbox text-3xl mb-3 block opacity-30"></i>
-                            Nenhum aluno encontrado
-                        </td>
-                    </tr>
-                `;
-                renderizarFooter();
+            document.getElementById('theadPrincipal').innerHTML = h;
+
+            // Body
+            const tbody = document.getElementById('corpoTabela');
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo</td></tr>`;
+                document.getElementById('tfootPrincipal').innerHTML = '';
                 return;
             }
-            
-            corpo.innerHTML = alunosAtivos.map((aluno, alunoIndex) => {
-                const faltas = calcularFaltas(alunoIndex);
-                
-                return `
-                <tr class="border-b border-emerald-500/10 hover:bg-emerald-500/5">
-                    <td class="p-3">
-                        <div class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</div>
-                        <div class="text-[10px] text-gray-500">${aluno.turma}</div>
-                    </td>
-                    <td class="p-3">
-                        <div class="flex gap-1">
-                            ${diasMes.map((_, i) => `
-                                <button onclick="aplicarLote(${i})" class="all-btn" title="Aplicar para todos">ALL</button>
-                            `).join('')}
-                        </div>
-                    </td>
-                    <td class="flex">
-                        ${diasMes.map((dia, diaIndex) => {
-                            const ativo = alunoAtivo(aluno, dia);
-                            const key = `${alunoIndex}-${diaIndex}`;
-                            const estado = estadoFrequencia[key] || '';
-                            
-                            if (!ativo) {
-                                return `<div class="flex-1 flex items-center justify-center p-2 min-w-[60px]"><span class="nm-badge">N/M</span></div>`;
-                            }
-                            
-                            return `
-                                <div class="flex-1 flex items-center justify-center p-2 min-w-[60px]">
-                                    <button onclick="cicloFrequencia(${alunoIndex}, ${diaIndex})" 
-                                            class="freq-btn ${CORES[estado]}" 
-                                            title="${estado === 'J' ? 'Justificado' : ''}">
-                                        ${estado}
-                                    </button>
-                                </div>
-                            `;
-                        }).join('')}
-                    </td>
-                    <td class="p-3 text-center">
-                        <span class="contador-faltas">${faltas}</span>
-                    </td>
-                </tr>
-                `;
-            }).join('');
-            
-            renderizarFooter();
-        }
 
-        // Calcular faltas do aluno
-        function calcularFaltas(alunoIndex) {
-            let faltas = 0;
-            diasMes.forEach((dia, diaIndex) => {
-                const aluno = alunosAtivos[alunoIndex];
-                if (!alunoAtivo(aluno, dia)) return;
+            tbody.innerHTML = lista.map((aluno, a) => {
+                let r = `<tr><td class="col-atleta px-4 py-3"><div class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</div><div class="text-[9px] text-gray-500">${aluno.turma||''}</div></td>`;
                 
-                const key = `${alunoIndex}-${diaIndex}`;
-                const estado = estadoFrequencia[key] || '';
-                if (estado === 'F' || estado === 'J') faltas++;
-            });
-            return faltas;
-        }
-
-        // Renderizar footer com contadores
-        function renderizarFooter() {
-            const footer = document.getElementById('footerPresencas');
-            
-            footer.innerHTML = diasMes.map((dia, diaIndex) => {
-                let presencas = 0;
-                
-                alunosAtivos.forEach((aluno, alunoIndex) => {
-                    if (!alunoAtivo(aluno, dia)) return;
-                    const key = `${alunoIndex}-${diaIndex}`;
-                    const estado = estadoFrequencia[key] || '';
-                    if (estado === 'P' || estado === 'A') presencas++;
+                dias.forEach((dia, d) => {
+                    if (!ativo(aluno, dia)) {
+                        r += `<td class="col-dia p-2"><span class="nm-badge">N/M</span></td>`;
+                    } else {
+                        const s = getStatus(aluno.nome, dia, a, d);
+                        r += `<td class="col-dia p-2"><button onclick="ciclo(${a},${d})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
+                    }
                 });
                 
-                return `
-                    <div class="flex-1 text-center p-2 min-w-[60px]">
-                        <span class="contador-presencas">${presencas}</span>
-                    </div>
-                `;
+                // Conta faltas
+                let f = 0;
+                dias.forEach((dia, d) => {
+                    if (ativo(aluno, dia)) {
+                        const s = getStatus(aluno.nome, dia, a, d);
+                        if (s === 'F' || s === 'J') f++;
+                    }
+                });
+                
+                r += `<td class="col-faltas"><span class="contador-faltas">${f}</span></td></tr>`;
+                return r;
             }).join('');
-        }
 
-        // Ciclo de frequência
-        function cicloFrequencia(alunoIndex, diaIndex) {
-            const key = `${alunoIndex}-${diaIndex}`;
-            const atual = estadoFrequencia[key] || '';
-            const proximoIndex = (CICLO.indexOf(atual) + 1) % CICLO.length;
-            const proximo = CICLO[proximoIndex];
-            
-            // Se for Justificado (J), abre modal
-            if (proximo === 'J') {
-                document.getElementById('justAlunoIndex').value = alunoIndex;
-                document.getElementById('justDiaIndex').value = diaIndex;
-                document.getElementById('justTexto').value = '';
-                document.getElementById('modalJustificativa').classList.add('active');
-                return;
-            }
-            
-            estadoFrequencia[key] = proximo;
-            renderizarTabela();
-        }
-
-        // Aplicar em lote
-        function aplicarLote(diaIndex) {
-            // Pega o estado do primeiro aluno ativo neste dia
-            let estadoReferencia = '';
-            for (let i = 0; i < alunosAtivos.length; i++) {
-                const key = `${i}-${diaIndex}`;
-                if (estadoFrequencia[key]) {
-                    estadoReferencia = estadoFrequencia[key];
-                    break;
-                }
-            }
-            
-            // Próximo estado do ciclo
-            const proximoIndex = (CICLO.indexOf(estadoReferencia) + 1) % CICLO.length;
-            const proximo = CICLO[proximoIndex];
-            
-            // Se for Justificado, não aplica em lote (precisa justificativa individual)
-            if (proximo === 'J') {
-                alert('Justificativa não pode ser aplicada em lote. Clique individualmente.');
-                return;
-            }
-            
-            // Aplica para todos os ativos neste dia
-            alunosAtivos.forEach((aluno, alunoIndex) => {
-                const dia = diasMes[diaIndex];
-                if (alunoAtivo(aluno, dia)) {
-                    const key = `${alunoIndex}-${diaIndex}`;
-                    estadoFrequencia[key] = proximo;
-                }
+            // Footer
+            let f = '<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>';
+            dias.forEach((dia, d) => {
+                let t = 0;
+                lista.forEach((aluno, a) => {
+                    if (ativo(aluno, dia)) {
+                        const s = getStatus(aluno.nome, dia, a, d);
+                        if (s === 'P' || s === 'A') t++;
+                    }
+                });
+                f += `<td class="col-dia p-2"><span class="contador-presencas">${t}</span></td>`;
             });
-            
-            renderizarTabela();
+            f += '<td class="col-faltas"></td></tr>';
+            document.getElementById('tfootPrincipal').innerHTML = f;
         }
 
-        // Modal Justificativa
-        function fecharModalJust() {
-            document.getElementById('modalJustificativa').classList.remove('active');
+        function ciclo(a, d) {
+            const aluno = lista[a];
+            const dia = dias[d];
+            if (!ativo(aluno, dia)) return;
+            
+            const k = a + '-' + d;
+            const atual = editando[k] || getStatus(aluno.nome, dia, a, d) || '';
+            const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
+            
+            if (prox === 'J') {
+                document.getElementById('jA').value = a;
+                document.getElementById('jD').value = d;
+                document.getElementById('modalJust').classList.add('active');
+                return;
+            }
+            
+            editando[k] = prox;
+            renderizar();
         }
 
-        function salvarJustificativa() {
-            const alunoIndex = document.getElementById('justAlunoIndex').value;
-            const diaIndex = document.getElementById('justDiaIndex').value;
-            const texto = document.getElementById('justTexto').value;
+        function lote(d) {
+            const dia = dias[d];
+            let primeiro = '';
             
-            const key = `${alunoIndex}-${diaIndex}`;
-            estadoFrequencia[key] = 'J';
+            for (let i = 0; i < lista.length; i++) {
+                if (ativo(lista[i], dia)) {
+                    primeiro = editando[i+'-'+d] || getStatus(lista[i].nome, dia, i, d) || '';
+                    if (primeiro) break;
+                }
+            }
             
-            // Salva justificativa separadamente
-            const justKey = `${key}-just`;
-            estadoFrequencia[justKey] = texto;
+            const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
+            if (prox === 'J') return alert('Justificativa apenas individual');
             
-            fecharModalJust();
-            renderizarTabela();
+            for (let i = 0; i < lista.length; i++) {
+                if (ativo(lista[i], dia)) {
+                    editando[i+'-'+d] = prox;
+                }
+            }
+            renderizar();
         }
 
-        // Salvar frequência
-        async function salvarFrequencia() {
+        function fecharJust() {
+            document.getElementById('modalJust').classList.remove('active');
+        }
+
+        function salvarJust() {
+            const a = document.getElementById('jA').value;
+            const d = document.getElementById('jD').value;
+            editando[a+'-'+d] = 'J';
+            editando[a+'-'+d+'-txt'] = document.getElementById('jT').value;
+            fecharJust();
+            renderizar();
+        }
+
+        async function salvar() {
             const btn = document.getElementById('btnSalvar');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
-            btn.classList.add('loading');
-            
-            const registros = [];
-            
-            alunosAtivos.forEach((aluno, alunoIndex) => {
-                diasMes.forEach((dia, diaIndex) => {
-                    if (!alunoAtivo(aluno, dia)) return;
+            btn.disabled = true;
+
+            // Envia para planilha
+            for (let a = 0; a < lista.length; a++) {
+                for (let d = 0; d < dias.length; d++) {
+                    const aluno = lista[a];
+                    const dia = dias[d];
                     
-                    const key = `${alunoIndex}-${diaIndex}`;
-                    const status = estadoFrequencia[key];
+                    if (!ativo(aluno, dia)) continue;
                     
-                    if (status) {
-                        const justKey = `${key}-just`;
-                        const justificativa = estadoFrequencia[justKey] || '';
-                        
-                        // Converte código para texto
-                        const statusTexto = {
-                            'P': 'Presente',
-                            'A': 'Atraso',
-                            'F': 'Faltou',
-                            'J': 'Justificado'
-                        }[status];
-                        
-                        registros.push({
-                            action: "frequencia",
-                            nome: aluno.nome,
-                            data_aula: formatarData(dia),
-                            status: statusTexto,
-                            justificativa: justificativa
-                        });
+                    const k = a + '-' + d;
+                    const s = editando[k];
+                    if (!s) continue; // Só salva o que foi editado
+                    
+                    // Atualiza local
+                    freq[chave(aluno.nome, dia)] = s;
+                    if (editando[k+'-txt']) {
+                        freq[chave(aluno.nome, dia)+'-txt'] = editando[k+'-txt'];
                     }
-                });
-            });
+                    
+                    // Envia
+                    const fd = new FormData();
+                    fd.append('action', 'frequencia');
+                    fd.append('nome', aluno.nome);
+                    fd.append('data_aula', dia.toLocaleDateString('pt-BR'));
+                    fd.append('status', TEXTO[s]);
+                    fd.append('justificativa', editando[k+'-txt'] || '');
+                    
+                    try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e) {}
+                }
+            }
             
             // Salva local
-            frequencias.push(...registros);
-            localStorage.setItem('tsunami_frequencias', JSON.stringify(frequencias));
+            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+            editando = {};
             
-            // Envia para planilha
-            try {
-                for (const reg of registros) {
-                    await enviarParaPlanilha(reg);
-                }
-                alert(`${registros.length} registros salvos com sucesso!`);
-            } catch (err) {
-                console.error('Erro:', err);
-                alert('Salvo localmente. Erro na sincronização.');
-            }
-            
-            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Frequência';
-            btn.classList.remove('loading');
+            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
+            btn.disabled = false;
+            alert('Salvo!');
+            renderizar();
         }
 
-        // Exportar presenças
-        function exportarPresencas() {
-            const turmaFiltro = document.getElementById('filtroTurma').value || 'Todas as Turmas';
-            const mes = dataAtual.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'});
+        async function sincronizar() {
+            document.getElementById('corpoTabela').innerHTML = '<tr><td colspan="20" class="p-8 text-center text-emerald-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
             
-            let presentes = [];
-            
-            alunosAtivos.forEach((aluno, alunoIndex) => {
-                let presencasAluno = [];
+            try {
+                // Alunos
+                const r1 = await fetch(URL_SCRIPT + '?getDados=alunos');
+                const d1 = await r1.json();
+                if (Array.isArray(d1)) {
+                    alunos = d1;
+                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                }
                 
-                diasMes.forEach((dia, diaIndex) => {
-                    if (!alunoAtivo(aluno, dia)) return;
-                    
-                    const key = `${alunoIndex}-${diaIndex}`;
-                    const status = estadoFrequencia[key];
-                    
-                    if (status === 'P' || status === 'A') {
-                        presencasAluno.push(dia.getDate());
-                    }
-                });
+                // Turmas
+                const r2 = await fetch(URL_SCRIPT + '?getDados=turmas');
+                const d2 = await r2.json();
+                if (Array.isArray(d2)) {
+                    turmas = d2;
+                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                }
                 
-                if (presencasAluno.length > 0) {
-                    presentes.push({
-                        nome: aluno.nome,
-                        turma: aluno.turma,
-                        dias: presencasAluno
+                // Frequência
+                const r3 = await fetch(URL_SCRIPT + '?getDados=frequencia');
+                const d3 = await r3.json();
+                if (Array.isArray(d3)) {
+                    freq = {};
+                    d3.forEach(f => {
+                        const dt = toDate(f.data_aula);
+                        if (dt) {
+                            freq[chave(f.nome, dt)] = (f.status === 'Presente' ? 'P' : 
+                                                       f.status === 'Atraso' ? 'A' : 
+                                                       f.status === 'Faltou' ? 'F' : 
+                                                       f.status === 'Justificado' ? 'J' : '');
+                            if (f.justificativa) {
+                                freq[chave(f.nome, dt)+'-txt'] = f.justificativa;
+                            }
+                        }
                     });
+                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
                 }
-            });
-            
-            const totalPresentes = presentes.length;
-            
-            const conteudo = `FREQUÊNCIA ARENA - ${mes.toUpperCase()}
-Turma: ${turmaFiltro}
-Total de Presentes: ${totalPresentes}
-
-${presentes.map(p => `- ${p.nome} (${p.turma}) - Dias: ${p.dias.join(', ')}`).join('\n')}
-
----
-Gerado por TSUNAMI System`;
-
-            document.getElementById('exportConteudo').textContent = conteudo;
-            document.getElementById('modalExportar').classList.add('active');
-        }
-
-        function fecharModalExport() {
-            document.getElementById('modalExportar').classList.remove('active');
-        }
-
-        function copiarExport() {
-            const texto = document.getElementById('exportConteudo').textContent;
-            navigator.clipboard.writeText(texto).then(() => {
-                alert('Copiado para a área de transferência!');
-            });
-        }
-
-        // Função auxiliar
-        async function enviarParaPlanilha(dados) {
-            const formData = new FormData();
-            for (const [chave, valor] of Object.entries(dados)) {
-                formData.append(chave, valor);
+            } catch(e) {
+                console.error(e);
             }
             
-            const resposta = await fetch(URL_SCRIPT, {
-                method: 'POST',
-                body: formData
+            // Atualiza select
+            const sel = document.getElementById('filtroTurma');
+            const val = sel.value;
+            sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+            turmas.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(t => {
+                const o = document.createElement('option');
+                o.value = t.nome;
+                o.textContent = t.nome;
+                sel.appendChild(o);
             });
+            sel.value = val;
             
-            const texto = await resposta.text();
-            try {
-                return JSON.parse(texto);
-            } catch (e) {
-                return { result: "success" };
-            }
+            renderizar();
         }
 
-        // Inicializa
-        carregarTurmas();
-        renderizarTabela();
+        // Inicia
+        sincronizar();
     </script>
 </body>
 </html>
