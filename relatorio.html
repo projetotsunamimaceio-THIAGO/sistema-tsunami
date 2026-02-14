@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TSUNAMI - Relatórios</title>
+    <title>TSUNAMI - Relatórios (Sábados)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -18,7 +18,6 @@
         .table-ranking { width: 100%; font-size: 13px; }
         .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; position: sticky; top: 0; background: #0a0a0f; }
         .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        /* Adicionado scroll para caso a lista de 15 alunos fique muito grande em telas menores */
         .ranking-container { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b5cf6 transparent; }
     </style>
 </head>
@@ -28,7 +27,10 @@
             <a href="index.html" class="btn-violet px-4 py-2 rounded-lg text-sm uppercase font-bold text-white">
                 <i class="fas fa-arrow-left mr-2"></i> Voltar
             </a>
-            <h1 class="text-3xl font-bold neon-violet tracking-widest uppercase text-center">Estatísticas</h1>
+            <div class="text-center">
+                <h1 class="text-3xl font-bold neon-violet tracking-widest uppercase">Estatísticas Arena</h1>
+                <p class="text-[10px] text-violet-400 tracking-[0.3em] uppercase mt-1">Apenas dados de Sábado</p>
+            </div>
             
             <div class="flex flex-wrap gap-2 justify-center">
                 <select id="filtroTipo" onchange="alternarFiltros()">
@@ -47,11 +49,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="glass p-6 rounded-2xl text-center border-b-4 border-violet-500">
-                <h3 class="text-xs uppercase text-violet-400 mb-1">Total de Alunos</h3>
+                <h3 class="text-xs uppercase text-violet-400 mb-1">Alunos em Sábados</h3>
                 <p id="totalAlunos" class="text-4xl font-bold">0</p>
             </div>
             <div class="glass p-6 rounded-2xl text-center border-b-4 border-cyan-500">
-                <h3 class="text-xs uppercase text-cyan-400 mb-1">Turmas Ativas</h3>
+                <h3 class="text-xs uppercase text-cyan-400 mb-1">Turmas Ativas (Sáb)</h3>
                 <p id="totalTurmas" class="text-4xl font-bold">0</p>
             </div>
         </div>
@@ -62,18 +64,18 @@
                 <div class="chart-container"><canvas id="chartPizza"></canvas></div>
             </div>
             <div class="glass p-6 rounded-2xl">
-                <h3 class="text-sm font-bold uppercase mb-4 text-cyan-300">Presença vs Faltas</h3>
+                <h3 class="text-sm font-bold uppercase mb-4 text-cyan-300">Presença vs Faltas (Sábados)</h3>
                 <div class="chart-container"><canvas id="chartColunas"></canvas></div>
             </div>
             <div class="glass p-6 rounded-2xl md:col-span-2">
-                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-300">Evolução de Presenças</h3>
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-300">Evolução de Presenças aos Sábados</h3>
                 <div class="chart-container"><canvas id="chartLinhas"></canvas></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="glass p-6 rounded-2xl border-t-2 border-emerald-500">
-                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Ranking: 15 Mais Frequentes</h3>
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Ranking Sábado: 15 Mais Frequentes</h3>
                 <div class="ranking-container">
                     <table class="table-ranking" id="rankingPresenca">
                         <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
@@ -82,7 +84,7 @@
                 </div>
             </div>
             <div class="glass p-6 rounded-2xl border-t-2 border-rose-500">
-                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Ranking: 15 Mais Faltas</h3>
+                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Ranking Sábado: 15 Mais Faltas</h3>
                 <div class="ranking-container">
                     <table class="table-ranking" id="rankingFaltas">
                         <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
@@ -126,21 +128,13 @@
             alunos.forEach(a => { 
                 const nomeKey = a.nome.trim().toUpperCase();
                 mapaAlunos[nomeKey] = a.turma || "S/T";
-                statsIndividuais[nomeKey] = { P: 0, F: 0, turma: a.turma || "S/T", nomeOriginal: a.nome };
+                statsIndividuais[nomeKey] = { P: 0, F: 0, turma: a.turma || "S/T", nomeOriginal: a.nome, ativoNoSabado: false };
             });
             
-            const turmasUnicas = [...new Set(alunos.map(a => a.turma || "S/T"))].sort();
-            document.getElementById('totalAlunos').innerText = alunos.length;
-            document.getElementById('totalTurmas').innerText = turmasUnicas.length;
-
-            const distTurmas = {};
-            alunos.forEach(a => distTurmas[a.turma || "S/T"] = (distTurmas[a.turma || "S/T"] || 0) + 1);
-            charts.pizza.data.labels = Object.keys(distTurmas);
-            charts.pizza.data.datasets[0].data = Object.values(distTurmas);
-            charts.pizza.update();
-
             const dadosTurmaColunas = {};
             const evolucaoPorData = {}; 
+            const distTurmas = {};
+            let contagemAlunosSabado = new Set();
 
             Object.entries(freq).forEach(([chave, status]) => {
                 if (chave.endsWith('-txt')) return;
@@ -150,7 +144,10 @@
                 const nomeRaw = partes[0].trim().toUpperCase();
                 const dataISO = partes[1];
                 const dataF = new Date(dataISO + "T00:00:00");
-                
+
+                // FILTRO DE SÁBADO: .getDay() retorna 6 para Sábado
+                if (dataF.getDay() !== 6) return;
+
                 let incluir = false;
                 if (tipoFiltro === 'periodo') {
                     const dias = parseInt(document.getElementById('filtroPeriodo').value);
@@ -165,6 +162,9 @@
                     const tNome = mapaAlunos[nomeRaw] || "S/T";
                     if (!dadosTurmaColunas[tNome]) dadosTurmaColunas[tNome] = { P: 0, F: 0 };
                     if (!evolucaoPorData[dataISO]) evolucaoPorData[dataISO] = {};
+                    
+                    contagemAlunosSabado.add(nomeRaw);
+                    distTurmas[tNome] = (distTurmas[tNome] || 0) + 1;
 
                     if (status === 'P' || status === 'A') {
                         dadosTurmaColunas[tNome].P++;
@@ -177,25 +177,41 @@
                 }
             });
 
+            // Atualiza cards superiores baseados no contexto de Sábado
+            document.getElementById('totalAlunos').innerText = contagemAlunosSabado.size;
+            document.getElementById('totalTurmas').innerText = Object.keys(dadosTurmaColunas).length;
+
+            // Gráfico Pizza
+            charts.pizza.data.labels = Object.keys(dadosTurmaColunas);
+            charts.pizza.data.datasets[0].data = Object.keys(dadosTurmaColunas).map(t => {
+                return alunos.filter(a => (a.turma || "S/T") === t).length;
+            });
+            charts.pizza.update();
+
+            // Gráfico Colunas
             charts.colunas.data.labels = Object.keys(dadosTurmaColunas);
             charts.colunas.data.datasets[0].data = Object.values(dadosTurmaColunas).map(d => d.P);
             charts.colunas.data.datasets[1].data = Object.values(dadosTurmaColunas).map(d => d.F);
             charts.colunas.update();
 
+            // Gráfico Linhas
             const datasOrd = Object.keys(evolucaoPorData).sort();
             charts.linhas.data.labels = datasOrd.map(d => d.split('-').reverse().slice(0,2).join('/'));
+            const turmasUnicas = Object.keys(dadosTurmaColunas).sort();
+            
             const dataPointsGeral = datasOrd.map(dt => turmasUnicas.reduce((s, t) => s + (evolucaoPorData[dt][t] || 0), 0));
 
-            const datasetsFinal = [{ label: "TOTAL GERAL", data: dataPointsGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 4, fill: true, tension: 0.3, pointRadius: 5 }];
+            const datasetsFinal = [{ label: "PRESENÇA TOTAL (SÁB)", data: dataPointsGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 4, fill: true, tension: 0.3, pointRadius: 5 }];
+            
             turmasUnicas.forEach((t, idx) => {
                 const pts = datasOrd.map(dt => evolucaoPorData[dt][t] || 0);
-                if (pts.some(v => v > 0)) datasetsFinal.push({ label: t, data: pts, borderColor: CORES_PALETA[idx % CORES_PALETA.length], backgroundColor: 'transparent', borderWidth: 2, tension: 0.3 });
+                datasetsFinal.push({ label: t, data: pts, borderColor: CORES_PALETA[idx % CORES_PALETA.length], backgroundColor: 'transparent', borderWidth: 2, tension: 0.3 });
             });
             charts.linhas.data.datasets = datasetsFinal;
             charts.linhas.update();
 
-            // Renderizar Rankings - ALTERADO PARA 15 ALUNOS
-            const listaStats = Object.values(statsIndividuais);
+            // Rankings
+            const listaStats = Object.values(statsIndividuais).filter(a => a.P > 0 || a.F > 0);
             
             const maisFreq = [...listaStats].sort((a, b) => b.P - a.P).slice(0, 15);
             document.querySelector('#rankingPresenca tbody').innerHTML = maisFreq.map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-emerald-400">${a.P}</td></tr>`).join('');
