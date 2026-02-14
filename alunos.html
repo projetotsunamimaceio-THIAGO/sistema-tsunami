@@ -11,7 +11,18 @@
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 255, 0.1); }
         .btn-fuchsia { border: 1px solid #ff00ff; background: rgba(255, 0, 255, 0.1); transition: all 0.3s; color: #ff00ff; }
         .btn-fuchsia:hover { background: #ff00ff; color: black; box-shadow: 0 0 20px rgba(255, 0, 255, 0.4); }
-        input, select, textarea { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 0, 255, 0.2) !important; color: white !important; }
+        
+        /* CORREÇÃO DO FUNDO BRANCO NO SELECT */
+        select, input, textarea { 
+            background: #1a1a2e !important; 
+            border: 1px solid rgba(255, 0, 255, 0.2) !important; 
+            color: white !important; 
+        }
+        select option {
+            background-color: #1a1a2e !important;
+            color: white !important;
+        }
+
         textarea { resize: vertical; min-height: 120px; }
         .aluno-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 0, 255, 0.1); border-left: 4px solid #ff00ff; transition: all 0.3s; }
         .aluno-card:hover { background: rgba(255, 0, 255, 0.05); transform: translateX(5px); }
@@ -28,7 +39,7 @@
         .empty-state { color: rgba(255, 0, 255, 0.4); font-style: italic; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8" onload="inicializar()">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
     <div class="max-w-6xl mx-auto">
@@ -52,7 +63,7 @@
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
-                    <select id="turma" class="w-full p-3 rounded-lg outline-none bg-gray-900" required><option value="">Selecione...</option></select>
+                    <select id="turma" class="w-full p-3 rounded-lg outline-none" required><option value="">Selecione...</option></select>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label>
@@ -76,7 +87,7 @@
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
                 <div class="md:col-span-4">
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
-                    <select id="turmaLote" class="w-full p-3 rounded-lg outline-none bg-gray-900" required><option value="">Selecione...</option></select>
+                    <select id="turmaLote" class="w-full p-3 rounded-lg outline-none" required><option value="">Selecione...</option></select>
                 </div>
                 <div class="md:col-span-4">
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label>
@@ -115,11 +126,11 @@
             <h3 class="text-xl font-bold text-fuchsia-400 mb-4 uppercase tracking-wider">Editar Aluno</h3>
             <input type="hidden" id="editIndex">
             <div class="space-y-4">
-                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome</label><input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase bg-gray-900"></div>
-                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label><select id="editTurma" class="w-full p-3 rounded-lg outline-none bg-gray-900"></select></div>
+                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome</label><input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase"></div>
+                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label><select id="editTurma" class="w-full p-3 rounded-lg outline-none"></select></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label><input type="date" id="editMatricula" class="w-full p-3 rounded-lg outline-none bg-gray-900"></div>
-                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label><input type="date" id="editVencimento" class="w-full p-3 rounded-lg outline-none bg-gray-900"></div>
+                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label><input type="date" id="editMatricula" class="w-full p-3 rounded-lg outline-none"></div>
+                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label><input type="date" id="editVencimento" class="w-full p-3 rounded-lg outline-none"></div>
                 </div>
                 <div class="flex gap-3 mt-6">
                     <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">Cancelar</button>
@@ -132,38 +143,17 @@
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
         let alunos = [];
-        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+        let turmas = [];
 
-        // ========== SINCRONIZAR ALUNOS DA PLANILHA ==========
-        async function sincronizarAlunos() {
-            const container = document.getElementById('listaAlunos');
-            container.innerHTML = '<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-spinner fa-spin text-4xl mb-4 block opacity-30"></i>Sincronizando...</p>';
-            
-            try {
-                const resposta = await fetch(URL_SCRIPT + '?getDados=alunos');
-                const dados = await resposta.json();
-                
-                if (Array.isArray(dados)) {
-                    alunos = dados;
-                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-                }
-            } catch (err) {
-                console.log('Erro ao sincronizar:', err);
-                alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
-            }
-            
-            renderizarAlunos();
-        }
-
-        function switchTab(tab) {
-            document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
-            document.getElementById('tabLote').classList.toggle('active', tab === 'lote');
-            document.getElementById('formIndividual').classList.toggle('hidden', tab !== 'individual');
-            document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
+        function inicializar() {
+            carregarTurmas();
+            sincronizarAlunos();
         }
 
         function carregarTurmas() {
+            turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
             const selects = [document.getElementById('turma'), document.getElementById('turmaLote'), document.getElementById('editTurma')];
+            
             selects.forEach(select => {
                 if (!select) return;
                 select.innerHTML = '<option value="">Selecione...</option>';
@@ -177,51 +167,29 @@
             });
         }
 
-        async function cadastrarLote() {
-            const turma = document.getElementById('turmaLote').value;
-            const matricula = document.getElementById('matriculaLote').value;
-            const vencimento = document.getElementById('vencimentoLote').value;
-            const nomesTexto = document.getElementById('listaNomesLote').value.trim();
-
-            if (!turma || !matricula || !vencimento) return alert('Preencha todos os campos!');
-            if (!nomesTexto) return alert('Digite pelo menos um nome!');
-
-            const nomes = nomesTexto.split('\n').map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
-            if (nomes.length === 0) return alert('Nenhum nome válido!');
-
-            const btn = document.getElementById('btnCadastrarLote');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-            btn.classList.add('opacity-50');
-
-            let sucessos = 0;
-            for (const nome of nomes) {
-                const novoAluno = { nome, turma, matricula_rematricula: matricula, data_vencimento: vencimento };
-                if (alunos.find(a => a.nome === nome && a.turma === turma)) continue;
-                
-                alunos.push(novoAluno);
-                try {
-                    await enviarParaPlanilha({ action: "alunos", ...novoAluno });
-                    sucessos++;
-                } catch (err) { console.error('Erro:', nome, err); }
+        async function sincronizarAlunos() {
+            const container = document.getElementById('listaAlunos');
+            container.innerHTML = '<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-spinner fa-spin text-4xl mb-4 block opacity-30"></i>Sincronizando...</p>';
+            
+            try {
+                const resposta = await fetch(URL_SCRIPT + '?getDados=alunos');
+                const dados = await resposta.json();
+                if (Array.isArray(dados)) {
+                    alunos = dados;
+                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                }
+            } catch (err) {
+                console.log('Erro ao sincronizar:', err);
+                alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
             }
-            
-            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-            document.getElementById('listaNomesLote').value = '';
             renderizarAlunos();
-            
-            btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
-            btn.classList.remove('opacity-50');
-            alert(`${sucessos} de ${nomes.length} alunos cadastrados!`);
-            switchTab('individual');
         }
 
         function renderizarAlunos(filtro = '') {
             const container = document.getElementById('listaAlunos');
             const totalEl = document.getElementById('totalAlunos');
-            
-            let lista = alunos.filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || a.turma.toLowerCase().includes(filtro.toLowerCase()));
+            let lista = alunos.filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || (a.turma && a.turma.toLowerCase().includes(filtro.toLowerCase())));
             lista.sort((a, b) => a.nome.localeCompare(b.nome));
-            
             totalEl.textContent = `${lista.length} aluno${lista.length !== 1 ? 's' : ''}`;
             
             if (lista.length === 0) {
@@ -231,8 +199,7 @@
 
             container.innerHTML = lista.map((aluno, index) => {
                 const alunoIndex = alunos.findIndex(a => a.nome === aluno.nome && a.turma === aluno.turma);
-                const vencido = new Date(aluno.data_vencimento) < new Date();
-                
+                const vencido = aluno.data_vencimento ? new Date(aluno.data_vencimento) < new Date() : false;
                 return `
                 <div class="aluno-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex-1">
@@ -240,7 +207,7 @@
                             ${aluno.nome} ${vencido ? '<span class="lote-badge">Vencido</span>' : ''}
                         </h3>
                         <div class="flex flex-wrap gap-3 text-xs text-gray-400">
-                            <span><i class="fas fa-users mr-1 text-fuchsia-500"></i>${aluno.turma}</span>
+                            <span><i class="fas fa-users mr-1 text-fuchsia-500"></i>${aluno.turma || 'SEM TURMA'}</span>
                             <span><i class="far fa-calendar-check mr-1 text-fuchsia-500"></i>Matrícula: ${formatarData(aluno.matricula_rematricula)}</span>
                             <span class="${vencido ? 'text-rose-400' : 'text-emerald-400'}"><i class="far fa-calendar-times mr-1"></i>Vence: ${formatarData(aluno.data_vencimento)}</span>
                         </div>
@@ -253,34 +220,64 @@
             }).join('');
         }
 
-        function formatarData(data) { return data ? new Date(data).toLocaleDateString('pt-BR') : '-'; }
+        function formatarData(data) { 
+            if(!data) return '-';
+            const d = new Date(data);
+            return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
+            document.getElementById('tabLote').classList.toggle('active', tab === 'lote');
+            document.getElementById('formIndividual').classList.toggle('hidden', tab !== 'individual');
+            document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
+        }
 
         document.getElementById('formAluno').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
-            
             const novoAluno = {
                 nome: document.getElementById('nome').value.toUpperCase(),
                 turma: document.getElementById('turma').value,
                 matricula_rematricula: document.getElementById('matricula').value,
                 data_vencimento: document.getElementById('vencimento').value
             };
-            
             if (!novoAluno.turma) return alert('Selecione uma turma!');
-
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.classList.add('opacity-50');
-
             alunos.push(novoAluno);
             localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-            
             try { await enviarParaPlanilha({ action: "alunos", ...novoAluno }); } catch (err) { console.error(err); }
-
             e.target.reset();
             renderizarAlunos();
             btn.innerHTML = '<i class="fas fa-plus"></i>';
             btn.classList.remove('opacity-50');
         });
+
+        async function cadastrarLote() {
+            const turma = document.getElementById('turmaLote').value;
+            const matricula = document.getElementById('matriculaLote').value;
+            const vencimento = document.getElementById('vencimentoLote').value;
+            const nomesTexto = document.getElementById('listaNomesLote').value.trim();
+            if (!turma || !matricula || !vencimento) return alert('Preencha todos os campos!');
+            if (!nomesTexto) return alert('Digite pelo menos um nome!');
+            const nomes = nomesTexto.split('\n').map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
+            const btn = document.getElementById('btnCadastrarLote');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+            btn.classList.add('opacity-50');
+            for (const nome of nomes) {
+                const novoAluno = { nome, turma, matricula_rematricula: matricula, data_vencimento: vencimento };
+                alunos.push(novoAluno);
+                try { await enviarParaPlanilha({ action: "alunos", ...novoAluno }); } catch (err) { console.error(err); }
+            }
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            document.getElementById('listaNomesLote').value = '';
+            renderizarAlunos();
+            btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
+            btn.classList.remove('opacity-50');
+            alert('Cadastro em lote finalizado!');
+            switchTab('individual');
+        }
 
         function editarAluno(index) {
             const aluno = alunos[index];
@@ -303,9 +300,9 @@
                 data_vencimento: document.getElementById('editVencimento').value
             };
             localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-            await enviarParaPlanilha({ action: "alunos", ...alunos[index], observacao: "EDITADO" });
             renderizarAlunos();
             fecharModal();
+            await enviarParaPlanilha({ action: "alunos", ...alunos[index], observacao: "EDITADO" });
         }
 
         function excluirAluno(index) {
@@ -320,13 +317,8 @@
         async function enviarParaPlanilha(dados) {
             const formData = new FormData();
             for (const [chave, valor] of Object.entries(dados)) formData.append(chave, valor);
-            const resposta = await fetch(URL_SCRIPT, { method: 'POST', body: formData });
-            const texto = await resposta.text();
-            try { return JSON.parse(texto); } catch (e) { return { result: "success" }; }
+            await fetch(URL_SCRIPT, { method: 'POST', body: formData });
         }
-
-        carregarTurmas();
-        sincronizarAlunos();
     </script>
 </body>
 </html>

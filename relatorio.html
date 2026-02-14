@@ -16,8 +16,10 @@
         .chart-container { position: relative; height: 350px; width: 100%; }
         select, input[type="month"] { background: #1a1a2e; border: 1px solid #8b5cf6; color: white; padding: 5px 10px; border-radius: 8px; outline: none; font-size: 12px; }
         .table-ranking { width: 100%; font-size: 13px; }
-        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; position: sticky; top: 0; background: #0a0a0f; }
         .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        /* Adicionado scroll para caso a lista de 15 alunos fique muito grande em telas menores */
+        .ranking-container { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b5cf6 transparent; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -71,18 +73,22 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="glass p-6 rounded-2xl border-t-2 border-emerald-500">
-                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Mais Frequentes</h3>
-                <table class="table-ranking" id="rankingPresenca">
-                    <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Ranking: 15 Mais Frequentes</h3>
+                <div class="ranking-container">
+                    <table class="table-ranking" id="rankingPresenca">
+                        <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
             <div class="glass p-6 rounded-2xl border-t-2 border-rose-500">
-                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Mais Faltas</h3>
-                <table class="table-ranking" id="rankingFaltas">
-                    <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Ranking: 15 Mais Faltas</h3>
+                <div class="ranking-container">
+                    <table class="table-ranking" id="rankingFaltas">
+                        <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -115,7 +121,7 @@
             const agora = new Date();
             
             const mapaAlunos = {};
-            const statsIndividuais = {}; // { NOME: { P: 0, F: 0, turma: "" } }
+            const statsIndividuais = {}; 
 
             alunos.forEach(a => { 
                 const nomeKey = a.nome.trim().toUpperCase();
@@ -171,7 +177,6 @@
                 }
             });
 
-            // Gráficos de Colunas e Linhas
             charts.colunas.data.labels = Object.keys(dadosTurmaColunas);
             charts.colunas.data.datasets[0].data = Object.values(dadosTurmaColunas).map(d => d.P);
             charts.colunas.data.datasets[1].data = Object.values(dadosTurmaColunas).map(d => d.F);
@@ -189,13 +194,13 @@
             charts.linhas.data.datasets = datasetsFinal;
             charts.linhas.update();
 
-            // Renderizar Rankings
+            // Renderizar Rankings - ALTERADO PARA 15 ALUNOS
             const listaStats = Object.values(statsIndividuais);
             
-            const maisFreq = [...listaStats].sort((a, b) => b.P - a.P).slice(0, 5);
+            const maisFreq = [...listaStats].sort((a, b) => b.P - a.P).slice(0, 15);
             document.querySelector('#rankingPresenca tbody').innerHTML = maisFreq.map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-emerald-400">${a.P}</td></tr>`).join('');
 
-            const maisFaltas = [...listaStats].sort((a, b) => b.F - a.F).slice(0, 5);
+            const maisFaltas = [...listaStats].sort((a, b) => b.F - a.F).slice(0, 15);
             document.querySelector('#rankingFaltas tbody').innerHTML = maisFaltas.map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-rose-400">${a.F}</td></tr>`).join('');
         }
 
