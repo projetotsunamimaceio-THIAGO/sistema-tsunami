@@ -8,36 +8,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-        
-        /* DESIGN DO PROJETO (AMARELO/AMBER) */
         .btn-projeto { border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.1); transition: all 0.3s; color: #f59e0b; }
         .btn-projeto:hover { background: #f59e0b; color: black; }
-        
         .projeto-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 158, 11, 0.1); border-radius: 16px; }
         .header-projeto { background: rgba(245, 158, 11, 0.1); border-bottom: 1px solid rgba(245, 158, 11, 0.2); }
-        
-        /* CORES DE STATUS (IGUAL À ARENA) */
         .freq-btn { width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
         .freq-vazio { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: transparent; }
         .freq-falta { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; color: #f43f5e; }
         .freq-presente { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981; }
         .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
         .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
-        
         .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
         .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
         .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
         .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
-        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border: 1px solid rgba(245, 158, 11, 0.1); text-align: center; padding: 8px; }
         .col-atleta { width: 250px; text-align: left; }
         .col-dia { width: 60px; }
         .col-faltas { width: 80px; }
-        select { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); color: white; }
+        select { background: #1a1a2e; border: 1px solid rgba(245, 158, 11, 0.2); color: white; padding: 8px; border-radius: 8px; }
+        select option { background: #1a1a2e; color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -57,7 +50,9 @@
                     <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-amber-400 min-w-[180px] text-center"></h2>
                     <button onclick="mudarMes(1)" class="btn-projeto w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none"><option value="">TODAS AS TURMAS</option></select>
+                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
+                    <option value="">TODAS AS TURMAS</option>
+                </select>
             </div>
 
             <div class="overflow-x-auto">
@@ -269,13 +264,13 @@
             editando = {};
             btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
             btn.disabled = false;
-            alert('Frequência de Projeto salva!');
+            alert('Frequência salva!');
             renderizar();
         }
 
         async function sincronizar() {
-            const tbody = document.getElementById('corpoTabela');
-            if(tbody && lista.length === 0) tbody.innerHTML = '<tr><td colspan="20" class="p-8 text-center text-amber-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
+            const sel = document.getElementById('filtroTurma');
+            const valAnterior = sel.value;
             try {
                 const [rA, rT, rF] = await Promise.all([
                     fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
@@ -283,7 +278,19 @@
                     fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
                 ]);
                 if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
-                if (Array.isArray(rT)) { turmas = rT; localStorage.setItem('tsunami_turmas', JSON.stringify(turmas)); }
+                if (Array.isArray(rT)) { 
+                    turmas = rT; 
+                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                    sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+                    turmas.forEach(t => {
+                        if(t.nome) {
+                            const o = document.createElement('option');
+                            o.value = t.nome; o.textContent = t.nome;
+                            sel.appendChild(o);
+                        }
+                    });
+                    sel.value = valAnterior;
+                }
                 if (Array.isArray(rF)) {
                     rF.forEach(f => {
                         const dataISO = getISOString(f.data_aula);
@@ -297,21 +304,24 @@
                     });
                     localStorage.setItem('tsunami_freq', JSON.stringify(freq));
                 }
-            } catch(e) {}
-            const sel = document.getElementById('filtroTurma');
-            const val = sel.value;
-            sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-            turmas.forEach(t => {
-                const o = document.createElement('option');
-                o.value = t.nome; o.textContent = t.nome;
-                sel.appendChild(o);
-            });
-            sel.value = val;
+            } catch(e) { console.error(e); }
             renderizar();
         }
 
         function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
-        sincronizar();
+        
+        // Inicialização
+        (function init(){
+            const sel = document.getElementById('filtroTurma');
+            turmas.forEach(t => {
+                if(t.nome) {
+                    const o = document.createElement('option');
+                    o.value = t.nome; o.textContent = t.nome;
+                    sel.appendChild(o);
+                }
+            });
+            sincronizar();
+        })();
     </script>
 </body>
 </html>

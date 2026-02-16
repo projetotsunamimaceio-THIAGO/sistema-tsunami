@@ -30,7 +30,8 @@
         .col-atleta { width: 250px; text-align: left; }
         .col-dia { width: 60px; }
         .col-faltas { width: 80px; }
-        select { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); color: white; }
+        select { background: #1a1a2e; border: 1px solid rgba(16, 185, 129, 0.2); color: white; padding: 8px; border-radius: 8px; }
+        select option { background: #1a1a2e; color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -50,7 +51,9 @@
                     <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center"></h2>
                     <button onclick="mudarMes(1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none"><option value="">TODAS AS TURMAS</option></select>
+                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
+                    <option value="">TODAS AS TURMAS</option>
+                </select>
             </div>
 
             <div class="overflow-x-auto">
@@ -167,7 +170,6 @@
 
             texto += `#Total: ${totalGeral} alunos\n`;
             texto += `----------------------\n`;
-            texto += `⚠️ Atrasados ***\n`;
             
             if (justificativas.length > 0) {
                 texto += `🗣️Justificados:\n`;
@@ -317,8 +319,8 @@
         }
 
         async function sincronizar() {
-            const tbody = document.getElementById('corpoTabela');
-            if(tbody && lista.length === 0) tbody.innerHTML = '<tr><td colspan="20" class="p-8 text-center text-emerald-400"><i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...</td></tr>';
+            const sel = document.getElementById('filtroTurma');
+            const valAnterior = sel.value;
             try {
                 const [rA, rT, rF] = await Promise.all([
                     fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
@@ -326,7 +328,19 @@
                     fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
                 ]);
                 if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
-                if (Array.isArray(rT)) { turmas = rT; localStorage.setItem('tsunami_turmas', JSON.stringify(turmas)); }
+                if (Array.isArray(rT)) { 
+                    turmas = rT; 
+                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                    sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+                    turmas.forEach(t => {
+                        if(t.nome) {
+                            const o = document.createElement('option');
+                            o.value = t.nome; o.textContent = t.nome;
+                            sel.appendChild(o);
+                        }
+                    });
+                    sel.value = valAnterior;
+                }
                 if (Array.isArray(rF)) {
                     rF.forEach(f => {
                         const dataISO = getISOString(f.data_aula);
@@ -340,21 +354,24 @@
                     });
                     localStorage.setItem('tsunami_freq', JSON.stringify(freq));
                 }
-            } catch(e) {}
-            const sel = document.getElementById('filtroTurma');
-            const val = sel.value;
-            sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-            turmas.forEach(t => {
-                const o = document.createElement('option');
-                o.value = t.nome; o.textContent = t.nome;
-                sel.appendChild(o);
-            });
-            sel.value = val;
+            } catch(e) { console.error(e); }
             renderizar();
         }
 
         function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
-        sincronizar();
+        
+        // Inicialização
+        (function init(){
+            const sel = document.getElementById('filtroTurma');
+            turmas.forEach(t => {
+                if(t.nome) {
+                    const o = document.createElement('option');
+                    o.value = t.nome; o.textContent = t.nome;
+                    sel.appendChild(o);
+                }
+            });
+            sincronizar();
+        })();
     </script>
 </body>
 </html>
