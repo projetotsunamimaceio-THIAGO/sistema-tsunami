@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TSUNAMI - Arena</title>
+    <title>TSUNAMI - Arena Precision</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -19,7 +19,8 @@
         .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
         .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
         .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
-        .btn-share { background: #25d366; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; }
+        .btn-share { background: #10b981; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
+        .btn-order { background: #fbbf24; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
         .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
         .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
         .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
@@ -28,10 +29,9 @@
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border: 1px solid rgba(16, 185, 129, 0.1); text-align: center; padding: 8px; }
         .col-atleta { width: 250px; text-align: left; }
-        .col-dia { width: 60px; }
+        .col-dia { width: 70px; }
         .col-faltas { width: 80px; }
         select { background: #1a1a2e; border: 1px solid rgba(16, 185, 129, 0.2); color: white; padding: 8px; border-radius: 8px; }
-        select option { background: #1a1a2e; color: white; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -51,9 +51,12 @@
                     <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center"></h2>
                     <button onclick="mudarMes(1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
-                    <option value="">TODAS AS TURMAS</option>
-                </select>
+                
+                <div class="flex gap-2">
+                    <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
+                        <option value="">TODAS AS TURMAS</option>
+                    </select>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -66,7 +69,7 @@
 
             <div class="p-4 border-t border-emerald-500/20 flex flex-col md:flex-row gap-3 justify-end">
                 <button onclick="sincronizar()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold"><i class="fas fa-sync mr-2"></i>Sincronizar</button>
-                <button onclick="salvar()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar</button>
+                <button onclick="salvar()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar Tudo</button>
             </div>
         </div>
     </div>
@@ -75,10 +78,10 @@
         <div class="bg-gray-900 p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500">
             <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase">Justificar Falta</h3>
             <input type="hidden" id="jA"><input type="hidden" id="jD">
-            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Motivo..."></textarea>
+            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Digite o motivo da falta..."></textarea>
             <div class="flex gap-3">
                 <button onclick="fecharJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
-                <button onclick="salvarJust()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
+                <button onclick="salvarJust()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Confirmar</button>
             </div>
         </div>
     </div>
@@ -89,6 +92,7 @@
         let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
         let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
         let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; 
+        let ordens = JSON.parse(localStorage.getItem('tsunami_ordens')) || {}; 
         let dataAtual = new Date();
         let dias = [];
         let lista = [];
@@ -98,6 +102,32 @@
         const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
         const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
         const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
+
+        // SOLUÇÃO DEFINITIVA: Limpeza total de fuso horário. Extrai apenas HH:MM:SS
+        function limparHora(valor) {
+            if (!valor) return "";
+            let s = String(valor);
+            
+            // Se vier formato de data do Google (Sat Dec 30 1899 10:56:49...), pegamos apenas os números da hora
+            let match = s.match(/(\d{2}:\d{2}:\d{2})/);
+            if (match) return match[1];
+
+            // Se vier apenas HH:MM
+            match = s.match(/(\d{2}:\d{2})/);
+            if (match) return match[1] + ":00";
+
+            return s;
+        }
+
+        // Converte string de hora para segundos para ordenação correta
+        function horaParaSegundos(h) {
+            if (!h || h === "") return 999999;
+            const partes = h.split(':').map(Number);
+            let s = 0;
+            if (partes.length === 3) s = (partes[0] * 3600) + (partes[1] * 60) + partes[2];
+            else if (partes.length === 2) s = (partes[0] * 3600) + (partes[1] * 60);
+            return s;
+        }
 
         function getISOString(data) {
             if (!data) return null;
@@ -132,54 +162,84 @@
             return mat <= fimMes && ven >= iniMes;
         }
 
-        function compartilhar(dIdx) {
+        async function compartilhar(dIdx, tipo = 'geral') {
             const dataISO = dias[dIdx];
             const dataBR = dataISO.split('-').reverse().join('/');
-            let texto = `*Frequência ARENA*\nDia: ${dataBR}\n\n`;
+            let texto = "";
             
-            const turmasNoRelatorio = [...new Set(lista.map(a => a.turma))];
-            let totalGeral = 0;
-            let justificativas = [];
+            if (tipo === 'geral') {
+                texto = `*Frequência ARENA*\nDia: ${dataBR}\n\n`;
+                const turmasNoRelatorio = [...new Set(lista.map(a => a.turma))];
+                let totalGeral = 0;
+                let justificativas = [];
 
-            turmasNoRelatorio.forEach(turmaNome => {
-                let alunosDaTurma = lista.filter(a => a.turma === turmaNome);
-                let presentesNaTurma = [];
+                turmasNoRelatorio.forEach(turmaNome => {
+                    let alunosDaTurma = lista.filter(a => a.turma === turmaNome);
+                    let presentesNaTurma = [];
 
-                alunosDaTurma.forEach(aluno => {
-                    const aIdx = lista.indexOf(aluno);
-                    const kEdit = aIdx + '-' + dIdx;
-                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
-                    
-                    if (s === 'P' || s === 'A') {
-                        let nomeLinha = aluno.nome.toUpperCase();
-                        if (s === 'A') nomeLinha += " ⚠️";
-                        presentesNaTurma.push(nomeLinha);
-                    } else if (s === 'J') {
-                        const motivo = editando[aIdx + '-' + dIdx + '-txt'] || freq[chave(aluno.nome, dataISO) + '-txt'] || 'Não informada';
-                        justificativas.push({nome: aluno.nome.toUpperCase(), motivo: motivo});
+                    alunosDaTurma.forEach(aluno => {
+                        const aIdx = lista.indexOf(aluno);
+                        const kEdit = aIdx + '-' + dIdx;
+                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
+                        
+                        if (s === 'P' || s === 'A') {
+                            let nomeLinha = aluno.nome.toUpperCase();
+                            if (s === 'A') nomeLinha += " ⚠️";
+                            presentesNaTurma.push(nomeLinha);
+                        } else if (s === 'J') {
+                            const motivo = editando[aIdx + '-' + dIdx + '-txt'] || freq[chave(aluno.nome, dataISO) + '-txt'] || 'Não informada';
+                            justificativas.push({nome: aluno.nome.toUpperCase(), motivo: motivo});
+                        }
+                    });
+
+                    if (presentesNaTurma.length > 0) {
+                        texto += `*🔹(${turmaNome || 'SEM TURMA'})*\n`;
+                        presentesNaTurma.forEach(p => texto += `${p}\n`);
+                        texto += `-Total: ${presentesNaTurma.length} alunos\n\n`;
+                        totalGeral += presentesNaTurma.length;
                     }
                 });
 
-                if (presentesNaTurma.length > 0) {
-                    texto += `*🔹(${turmaNome || 'SEM TURMA'})*\n`;
-                    presentesNaTurma.forEach(p => texto += `${p}\n`);
-                    texto += `-Total: ${presentesNaTurma.length} alunos\n\n`;
-                    totalGeral += presentesNaTurma.length;
+                texto += `#Total: ${totalGeral} alunos\n`;
+                if (justificativas.length > 0) {
+                    texto += `\n🗣️ *Justificados:*\n`;
+                    justificativas.forEach(j => { texto += `${j.nome} (${j.motivo})\n`; });
                 }
-            });
+            } else {
+                texto = `*Frequência ARENA - ORDEM DE CHEGADA*\nDia: ${dataBR}\n\n`;
+                let registros = [];
 
-            texto += `#Total: ${totalGeral} alunos\n`;
-            texto += `----------------------\n`;
-            
-            if (justificativas.length > 0) {
-                texto += `🗣️Justificados:\n`;
-                justificativas.forEach(j => {
-                    texto += `${j.nome}\n(${j.motivo})\n`;
+                lista.forEach(aluno => {
+                    const kFreq = chave(aluno.nome, dataISO);
+                    const s = freq[kFreq] || '';
+                    const horaOriginal = ordens[kFreq];
+
+                    if ((s === 'P' || s === 'A') && horaOriginal) {
+                        let hFormatada = limparHora(horaOriginal);
+                        registros.push({
+                            nome: aluno.nome.toUpperCase(),
+                            horaExibicao: hFormatada,
+                            segundos: horaParaSegundos(hFormatada),
+                            status: s
+                        });
+                    }
                 });
+
+                // Ordenação cronológica pura pelos segundos
+                registros.sort((a, b) => a.segundos - b.segundos);
+
+                if (registros.length > 0) {
+                    registros.forEach((r, idx) => {
+                        let aviso = r.status === 'A' ? " ⚠️" : "";
+                        texto += `${idx + 1}º ${r.nome} (${r.horaExibicao})${aviso}\n`;
+                    });
+                } else {
+                    texto += "Nenhum registro de presença para este dia.";
+                }
             }
 
             if (navigator.share) {
-                navigator.share({ text: texto });
+                try { await navigator.share({ text: texto }); } catch (err) {}
             } else {
                 window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
             }
@@ -194,7 +254,7 @@
             dias = [];
             let dTemp = new Date(ano, mes, 1);
             while (dTemp.getMonth() === mes) {
-                if (dTemp.getDay() === 6) dias.push(getISOString(dTemp));
+                if (dTemp.getDay() === 6) dias.push(getISOString(dTemp)); 
                 dTemp.setDate(dTemp.getDate() + 1);
             }
             
@@ -202,20 +262,25 @@
             lista = alunos.filter(a => noMes(a, ano, mes)).sort((a,b) => a.nome.localeCompare(b.nome));
             if (filtro) lista = lista.filter(a => a.turma === filtro);
 
-            let h = '<tr class="bg-emerald-500/5"><th class="col-atleta text-[10px] uppercase text-emerald-400 p-3">Atleta</th>';
+            let h = `<tr class="bg-emerald-500/5"><th class="col-atleta text-[10px] uppercase text-emerald-400 p-3">Atleta</th>`;
             dias.forEach(d => {
                 h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">SÁB</div><div style="font-size:18px;font-weight:bold;color:#34d399">${d.split('-')[2]}</div></th>`;
             });
-            h += '<th class="col-faltas text-[10px] uppercase text-emerald-400 p-3">Faltas</th></tr>';
+            h += `<th class="col-faltas text-[10px] uppercase text-emerald-400 p-3">Faltas</th></tr>`;
             
-            h += '<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Ações Lote</td>';
-            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="compartilhar(${i})" class="btn-share"><i class="fas fa-share-alt"></i></button><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
-            h += '<td class="col-faltas"></td></tr>';
+            h += `<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Relatórios</td>`;
+            dias.forEach((_,i) => h += `
+                <td class="col-dia p-2">
+                    <button onclick="compartilhar(${i}, 'geral')" class="btn-share" title="Geral"><i class="fas fa-share-alt"></i></button>
+                    <button onclick="compartilhar(${i}, 'ordem')" class="btn-order" title="Ordem"><i class="fas fa-clock"></i></button>
+                    <button onclick="lote(${i})" class="all-btn">ALL</button>
+                </td>`);
+            h += `<td class="col-faltas"></td></tr>`;
             document.getElementById('theadPrincipal').innerHTML = h;
 
             const tbody = document.getElementById('corpoTabela');
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo encontrado</td></tr>`;
                 return;
             }
 
@@ -230,27 +295,28 @@
                         r += `<td class="col-dia p-2"><button onclick="ciclo(${aIdx},${dIdx})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
                     }
                 });
-                let f = 0;
+                
+                let fTotal = 0;
                 dias.forEach((dia, dIdx) => {
                     const kEdit = aIdx + '-' + dIdx;
                     const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                    if (s === 'F' || s === 'J') f++;
+                    if (s === 'F' || s === 'J') fTotal++;
                 });
-                r += `<td class="col-faltas"><span class="contador-faltas">${f}</span></td></tr>`;
+                r += `<td class="col-faltas"><span class="contador-faltas">${fTotal}</span></td></tr>`;
                 return r;
             }).join('');
 
-            let fRow = '<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>';
+            let fRow = `<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>`;
             dias.forEach((dia, dIdx) => {
-                let total = 0;
+                let totalPresencas = 0;
                 lista.forEach((aluno, aIdx) => {
                     const kEdit = aIdx + '-' + dIdx;
                     const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                    if (s === 'P' || s === 'A') total++;
+                    if (s === 'P' || s === 'A') totalPresencas++;
                 });
-                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${total}</span></td>`;
+                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${totalPresencas}</span></td>`;
             });
-            fRow += '<td class="col-faltas"></td></tr>';
+            fRow += `<td class="col-faltas"></td></tr>`;
             document.getElementById('tfootPrincipal').innerHTML = fRow;
         }
 
@@ -259,12 +325,23 @@
             const aluno = lista[a], dia = dias[d];
             const atual = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
             const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
+            
             if (prox === 'J') {
                 document.getElementById('jA').value = a; document.getElementById('jD').value = d;
                 document.getElementById('modalJust').classList.add('active');
                 return;
             }
+
+            if (prox === 'P' || prox === 'A') {
+                const agora = new Date();
+                const hStr = agora.getHours().toString().padStart(2,'0') + ':' + agora.getMinutes().toString().padStart(2,'0') + ':' + agora.getSeconds().toString().padStart(2,'0');
+                ordens[chave(aluno.nome, dia)] = hStr;
+            } else {
+                delete ordens[chave(aluno.nome, dia)];
+            }
+
             editando[kEdit] = prox;
+            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             renderizar();
         }
 
@@ -279,7 +356,21 @@
             }
             const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
             if (prox === 'J') return;
-            lista.forEach((aluno, aIdx) => { if(ativo(aluno, dia)) editando[aIdx+'-'+dIdx] = prox; });
+            
+            const agora = new Date();
+            const hStr = agora.getHours().toString().padStart(2,'0') + ':' + agora.getMinutes().toString().padStart(2,'0') + ':' + agora.getSeconds().toString().padStart(2,'0');
+
+            lista.forEach((aluno, aIdx) => { 
+                if(ativo(aluno, dia)) {
+                    editando[aIdx+'-'+dIdx] = prox;
+                    if (prox === 'P' || prox === 'A') {
+                        ordens[chave(aluno.nome, dia)] = hStr;
+                    } else {
+                        delete ordens[chave(aluno.nome, dia)];
+                    }
+                }
+            });
+            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             renderizar();
         }
 
@@ -293,34 +384,39 @@
 
         async function salvar() {
             const btn = document.getElementById('btnSalvar');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>SINC...';
             btn.disabled = true;
+
             for (const k in editando) {
                 if (k.includes('-txt')) continue;
                 const [aIdx, dIdx] = k.split('-').map(Number);
                 const aluno = lista[aIdx], dia = dias[dIdx], status = editando[k];
                 const kFreq = chave(aluno.nome, dia);
+                
                 freq[kFreq] = status;
                 if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
+
                 const fd = new FormData();
                 fd.append('action', 'frequencia');
                 fd.append('nome', aluno.nome);
                 fd.append('data_aula', dia.split('-').reverse().join('/')); 
                 fd.append('status', TEXTO[status] || '');
                 fd.append('justificativa', editando[k+'-txt'] || '');
+                fd.append('hora', ordens[kFreq] || '');
+                
                 try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
             }
+
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             editando = {};
-            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
+            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Tudo';
             btn.disabled = false;
-            alert('Frequência salva!');
+            alert('Sincronizado!');
             renderizar();
         }
 
         async function sincronizar() {
-            const sel = document.getElementById('filtroTurma');
-            const valAnterior = sel.value;
             try {
                 const [rA, rT, rF] = await Promise.all([
                     fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
@@ -331,28 +427,25 @@
                 if (Array.isArray(rT)) { 
                     turmas = rT; 
                     localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                    const sel = document.getElementById('filtroTurma');
                     sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-                    turmas.forEach(t => {
-                        if(t.nome) {
-                            const o = document.createElement('option');
-                            o.value = t.nome; o.textContent = t.nome;
-                            sel.appendChild(o);
-                        }
-                    });
-                    sel.value = valAnterior;
+                    turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
                 }
                 if (Array.isArray(rF)) {
+                    // Limpa ordens para evitar lixo de memória
+                    ordens = {};
                     rF.forEach(f => {
                         const dataISO = getISOString(f.data_aula);
                         if (dataISO) {
                             const k = chave(f.nome, dataISO);
-                            if (f.status) {
-                                freq[k] = SIGLAS[f.status] || '';
-                                if (f.justificativa) freq[k + '-txt'] = f.justificativa;
-                            }
+                            freq[k] = SIGLAS[f.status] || '';
+                            if (f.justificativa) freq[k + '-txt'] = f.justificativa;
+                            // TRATAMENTO OBRIGATÓRIO: Força a limpeza da hora vinda do Google
+                            if (f.hora) ordens[k] = limparHora(f.hora);
                         }
                     });
                     localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+                    localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
                 }
             } catch(e) { console.error(e); }
             renderizar();
@@ -360,16 +453,9 @@
 
         function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
         
-        // Inicialização
         (function init(){
             const sel = document.getElementById('filtroTurma');
-            turmas.forEach(t => {
-                if(t.nome) {
-                    const o = document.createElement('option');
-                    o.value = t.nome; o.textContent = t.nome;
-                    sel.appendChild(o);
-                }
-            });
+            turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
             sincronizar();
         })();
     </script>
