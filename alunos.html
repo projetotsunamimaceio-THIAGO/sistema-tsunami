@@ -3,488 +3,448 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TSUNAMI - Arena Precision</title>
+    <title>TSUNAMI - Alunos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-        .btn-emerald { border: 1px solid #10b981; background: rgba(16, 185, 129, 0.1); transition: all 0.3s; color: #10b981; }
-        .btn-emerald:hover { background: #10b981; color: black; }
-        .arena-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(16, 185, 129, 0.1); border-radius: 16px; }
-        .header-arena { background: rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.2); }
-        .freq-btn { width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
-        .freq-vazio { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: transparent; }
-        .freq-falta { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; color: #f43f5e; }
-        .freq-presente { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981; }
-        .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
-        .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
-        .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
-        .btn-share { background: #10b981; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
-        .btn-order { background: #fbbf24; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
-        .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
-        .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
-        .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 255, 0.1); }
+        .btn-fuchsia { border: 1px solid #ff00ff; background: rgba(255, 0, 255, 0.1); transition: all 0.3s; color: #ff00ff; }
+        .btn-fuchsia:hover { background: #ff00ff; color: black; box-shadow: 0 0 20px rgba(255, 0, 255, 0.4); }
+        
+        select, input, textarea { 
+            background: #1a1a2e !important; 
+            border: 1px solid rgba(255, 0, 255, 0.2) !important; 
+            color: white !important; 
+        }
+        select option {
+            background-color: #1a1a2e !important;
+            color: white !important;
+        }
+
+        textarea { resize: vertical; min-height: 120px; }
+        .aluno-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 0, 255, 0.1); border-left: 4px solid #ff00ff; transition: all 0.3s; }
+        .aluno-card:hover { background: rgba(255, 0, 255, 0.05); transform: translateX(5px); }
+        .edit-btn { color: #fbbf24; transition: 0.3s; }
+        .edit-btn:hover { color: #f59e0b; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+        .delete-btn { color: #f43f5e; transition: 0.3s; }
+        .delete-btn:hover { color: #e11d48; text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+        .search-box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 0, 255, 0.2); }
+        .lote-badge { background: rgba(244, 63, 94, 0.2); color: #f43f5e; font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border: 1px solid rgba(16, 185, 129, 0.1); text-align: center; padding: 8px; }
-        .col-atleta { width: 250px; text-align: left; }
-        .col-dia { width: 70px; }
-        .col-faltas { width: 80px; }
-        select { background: #1a1a2e; border: 1px solid rgba(16, 185, 129, 0.2); color: white; padding: 8px; border-radius: 8px; }
+        .tab-btn { background: transparent; border: 1px solid rgba(255, 0, 255, 0.3); color: #ff00ff; padding: 8px 20px; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .tab-btn.active { background: rgba(255, 0, 255, 0.2); border-bottom: 2px solid #ff00ff; }
+        .empty-state { color: rgba(255, 0, 255, 0.4); font-style: italic; }
+
+        #cameraContainer { display: none; flex-direction: column; align-items: center; gap: 10px; margin-top: 15px; border-top: 1px solid rgba(255, 0, 255, 0.2); padding-top: 15px; }
+        #video { width: 100%; max-width: 320px; border-radius: 10px; border: 2px solid #ff00ff; transform: scaleX(-1); }
+        #canvas { display: none; }
+        .capture-indicator { width: 10px; height: 10px; background: #ff00ff; border-radius: 50%; box-shadow: 0 0 10px #ff00ff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8" onload="inicializar()">
     <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <a href="index.html" class="btn-emerald px-4 py-2 rounded-lg text-xs uppercase font-bold"><i class="fas fa-arrow-left mr-2"></i>Voltar</a>
-            <h1 class="text-2xl md:text-3xl font-bold text-emerald-400 tracking-widest uppercase text-center flex-1"><i class="fas fa-check-double mr-3"></i>Frequência Arena</h1>
+
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <a href="index.html" class="btn-fuchsia px-4 py-2 rounded-lg text-xs uppercase font-bold"><i class="fas fa-arrow-left mr-2"></i>Voltar</a>
+            <h1 class="text-2xl md:text-3xl font-bold text-fuchsia-400 tracking-widest uppercase text-center flex-1"><i class="fas fa-user-plus mr-3"></i>Gerenciar Alunos</h1>
             <div class="w-20"></div>
         </div>
-        <div class="arena-card">
-            <div class="header-arena p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <button onclick="mudarMes(-1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
-                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-emerald-300 min-w-[180px] text-center"></h2>
-                    <button onclick="mudarMes(1)" class="btn-emerald w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
+
+        <div class="flex gap-2 mb-0">
+            <button onclick="switchTab('individual')" id="tabIndividual" class="tab-btn active"><i class="fas fa-user mr-2"></i>Individual</button>
+            <button onclick="switchTab('lote')" id="tabLote" class="tab-btn"><i class="fas fa-layer-group mr-2"></i>Cadastro em Lote</button>
+        </div>
+
+        <div id="formIndividual" class="glass p-6 rounded-b-2xl rounded-tr-2xl mb-8">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 mb-6 border-b border-fuchsia-500/20 pb-2">Novo Aluno</h2>
+            <form id="formAluno" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome Completo</label>
+                    <input type="text" id="nome" placeholder="Ex: João Silva" class="w-full p-3 rounded-lg outline-none uppercase" required>
                 </div>
-               
-                <div class="flex gap-2">
-                    <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
-                        <option value="">TODAS AS TURMAS</option>
-                    </select>
+                <div class="md:col-span-3">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
+                    <select id="turma" class="w-full p-3 rounded-lg outline-none" required><option value="">Selecione...</option></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label>
+                    <input type="date" id="matricula" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
+                    <input type="date" id="vencimento" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+                <div class="md:col-span-1 text-center">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Rosto</label>
+                    <button type="button" onclick="toggleCamera()" id="btnCamera" class="w-full border border-blue-500 bg-blue-500/10 text-blue-400 p-3 rounded-lg h-[46px] flex items-center justify-center hover:bg-blue-500 hover:text-white transition">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+                <div class="md:col-span-1">
+                    <button type="submit" id="saveBtn" class="w-full btn-fuchsia p-3 rounded-lg uppercase font-bold text-xs h-[46px] flex items-center justify-center"><i class="fas fa-plus"></i></button>
+                </div>
+
+                <div id="cameraContainer" class="md:col-span-12">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="capture-indicator"></div>
+                        <span class="text-[10px] uppercase text-fuchsia-300">Posicione o rosto no centro</span>
+                    </div>
+                    <video id="video" autoplay muted></video>
+                    <canvas id="canvas"></canvas>
+                    <p id="fotoStatus" class="text-[10px] text-emerald-400 hidden"><i class="fas fa-check-circle mr-1"></i> Rosto capturado!</p>
+                </div>
+            </form>
+        </div>
+
+        <div id="formLote" class="glass p-6 rounded-b-2xl rounded-tr-2xl mb-8 hidden">
+            <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 mb-6 border-b border-fuchsia-500/20 pb-2 flex justify-between items-center">
+                <span>Cadastro em Lote</span>
+                <span class="text-xs text-gray-400 font-normal normal-case">Um nome por linha</span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
+                    <select id="turmaLote" class="w-full p-3 rounded-lg outline-none" required><option value="">Selecione...</option></select>
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label>
+                    <input type="date" id="matriculaLote" class="w-full p-3 rounded-lg outline-none" required>
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
+                    <input type="date" id="vencimentoLote" class="w-full p-3 rounded-lg outline-none" required>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table id="tabelaFrequencia">
-                    <thead id="theadPrincipal"></thead>
-                    <tbody id="corpoTabela"></tbody>
-                    <tfoot id="tfootPrincipal"></tfoot>
-                </table>
+            <div class="mb-4">
+                <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Lista de Nomes (um por linha)</label>
+                <textarea id="listaNomesLote" placeholder="Carlos Silva&#10;Maria Oliveira&#10;João Santos..." class="w-full p-4 rounded-lg outline-none font-mono text-sm"></textarea>
             </div>
-            <div class="p-4 border-t border-emerald-500/20 flex flex-col md:flex-row gap-3 justify-end">
-                <button onclick="sincronizar()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold"><i class="fas fa-sync mr-2"></i>Sincronizar</button>
-                <button onclick="salvar()" id="btnSalvar" class="btn-emerald px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar Tudo</button>
+            <button onclick="cadastrarLote()" id="btnCadastrarLote" class="w-full btn-fuchsia p-4 rounded-lg uppercase font-bold tracking-wider flex items-center justify-center gap-2"><i class="fas fa-users"></i> Cadastrar Todos</button>
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-fuchsia-500/20 pb-4">
+                <h2 class="text-sm uppercase tracking-[0.3em] text-fuchsia-300 flex items-center gap-2">
+                    <i class="fas fa-users"></i> Alunos Cadastrados
+                    <span id="totalAlunos" class="text-xs bg-fuchsia-500/20 px-3 py-1 rounded-full">0 alunos</span>
+                </h2>
+                <button onclick="sincronizarAlunos()" class="text-xs bg-fuchsia-500/20 px-3 py-1 rounded-full hover:bg-fuchsia-500/30 transition"><i class="fas fa-sync mr-1"></i>Sincronizar</button>
+                <div class="relative w-full md:w-72">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-fuchsia-400"></i>
+                    <input type="text" id="busca" placeholder="Buscar aluno..." class="search-box w-full p-3 pl-10 rounded-lg outline-none text-sm">
+                </div>
             </div>
+            <div id="listaAlunos" class="space-y-3"><p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-spinner fa-spin text-4xl mb-4 block opacity-30"></i>Carregando...</p></div>
         </div>
     </div>
 
-    <div id="modalJust" class="modal">
-        <div class="bg-gray-900 p-6 rounded-2xl max-w-md w-full mx-4 border border-cyan-500">
-            <h3 class="text-xl font-bold text-cyan-400 mb-4 uppercase">Justificar Falta</h3>
-            <input type="hidden" id="jA"><input type="hidden" id="jD">
-            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Digite o motivo da falta..."></textarea>
-            <div class="flex gap-3">
-                <button onclick="fecharJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
-                <button onclick="salvarJust()" class="flex-1 bg-cyan-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Confirmar</button>
+    <div id="editModal" class="modal">
+        <div class="glass p-6 rounded-2xl max-w-md w-full mx-4 border border-fuchsia-500/30">
+            <h3 class="text-xl font-bold text-fuchsia-400 mb-4 uppercase tracking-wider">Editar Aluno</h3>
+            <input type="hidden" id="editIndex">
+            <div class="space-y-4">
+                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome</label><input type="text" id="editNome" class="w-full p-3 rounded-lg outline-none uppercase"></div>
+                <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label><select id="editTurma" class="w-full p-3 rounded-lg outline-none"></select></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Matrícula</label><input type="date" id="editMatricula" class="w-full p-3 rounded-lg outline-none"></div>
+                    <div><label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label><input type="date" id="editVencimento" class="w-full p-3 rounded-lg outline-none"></div>
+                </div>
+
+                <div class="pt-4 border-t border-fuchsia-500/10">
+                    <button type="button" onclick="ativarCameraEdicao()" class="w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 p-2 rounded-lg text-[10px] uppercase font-bold hover:bg-blue-500 hover:text-white transition">
+                        <i class="fas fa-camera mr-2"></i>Capturar Novo Rosto
+                    </button>
+                    <div id="statusFotoEdicao" class="text-[10px] text-emerald-400 mt-2 hidden text-center"><i class="fas fa-check"></i> Foto capturada para salvar!</div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button onclick="fecharModal()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold hover:bg-gray-800 transition">Cancelar</button>
+                    <button onclick="salvarEdicao()" id="btnSalvarEdicao" class="flex-1 btn-fuchsia p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
-       
-        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
-        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
-        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
-        let ordens = JSON.parse(localStorage.getItem('tsunami_ordens')) || {};
-        let dataAtual = new Date();
-        let dias = [];
-        let lista = [];
-        let editando = {};
-        const CICLO = ['', 'F', 'P', 'A', 'J'];
-        const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
-        const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
-        const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
+        let alunos = [];
+        let turmas = [];
+        let stream = null;
+        let faceData = null;
 
-        // ==================== FUNÇÕES AUXILIARES ====================
-        function limparHora(valor) {
-            if (!valor) return "";
-            let s = String(valor).trim();
-            let match = s.match(/(\d{2}:\d{2}:\d{2})/) || s.match(/(\d{2}:\d{2})/);
-            return match ? match[1] : s;
+        function inicializar() {
+            carregarTurmas();
+            sincronizarAlunos();
         }
 
-        function horaParaSegundos(h) {
-            if (!h || h === "") return 999999;
-            const partes = h.split(':').map(Number);
-            if (partes.length === 3) {
-                return (partes[0] * 3600) + (partes[1] * 60) + partes[2];
-            } else if (partes.length === 2) {
-                return (partes[0] * 3600) + (partes[1] * 60);
-            }
-            return 999999;
-        }
+        async function toggleCamera() {
+            const container = document.getElementById('cameraContainer');
+            const video = document.getElementById('video');
+            const btn = document.getElementById('btnCamera');
 
-        function getISOString(data) {
-            if (!data) return null;
-            let d;
-            if (typeof data === 'string') {
-                const dataLimpa = data.split(' ')[0];
-                if (dataLimpa.includes('/')) {
-                    const [dia, mes, ano] = dataLimpa.split('/').map(Number);
-                    d = new Date(ano, mes - 1, dia);
-                } else { 
-                    d = new Date(data); 
-                }
-            } else if (data instanceof Date) { 
-                d = data; 
-            } else { 
-                return null; 
-            }
-            if (isNaN(d.getTime())) return null;
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-
-        function chave(nome, dataISO) { 
-            return (nome.trim().toUpperCase() + '|' + dataISO); 
-        }
-
-        function ativo(aluno, dataISO) {
-            const mat = getISOString(aluno.matricula_rematricula);
-            const ven = getISOString(aluno.data_vencimento);
-            if (!mat || !ven) return true;
-            return dataISO >= mat && dataISO <= ven;
-        }
-
-        function noMes(aluno, ano, mes) {
-            const mat = getISOString(aluno.matricula_rematricula);
-            const ven = getISOString(aluno.data_vencimento);
-            if (!mat || !ven) return true;
-            const iniMes = getISOString(new Date(ano, mes, 1));
-            const fimMes = getISOString(new Date(ano, mes + 1, 0));
-            return mat <= fimMes && ven >= iniMes;
-        }
-
-        // ==================== FUNÇÃO COMPARTILHAR CORRIGIDA ====================
-        async function compartilhar(dIdx, tipo = 'geral') {
-            const dataISO = dias[dIdx];
-            const dataBR = dataISO.split('-').reverse().join('/');
-
-            if (tipo === 'geral') {
-                let texto = `*Frequência ARENA*\nDia: ${dataBR}\n\n`;
-                const turmasNoRelatorio = [...new Set(lista.map(a => a.turma))];
-                let totalGeral = 0;
-                let justificativas = [];
-
-                turmasNoRelatorio.forEach(turmaNome => {
-                    let alunosDaTurma = lista.filter(a => a.turma === turmaNome);
-                    let presentesNaTurma = [];
-                    alunosDaTurma.forEach(aluno => {
-                        const aIdx = lista.indexOf(aluno);
-                        const kEdit = aIdx + '-' + dIdx;
-                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
-
-                        if (s === 'P' || s === 'A') {
-                            let nomeLinha = aluno.nome.toUpperCase();
-                            if (s === 'A') nomeLinha += " ⚠️";
-                            presentesNaTurma.push(nomeLinha);
-                        } else if (s === 'J') {
-                            const motivo = editando[aIdx + '-' + dIdx + '-txt'] || freq[chave(aluno.nome, dataISO) + '-txt'] || 'Não informada';
-                            justificativas.push({nome: aluno.nome.toUpperCase(), motivo: motivo});
-                        }
-                    });
-                    if (presentesNaTurma.length > 0) {
-                        texto += `*🔹(${turmaNome || 'SEM TURMA'})*\n`;
-                        presentesNaTurma.forEach(p => texto += `${p}\n`);
-                        texto += `-Total: ${presentesNaTurma.length} alunos\n\n`;
-                        totalGeral += presentesNaTurma.length;
-                    }
-                });
-                texto += `#Total: ${totalGeral} alunos\n`;
-                if (justificativas.length > 0) {
-                    texto += `\n🗣️ *Justificados:*\n`;
-                    justificativas.forEach(j => { texto += `${j.nome} (${j.motivo})\n`; });
-                }
-
-                if (navigator.share) {
-                    try { await navigator.share({ text: texto }); } catch (err) {}
-                } else {
-                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
-                }
-                return;
-            }
-
-            // ====================== RELATÓRIO POR ORDEM DE CHEGADA ======================
-            let texto = `*Frequência ARENA - ORDEM DE CHEGADA*\nDia: ${dataBR}\n\n`;
-
-            let registros = [];
-
-            lista.forEach((aluno, aIdx) => {
-                const kEdit = aIdx + '-' + dIdx;
-                const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
-
-                if (s !== 'P' && s !== 'A') return;
-
-                // Usa o horário salvo no banco (prioridade máxima)
-                let horaOriginal = ordens[chave(aluno.nome, dataISO)];
-
-                // Se não tiver horário salvo, usa horário atual como fallback
-                if (!horaOriginal) {
-                    const agora = new Date();
-                    horaOriginal = agora.getHours().toString().padStart(2,'0') + ':' + 
-                                   agora.getMinutes().toString().padStart(2,'0') + ':' + 
-                                   agora.getSeconds().toString().padStart(2,'0');
-                }
-
-                let hFormatada = limparHora(horaOriginal);
-
-                registros.push({
-                    nome: aluno.nome.toUpperCase(),
-                    horaExibicao: hFormatada,
-                    segundos: horaParaSegundos(hFormatada),
-                    status: s
-                });
-            });
-
-            // Ordenação por horário real (do mais cedo ao mais tarde)
-            registros.sort((a, b) => a.segundos - b.segundos);
-
-            if (registros.length === 0) {
-                texto += "Nenhum registro de presença para este dia.";
+            if (stream) {
+                pararCamera();
+                container.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-camera"></i>';
+                btn.classList.remove('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
             } else {
-                registros.forEach((r, idx) => {
-                    let aviso = (r.status === 'A') ? " ⚠️" : "";
-                    texto += `${idx + 1}º ${r.nome} (${r.horaExibicao})${aviso}\n`;
-                });
-            }
-
-            if (navigator.share) {
-                try { await navigator.share({ text: texto }); } catch (err) {}
-            } else {
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
-            }
-        }
-
-        function renderizar() {
-            const ano = dataAtual.getFullYear();
-            const mes = dataAtual.getMonth();
-            const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-            document.getElementById('tituloMes').textContent = nomesMes[mes] + ' ' + ano;
-
-            dias = [];
-            let dTemp = new Date(ano, mes, 1);
-            while (dTemp.getMonth() === mes) {
-                if (dTemp.getDay() === 6) dias.push(getISOString(dTemp));
-                dTemp.setDate(dTemp.getDate() + 1);
-            }
-           
-            const filtro = document.getElementById('filtroTurma').value;
-            lista = alunos.filter(a => noMes(a, ano, mes)).sort((a,b) => a.nome.localeCompare(b.nome));
-            if (filtro) lista = lista.filter(a => a.turma === filtro);
-
-            let h = `<tr class="bg-emerald-500/5"><th class="col-atleta text-[10px] uppercase text-emerald-400 p-3">Atleta</th>`;
-            dias.forEach(d => {
-                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">SÁB</div><div style="font-size:18px;font-weight:bold;color:#34d399">${d.split('-')[2]}</div></th>`;
-            });
-            h += `<th class="col-faltas text-[10px] uppercase text-emerald-400 p-3">Faltas</th></tr>`;
-           
-            h += `<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Relatórios</td>`;
-            dias.forEach((_,i) => h += `
-                <td class="col-dia p-2">
-                    <button onclick="compartilhar(${i}, 'geral')" class="btn-share" title="Geral"><i class="fas fa-share-alt"></i></button>
-                    <button onclick="compartilhar(${i}, 'ordem')" class="btn-order" title="Ordem de Chegada"><i class="fas fa-clock"></i></button>
-                    <button onclick="lote(${i})" class="all-btn">ALL</button>
-                </td>`);
-            h += `<td class="col-faltas"></td></tr>`;
-            document.getElementById('theadPrincipal').innerHTML = h;
-
-            const tbody = document.getElementById('corpoTabela');
-            if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo encontrado</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = lista.map((aluno, aIdx) => {
-                let r = `<tr><td class="col-atleta px-4 py-3"><div class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</div><div class="text-[9px] text-gray-500">${aluno.turma||''}</div></td>`;
-                dias.forEach((dia, dIdx) => {
-                    if (!ativo(aluno, dia)) {
-                        r += `<td class="col-dia p-2"><span class="nm-badge">N/M</span></td>`;
-                    } else {
-                        const kEdit = aIdx + '-' + dIdx;
-                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                        r += `<td class="col-dia p-2"><button onclick="ciclo(${aIdx},${dIdx})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
-                    }
-                });
-               
-                let fTotal = 0;
-                dias.forEach((dia, dIdx) => {
-                    const kEdit = aIdx + '-' + dIdx;
-                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                    if (s === 'F' || s === 'J') fTotal++;
-                });
-                r += `<td class="col-faltas"><span class="contador-faltas">${fTotal}</span></td></tr>`;
-                return r;
-            }).join('');
-
-            let fRow = `<tr class="bg-emerald-500/10"><td class="col-atleta text-[10px] uppercase text-emerald-400 font-bold px-4 py-3">Presenças / Dia</td>`;
-            dias.forEach((dia, dIdx) => {
-                let totalPresencas = 0;
-                lista.forEach((aluno, aIdx) => {
-                    const kEdit = aIdx + '-' + dIdx;
-                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                    if (s === 'P' || s === 'A') totalPresencas++;
-                });
-                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${totalPresencas}</span></td>`;
-            });
-            fRow += `<td class="col-faltas"></td></tr>`;
-            document.getElementById('tfootPrincipal').innerHTML = fRow;
-        }
-
-        function ciclo(a, d) {
-            const kEdit = a + '-' + d;
-            const aluno = lista[a], dia = dias[d];
-            const atual = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-            const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
-           
-            if (prox === 'J') {
-                document.getElementById('jA').value = a; 
-                document.getElementById('jD').value = d;
-                document.getElementById('modalJust').classList.add('active');
-                return;
-            }
-            if (prox === 'P' || prox === 'A') {
-                const agora = new Date();
-                const hStr = agora.getHours().toString().padStart(2,'0') + ':' + 
-                             agora.getMinutes().toString().padStart(2,'0') + ':' + 
-                             agora.getSeconds().toString().padStart(2,'0');
-                ordens[chave(aluno.nome, dia)] = hStr;
-            } else {
-                delete ordens[chave(aluno.nome, dia)];
-            }
-            editando[kEdit] = prox;
-            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
-            renderizar();
-        }
-
-        function lote(dIdx) {
-            const dia = dias[dIdx];
-            let primeiro = '';
-            for(let i=0; i<lista.length; i++) {
-                if(ativo(lista[i], dia)) {
-                    primeiro = editando[i+'-'+dIdx] !== undefined ? editando[i+'-'+dIdx] : (freq[chave(lista[i].nome, dia)] || '');
-                    break;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                    video.srcObject = stream;
+                    container.style.display = 'flex';
+                    btn.innerHTML = '<i class="fas fa-times"></i>';
+                    btn.classList.add('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
+                } catch (err) {
+                    alert("Câmera não disponível.");
                 }
             }
-            const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
-            if (prox === 'J') return;
-           
-            const agora = new Date();
-            const hStr = agora.getHours().toString().padStart(2,'0') + ':' + 
-                         agora.getMinutes().toString().padStart(2,'0') + ':' + 
-                         agora.getSeconds().toString().padStart(2,'0');
-
-            lista.forEach((aluno, aIdx) => {
-                if(ativo(aluno, dia)) {
-                    editando[aIdx+'-'+dIdx] = prox;
-                    if (prox === 'P' || prox === 'A') {
-                        ordens[chave(aluno.nome, dia)] = hStr;
-                    } else {
-                        delete ordens[chave(aluno.nome, dia)];
-                    }
-                }
-            });
-            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
-            renderizar();
         }
 
-        function fecharJust() { 
-            document.getElementById('modalJust').classList.remove('active'); 
-        }
-
-        function salvarJust() {
-            const a = document.getElementById('jA').value, 
-                  d = document.getElementById('jD').value;
-            editando[a+'-'+d] = 'J';
-            editando[a+'-'+d+'-txt'] = document.getElementById('jT').value;
-            fecharJust(); 
-            renderizar();
-        }
-
-        async function salvar() {
-            const btn = document.getElementById('btnSalvar');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>SINC...';
-            btn.disabled = true;
-
-            for (const k in editando) {
-                if (k.includes('-txt')) continue;
-                const [aIdx, dIdx] = k.split('-').map(Number);
-                const aluno = lista[aIdx], dia = dias[dIdx], status = editando[k];
-                const kFreq = chave(aluno.nome, dia);
-               
-                freq[kFreq] = status;
-                if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
-
-                const fd = new FormData();
-                fd.append('action', 'frequencia');
-                fd.append('nome', aluno.nome);
-                fd.append('data_aula', dia.split('-').reverse().join('/'));
-                fd.append('status', TEXTO[status] || '');
-                fd.append('justificativa', editando[k+'-txt'] || '');
-                fd.append('hora', ordens[kFreq] || '');
-               
-                try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
+        function pararCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
-
-            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
-            editando = {};
-            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Tudo';
-            btn.disabled = false;
-            alert('Sincronizado!');
-            renderizar();
         }
 
-        async function sincronizar() {
+        function capturarFoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 160;
+            canvas.height = 120;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            faceData = canvas.toDataURL('image/jpeg', 0.5);
+            document.getElementById('fotoStatus').classList.remove('hidden');
+            if(document.getElementById('editModal').classList.contains('active')) {
+                document.getElementById('statusFotoEdicao').classList.remove('hidden');
+            }
+        }
+
+        // ADICIONADO: ATIVAR CAMERA PARA EDIÇÃO
+        async function ativarCameraEdicao() {
+            const container = document.getElementById('cameraContainer');
+            if (container.style.display !== 'flex') {
+                await toggleCamera();
+            }
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function carregarTurmas() {
+            turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+            const selects = [document.getElementById('turma'), document.getElementById('turmaLote'), document.getElementById('editTurma')];
+            
+            selects.forEach(select => {
+                if (!select) return;
+                select.innerHTML = '<option value="">Selecione...</option>';
+                turmas.sort((a, b) => a.nome.localeCompare(b.nome));
+                turmas.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.nome;
+                    option.textContent = t.nome;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        async function sincronizarAlunos() {
+            const container = document.getElementById('listaAlunos');
+            container.innerHTML = '<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-spinner fa-spin text-4xl mb-4 block opacity-30"></i>Sincronizando...</p>';
+            
             try {
-                const [rA, rT, rF] = await Promise.all([
-                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
-                ]);
-
-                if (Array.isArray(rA)) { 
-                    alunos = rA; 
-                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); 
+                const resposta = await fetch(URL_SCRIPT + '?getDados=alunos');
+                const dados = await resposta.json();
+                if (Array.isArray(dados)) {
+                    alunos = dados;
+                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
                 }
-                if (Array.isArray(rT)) {
-                    turmas = rT;
-                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
-                    const sel = document.getElementById('filtroTurma');
-                    sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-                    turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
-                }
-                if (Array.isArray(rF)) {
-                    rF.forEach(f => {
-                        const dataISO = getISOString(f.data_aula);
-                        if (dataISO) {
-                            const k = chave(f.nome, dataISO);
-                            freq[k] = SIGLAS[f.status] || '';
-                            if (f.justificativa) freq[k + '-txt'] = f.justificativa;
-                            if (f.hora) ordens[k] = limparHora(f.hora);   // <-- Aqui carrega o horário do banco
-                        }
-                    });
-                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-                    localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
-                }
-            } catch(e) { 
-                console.error(e); 
+            } catch (err) {
+                console.log('Erro ao sincronizar:', err);
+                alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
             }
-            renderizar();
+            renderizarAlunos();
         }
 
-        function mudarMes(dir) { 
-            dataAtual.setMonth(dataAtual.getMonth() + dir); 
-            editando = {}; 
-            renderizar(); 
+        function renderizarAlunos(filtro = '') {
+            const container = document.getElementById('listaAlunos');
+            const totalEl = document.getElementById('totalAlunos');
+            let lista = alunos.filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || (a.turma && a.turma.toLowerCase().includes(filtro.toLowerCase())));
+            lista.sort((a, b) => a.nome.localeCompare(b.nome));
+            totalEl.textContent = `${lista.length} aluno${lista.length !== 1 ? 's' : ''}`;
+            
+            if (lista.length === 0) {
+                container.innerHTML = `<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>${filtro ? 'Nenhum aluno encontrado' : 'Nenhum aluno registrado'}</p>`;
+                return;
+            }
+
+            container.innerHTML = lista.map((aluno, index) => {
+                const alunoIndex = alunos.findIndex(a => a.nome === aluno.nome && a.turma === aluno.turma);
+                const vencido = aluno.data_vencimento ? new Date(aluno.data_vencimento) < new Date() : false;
+                const temFoto = (aluno.face_data && aluno.face_data.length > 100) ? '<i class="fas fa-id-badge text-blue-400 ml-2" title="Possui Facial"></i>' : '';
+                return `
+                <div class="aluno-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-fuchsia-300 uppercase tracking-wider mb-1 flex items-center">
+                            ${aluno.nome} ${temFoto} ${vencido ? '<span class="lote-badge">Vencido</span>' : ''}
+                        </h3>
+                        <div class="flex flex-wrap gap-3 text-xs text-gray-400">
+                            <span><i class="fas fa-users mr-1 text-fuchsia-500"></i>${aluno.turma || 'SEM TURMA'}</span>
+                            <span><i class="far fa-calendar-check mr-1 text-fuchsia-500"></i>Matrícula: ${formatarData(aluno.matricula_rematricula)}</span>
+                            <span class="${vencido ? 'text-rose-400' : 'text-emerald-400'}"><i class="far fa-calendar-times mr-1"></i>Vence: ${formatarData(aluno.data_vencimento)}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="editarAluno(${alunoIndex})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button onclick="excluirAluno(${alunoIndex})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
         }
-       
-        (function init(){
-            const sel = document.getElementById('filtroTurma');
-            turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
-            sincronizar();
-        })();
+
+        function formatarData(data) { 
+            if(!data) return '-';
+            const d = new Date(data);
+            return d.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabIndividual').classList.toggle('active', tab === 'individual');
+            document.getElementById('tabLote').classList.toggle('active', tab === 'lote');
+            document.getElementById('formIndividual').classList.toggle('hidden', tab !== 'individual');
+            document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
+        }
+
+        document.getElementById('formAluno').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            
+            if(stream) capturarFoto();
+
+            const novoAluno = {
+                action: "alunos",
+                nome: document.getElementById('nome').value.toUpperCase(),
+                turma: document.getElementById('turma').value,
+                matricula_rematricula: document.getElementById('matricula').value,
+                data_vencimento: document.getElementById('vencimento').value,
+                face_data: faceData || ""
+            };
+
+            if (!novoAluno.turma) return alert('Selecione uma turma!');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.classList.add('opacity-50');
+            
+            try { 
+                await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(novoAluno) });
+                alunos.push(novoAluno);
+                localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                alert("Salvo com sucesso!");
+            } catch (err) { 
+                console.error(err); 
+                alert("Erro ao salvar na planilha, mas salvo localmente.");
+            }
+            
+            e.target.reset();
+            pararCamera();
+            faceData = null;
+            document.getElementById('cameraContainer').style.display = 'none';
+            document.getElementById('fotoStatus').classList.add('hidden');
+            document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
+            document.getElementById('btnCamera').classList.remove('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
+            
+            renderizarAlunos();
+            btn.innerHTML = '<i class="fas fa-plus"></i>';
+            btn.classList.remove('opacity-50');
+        });
+
+        async function cadastrarLote() {
+            const turma = document.getElementById('turmaLote').value;
+            const matricula = document.getElementById('matriculaLote').value;
+            const vencimento = document.getElementById('vencimentoLote').value;
+            const nomesTexto = document.getElementById('listaNomesLote').value.trim();
+            if (!turma || !matricula || !vencimento) return alert('Preencha todos os campos!');
+            if (!nomesTexto) return alert('Digite pelo menos um nome!');
+            const nomes = nomesTexto.split('\n').map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
+            const btn = document.getElementById('btnCadastrarLote');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+            btn.classList.add('opacity-50');
+            
+            for (const nome of nomes) {
+                const novoAluno = { action: "alunos", nome, turma, matricula_rematricula: matricula, data_vencimento: vencimento, face_data: "" };
+                try { await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(novoAluno) }); } catch (err) { console.error(err); }
+                alunos.push(novoAluno);
+            }
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            document.getElementById('listaNomesLote').value = '';
+            renderizarAlunos();
+            btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
+            btn.classList.remove('opacity-50');
+            alert('Cadastro em lote finalizado!');
+            switchTab('individual');
+        }
+
+        function editarAluno(index) {
+            const aluno = alunos[index];
+            faceData = null;
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editNome').value = aluno.nome;
+            document.getElementById('editTurma').value = aluno.turma;
+            document.getElementById('editMatricula').value = aluno.matricula_rematricula;
+            document.getElementById('editVencimento').value = aluno.data_vencimento;
+            document.getElementById('statusFotoEdicao').classList.add('hidden');
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function fecharModal() { 
+            document.getElementById('editModal').classList.remove('active'); 
+            pararCamera();
+            document.getElementById('cameraContainer').style.display = 'none';
+        }
+
+        async function salvarEdicao() {
+            const index = document.getElementById('editIndex').value;
+            const btn = document.getElementById('btnSalvarEdicao');
+            
+            if(stream) capturarFoto();
+
+            const alunoEditado = {
+                action: "alunos",
+                nome: document.getElementById('editNome').value.toUpperCase(),
+                turma: document.getElementById('editTurma').value,
+                matricula_rematricula: document.getElementById('editMatricula').value,
+                data_vencimento: document.getElementById('editVencimento').value,
+                face_data: faceData || alunos[index].face_data || "",
+                observacao: "EDITADO"
+            };
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            alunos[index] = alunoEditado;
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            renderizarAlunos();
+            
+            try {
+                await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(alunoEditado) });
+                alert("Atualizado com sucesso!");
+            } catch(e) {
+                alert("Erro ao sincronizar edição.");
+            }
+            
+            btn.innerHTML = 'Salvar';
+            fecharModal();
+        }
+
+        function excluirAluno(index) {
+            if (!confirm(`Excluir "${alunos[index].nome}"?`)) return;
+            alunos.splice(index, 1);
+            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            renderizarAlunos();
+        }
+
+        document.getElementById('busca').addEventListener('input', (e) => renderizarAlunos(e.target.value));
     </script>
 </body>
 </html>
