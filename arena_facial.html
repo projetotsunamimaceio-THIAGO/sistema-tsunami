@@ -8,50 +8,50 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; overflow: hidden; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
         .camera-container { position: relative; width: 100%; max-width: 640px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 2px solid #10b981; box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); background: #000; }
         video { width: 100%; height: auto; transform: scaleX(-1); }
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; transform: scaleX(-1); }
-        .status-badge { background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #10b981; }
-        .log-container { height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px; }
+        .status-badge { background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; border: 1px solid #10b981; }
+        .log-container { height: 150px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px; }
         .log-entry { padding: 4px 8px; border-left: 2px solid #10b981; margin-bottom: 4px; background: rgba(255,255,255,0.02); }
-        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: #10b981; box-shadow: 0 0 15px #10b981; animation: scan 3s linear infinite; }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: #10b981; box-shadow: 0 0 15px #10b981; animation: scan 3s linear infinite; z-index: 10; }
         @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        #loadingOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.95); z-index: 100; }
     </style>
 </head>
 <body class="p-4 md:p-8" onload="iniciarSistema()">
-    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
-
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-6">
-            <a href="arena.html" class="border border-emerald-500 text-emerald-500 px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-black transition">
-                <i class="fas fa-arrow-left mr-2"></i>VOLTAR
-            </a>
-            <h1 class="text-xl md:text-2xl font-bold text-emerald-400 tracking-tighter uppercase flex items-center">
-                <i class="fas fa-expand mr-3"></i>Chamada Facial
-            </h1>
+            <a href="arena.html" class="border border-emerald-500 text-emerald-500 px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-black transition">VOLTAR</a>
+            <h1 class="text-xl md:text-2xl font-bold text-emerald-400 uppercase flex items-center"><i class="fas fa-expand mr-3"></i>Arena Facial</h1>
             <div class="status-badge" id="statusLabel">Iniciando...</div>
         </div>
 
         <div class="camera-container mb-6" id="videoWrapper">
             <video id="video" autoplay muted playsinline></video>
-            <div class="scan-line" id="scanLine"></div>
-            <div id="loadingOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50 text-center p-6">
-                <i class="fas fa-brain fa-spin text-4xl text-emerald-500 mb-4"></i>
-                <p class="text-emerald-400 font-bold uppercase text-sm">Sincronizando Banco de Dados...</p>
-                <p id="loadingStatus" class="text-gray-500 text-[10px] mt-2">Aguardando modelos...</p>
+            <div class="scan-line"></div>
+            <div id="loadingOverlay">
+                <i class="fas fa-brain text-5xl text-emerald-500 animate-pulse mb-4"></i>
+                <p id="loadingStatus" class="text-emerald-400 font-bold uppercase text-sm">Carregando Banco de Dados...</p>
+                <div class="w-48 h-1 bg-gray-800 rounded-full mt-4 overflow-hidden">
+                    <div id="progressBar" class="w-0 h-full bg-emerald-500 transition-all duration-300"></div>
+                </div>
             </div>
         </div>
 
         <div id="resultCard" class="glass p-6 rounded-2xl mb-6 text-center hidden border-2 border-emerald-500">
             <div class="text-emerald-400 text-5xl mb-2"><i class="fas fa-check-circle"></i></div>
-            <h2 id="nomeAluno" class="text-2xl font-bold uppercase mb-1">---</h2>
-            <p id="infoTurma" class="text-gray-400 text-sm uppercase">PRESENÇA REGISTRADA</p>
+            <h2 id="nomeAluno" class="text-2xl font-bold uppercase text-white">---</h2>
+            <p class="text-emerald-400 text-xs font-bold uppercase">Presença Confirmada</p>
         </div>
 
-        <div class="glass p-4 rounded-2xl">
-            <h3 class="text-[10px] uppercase text-emerald-500 mb-3 tracking-widest border-b border-emerald-500/20 pb-1">Log do Sistema</h3>
+        <div class="glass p-4 rounded-2xl border border-emerald-500/20">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-[10px] uppercase text-emerald-500 font-bold tracking-widest">Console do Sistema</h3>
+                <span id="contadorAlunos" class="text-[9px] text-emerald-400">0 ROSTOS MAPEADOS</span>
+            </div>
             <div id="log" class="log-container"></div>
         </div>
     </div>
@@ -62,12 +62,20 @@
         let isProcessing = false;
         let lastIdentified = "";
 
+        function systemLog(msg, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.color = type === 'success' ? '#10b981' : (type === 'error' ? '#f43f5e' : '#94a3b8');
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.prepend(entry);
+        }
+
         async function iniciarSistema() {
             try {
-                const status = document.getElementById('loadingStatus');
+                const progressBar = document.getElementById('progressBar');
+                systemLog("Carregando modelos AI...");
                 
-                // Carregar modelos de um CDN que funciona
-                status.textContent = "Carregando motores de visão...";
                 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
@@ -75,141 +83,101 @@
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
                 ]);
 
-                status.textContent = "Mapeando rostos cadastrados...";
-                const labeledDescriptors = await carregarDescritores();
+                progressBar.style.width = "30%";
+                systemLog("Buscando dados da planilha...");
+                
+                const response = await fetch(URL_SCRIPT + '?getDados=alunos');
+                const alunos = await response.json();
+                
+                systemLog(`${alunos.length} registros encontrados. Mapeando fotos...`);
+                
+                const labeledDescriptors = [];
+                const batchSize = 10; // Processa de 10 em 10 para não travar o Chrome
 
-                if (labeledDescriptors && labeledDescriptors.length > 0) {
+                for (let i = 0; i < alunos.length; i += batchSize) {
+                    const batch = alunos.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async (aluno) => {
+                        if (aluno.face_data && aluno.face_data.length > 500) {
+                            try {
+                                const img = new Image();
+                                img.src = aluno.face_data;
+                                await img.decode(); // Método moderno e rápido para carregar imagem
+
+                                const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+                                if (detection) {
+                                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(aluno.nome, [detection.descriptor]));
+                                }
+                            } catch (e) { console.warn("Erro no aluno: " + aluno.nome); }
+                        }
+                    }));
+                    
+                    let progresso = 30 + (i / alunos.length * 70);
+                    progressBar.style.width = progresso + "%";
+                    document.getElementById('contadorAlunos').textContent = `${labeledDescriptors.length} ROSTOS MAPEADOS`;
+                }
+
+                if (labeledDescriptors.length > 0) {
                     faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
+                    systemLog("Reconhecimento pronto!", 'success');
                     document.getElementById('loadingOverlay').style.display = 'none';
                     document.getElementById('statusLabel').textContent = "ONLINE";
-                    addLog("Sistema carregado com " + labeledDescriptors.length + " atletas.");
-                    iniciarCamera();
+                    startVideo();
                 } else {
-                    status.innerHTML = "<span class='text-rose-500'>FALHA: Nenhuma foto válida no banco.</span>";
-                    addLog("ERRO: Planilha sem dados de face válidos.");
+                    throw new Error("Nenhum rosto válido encontrado na planilha.");
                 }
             } catch (err) {
-                console.error(err);
-                addLog("Falha no boot: " + err.message);
+                systemLog(err.message, 'error');
+                document.getElementById('loadingStatus').textContent = "ERRO: FOTOS INVÁLIDAS";
             }
         }
 
-        async function carregarDescritores() {
-            try {
-                const resp = await fetch(URL_SCRIPT + '?getDados=alunos');
-                const alunos = await resp.json();
-                
-                // Filtra apenas quem tem o Base64 na coluna E
-                const alunosComFoto = alunos.filter(a => a.face_data && a.face_data.includes('base64'));
-                addLog(`Processando ${alunosComFoto.length} cadastros...`);
-
-                const descritores = [];
-                for (const aluno of alunosComFoto) {
-                    try {
-                        const img = await faceapi.fetchImage(aluno.face_data);
-                        const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-                            .withFaceLandmarks()
-                            .withFaceDescriptor();
-                        
-                        if (detection) {
-                            descritores.push(new faceapi.LabeledFaceDescriptors(aluno.nome, [detection.descriptor]));
-                        }
-                    } catch (e) {
-                        console.warn("Pulei rosto de: " + aluno.nome);
-                    }
-                }
-                return descritores;
-            } catch (e) {
-                addLog("Erro de conexão: Verifique o URL_SCRIPT.");
-                return [];
-            }
-        }
-
-        function iniciarCamera() {
+        async function startVideo() {
             const video = document.getElementById('video');
-            navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.onloadedmetadata = () => processarFrames();
-                })
-                .catch(err => addLog("Câmera bloqueada: " + err.message));
-        }
-
-        async function processarFrames() {
-            const video = document.getElementById('video');
-            const canvas = faceapi.createCanvasFromMedia(video);
-            document.getElementById('videoWrapper').append(canvas);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+            video.srcObject = stream;
             
-            const displaySize = { width: video.clientWidth, height: video.clientHeight };
-            faceapi.matchDimensions(canvas, displaySize);
+            video.onplay = () => {
+                const canvas = faceapi.createCanvasFromMedia(video);
+                document.getElementById('videoWrapper').append(canvas);
+                const displaySize = { width: video.clientWidth, height: video.clientHeight };
+                faceapi.matchDimensions(canvas, displaySize);
 
-            setInterval(async () => {
-                if (isProcessing) return;
-
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptors();
-                
-                const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                
-                resizedDetections.forEach(detection => {
-                    const result = faceMatcher.findBestMatch(detection.descriptor);
+                setInterval(async () => {
+                    if (isProcessing) return;
+                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
                     
-                    const box = detection.detection.box;
-                    const color = result.label === 'unknown' ? '#f43f5e' : '#10b981';
+                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                     
-                    // Desenho manual para maior performance
-                    const ctx = canvas.getContext('2d');
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(box.x, box.y, box.width, box.height);
-
-                    if (result.label !== 'unknown' && result.distance < 0.5) {
-                        if (result.label !== lastIdentified) {
-                            confirmarPresenca(result.label);
+                    resizedDetections.forEach(detection => {
+                        const result = faceMatcher.findBestMatch(detection.descriptor);
+                        if (result.label !== 'unknown' && result.label !== lastIdentified) {
+                            registrarPresenca(result.label);
                         }
-                    }
-                });
-            }, 250);
+                    });
+                }, 600);
+            };
         }
 
-        async function confirmarPresenca(nome) {
+        async function registrarPresenca(nome) {
             isProcessing = true;
             lastIdentified = nome;
-            
-            const card = document.getElementById('resultCard');
             document.getElementById('nomeAluno').textContent = nome;
-            card.classList.remove('hidden');
-            addLog(`Atleta Identificado: ${nome}`);
-
+            document.getElementById('resultCard').classList.remove('hidden');
+            
             try {
-                // Formato correto para o POST no seu Apps Script
-                const formData = new FormData();
-                formData.append('action', 'frequencia');
-                formData.append('nome', nome);
-                formData.append('status', 'Presente');
-                formData.append('data_aula', new Date().toLocaleDateString('pt-BR'));
-
-                await fetch(URL_SCRIPT, { method: 'POST', body: formData });
-                addLog(`Presença salva com sucesso.`);
-            } catch (e) {
-                addLog(`Erro ao salvar no Google Sheets.`);
-            }
+                const params = new URLSearchParams();
+                params.append('action', 'presenca');
+                params.append('nome', nome);
+                await fetch(URL_SCRIPT, { method: 'POST', body: params });
+                systemLog(`PRESENÇA: ${nome}`, 'success');
+            } catch (e) { systemLog("Erro ao salvar", 'error'); }
 
             setTimeout(() => {
-                card.classList.add('hidden');
+                document.getElementById('resultCard').classList.add('hidden');
                 isProcessing = false;
                 lastIdentified = "";
             }, 5000);
-        }
-
-        function addLog(msg) {
-            const log = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span class="text-emerald-500/50">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-            log.prepend(entry);
         }
     </script>
 </body>

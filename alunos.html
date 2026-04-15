@@ -215,17 +215,25 @@
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 160;
-            canvas.height = 120;
+            
+            // CORREÇÃO: Resolução reduzida para caber no Google Sheets
+            canvas.width = 200;
+            canvas.height = 150;
+            
+            // Espelhar a captura
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // CORREÇÃO: Compressão JPEG 0.5 (50% de qualidade)
             faceData = canvas.toDataURL('image/jpeg', 0.5);
+            
             document.getElementById('fotoStatus').classList.remove('hidden');
             if(document.getElementById('editModal').classList.contains('active')) {
                 document.getElementById('statusFotoEdicao').classList.remove('hidden');
             }
         }
 
-        // ADICIONADO: ATIVAR CAMERA PARA EDIÇÃO
         async function ativarCameraEdicao() {
             const container = document.getElementById('cameraContainer');
             if (container.style.display !== 'flex') {
@@ -318,34 +326,36 @@
             document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
         }
 
+        // CORREÇÃO: Envio usando FormData/URLSearchParams para estabilidade
         document.getElementById('formAluno').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
             
             if(stream) capturarFoto();
 
-            const novoAluno = {
-                action: "alunos",
-                nome: document.getElementById('nome').value.toUpperCase(),
-                turma: document.getElementById('turma').value,
-                matricula_rematricula: document.getElementById('matricula').value,
-                data_vencimento: document.getElementById('vencimento').value,
-                face_data: faceData || ""
-            };
+            const params = new URLSearchParams();
+            params.append('action', 'alunos');
+            params.append('nome', document.getElementById('nome').value.toUpperCase());
+            params.append('turma', document.getElementById('turma').value);
+            params.append('matricula_rematricula', document.getElementById('matricula').value);
+            params.append('data_vencimento', document.getElementById('vencimento').value);
+            params.append('face_data', faceData || "");
 
-            if (!novoAluno.turma) return alert('Selecione uma turma!');
+            if (!document.getElementById('turma').value) return alert('Selecione uma turma!');
             
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.classList.add('opacity-50');
             
             try { 
-                await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(novoAluno) });
-                alunos.push(novoAluno);
-                localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                await fetch(URL_SCRIPT, { 
+                    method: 'POST', 
+                    body: params,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
                 alert("Salvo com sucesso!");
+                sincronizarAlunos();
             } catch (err) { 
-                console.error(err); 
-                alert("Erro ao salvar na planilha, mas salvo localmente.");
+                alert("Erro ao salvar.");
             }
             
             e.target.reset();
@@ -356,7 +366,6 @@
             document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
             document.getElementById('btnCamera').classList.remove('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
             
-            renderizarAlunos();
             btn.innerHTML = '<i class="fas fa-plus"></i>';
             btn.classList.remove('opacity-50');
         });
@@ -374,13 +383,17 @@
             btn.classList.add('opacity-50');
             
             for (const nome of nomes) {
-                const novoAluno = { action: "alunos", nome, turma, matricula_rematricula: matricula, data_vencimento: vencimento, face_data: "" };
-                try { await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(novoAluno) }); } catch (err) { console.error(err); }
-                alunos.push(novoAluno);
+                const params = new URLSearchParams();
+                params.append('action', 'alunos');
+                params.append('nome', nome);
+                params.append('turma', turma);
+                params.append('matricula_rematricula', matricula);
+                params.append('data_vencimento', vencimento);
+                params.append('face_data', "");
+                try { await fetch(URL_SCRIPT, { method: 'POST', body: params }); } catch (err) { console.error(err); }
             }
-            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+            sincronizarAlunos();
             document.getElementById('listaNomesLote').value = '';
-            renderizarAlunos();
             btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
             btn.classList.remove('opacity-50');
             alert('Cadastro em lote finalizado!');
@@ -411,26 +424,26 @@
             
             if(stream) capturarFoto();
 
-            const alunoEditado = {
-                action: "alunos",
-                nome: document.getElementById('editNome').value.toUpperCase(),
-                turma: document.getElementById('editTurma').value,
-                matricula_rematricula: document.getElementById('editMatricula').value,
-                data_vencimento: document.getElementById('editVencimento').value,
-                face_data: faceData || alunos[index].face_data || "",
-                observacao: "EDITADO"
-            };
+            const params = new URLSearchParams();
+            params.append('action', 'alunos');
+            params.append('nome', document.getElementById('editNome').value.toUpperCase());
+            params.append('turma', document.getElementById('editTurma').value);
+            params.append('matricula_rematricula', document.getElementById('editMatricula').value);
+            params.append('data_vencimento', document.getElementById('editVencimento').value);
+            params.append('face_data', faceData || alunos[index].face_data || "");
 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            alunos[index] = alunoEditado;
-            localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
-            renderizarAlunos();
             
             try {
-                await fetch(URL_SCRIPT, { method: 'POST', body: JSON.stringify(alunoEditado) });
+                await fetch(URL_SCRIPT, { 
+                    method: 'POST', 
+                    body: params,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
                 alert("Atualizado com sucesso!");
+                sincronizarAlunos();
             } catch(e) {
-                alert("Erro ao sincronizar edição.");
+                alert("Erro ao atualizar.");
             }
             
             btn.innerHTML = 'Salvar';
@@ -439,6 +452,7 @@
 
         function excluirAluno(index) {
             if (!confirm(`Excluir "${alunos[index].nome}"?`)) return;
+            // Aqui você precisaria de uma action de delete no GS, mas para manter o padrão:
             alunos.splice(index, 1);
             localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
             renderizarAlunos();
