@@ -66,7 +66,7 @@
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Nome Completo</label>
                     <input type="text" id="nome" placeholder="Ex: João Silva" class="w-full p-3 rounded-lg outline-none uppercase" required>
                 </div>
-                <div class="md:col-span-3">
+                <div class="md:col-span-2">
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Turma</label>
                     <select id="turma" class="w-full p-3 rounded-lg outline-none" required><option value="">Selecione...</option></select>
                 </div>
@@ -78,12 +78,23 @@
                     <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Vencimento</label>
                     <input type="date" id="vencimento" class="w-full p-3 rounded-lg outline-none" required>
                 </div>
-                <div class="md:col-span-1 text-center">
-                    <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Rosto</label>
-                    <button type="button" onclick="toggleCamera()" id="btnCamera" class="w-full border border-blue-500 bg-blue-500/10 text-blue-400 p-3 rounded-lg h-[46px] flex items-center justify-center hover:bg-blue-500 hover:text-white transition">
-                        <i class="fas fa-camera"></i>
-                    </button>
+
+                <div class="md:col-span-2 flex gap-2">
+                    <div class="flex-1 text-center">
+                        <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Câmera</label>
+                        <button type="button" onclick="toggleCamera()" id="btnCamera" class="w-full border border-blue-500 bg-blue-500/10 text-blue-400 p-3 rounded-lg h-[46px] flex items-center justify-center hover:bg-blue-500 hover:text-white transition">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 text-center">
+                        <label class="block text-[10px] uppercase tracking-wider text-fuchsia-400 mb-2">Arquivo</label>
+                        <input type="file" id="inputFile" accept="image/*" class="hidden" onchange="handleFileUpload(this)">
+                        <button type="button" onclick="document.getElementById('inputFile').click()" class="w-full border border-emerald-500 bg-emerald-500/10 text-emerald-400 p-3 rounded-lg h-[46px] flex items-center justify-center hover:bg-emerald-500 hover:text-white transition">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                    </div>
                 </div>
+
                 <div class="md:col-span-1">
                     <button type="submit" id="saveBtn" class="w-full btn-fuchsia p-3 rounded-lg uppercase font-bold text-xs h-[46px] flex items-center justify-center"><i class="fas fa-plus"></i></button>
                 </div>
@@ -95,7 +106,7 @@
                     </div>
                     <video id="video" autoplay muted></video>
                     <canvas id="canvas"></canvas>
-                    <p id="fotoStatus" class="text-[10px] text-emerald-400 hidden"><i class="fas fa-check-circle mr-1"></i> Rosto capturado!</p>
+                    <p id="fotoStatus" class="text-[10px] text-emerald-400 hidden"><i class="fas fa-check-circle mr-1"></i> Foto capturada/carregada!</p>
                 </div>
             </form>
         </div>
@@ -181,6 +192,30 @@
             sincronizarAlunos();
         }
 
+        // --- NOVA FUNÇÃO DE UPLOAD ---
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 200; 
+                    canvas.height = 150;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    faceData = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('fotoStatus').classList.remove('hidden');
+                    pararCamera();
+                    document.getElementById('cameraContainer').style.display = 'none';
+                    document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function toggleCamera() {
             const container = document.getElementById('cameraContainer');
             const video = document.getElementById('video');
@@ -215,19 +250,12 @@
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            
-            // CORREÇÃO: Resolução reduzida para caber no Google Sheets
-            canvas.width = 200;
-            canvas.height = 150;
-            
-            // Espelhar a captura
+            canvas.width = 160;
+            canvas.height = 120;
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // CORREÇÃO: Compressão JPEG 0.5 (50% de qualidade)
-            faceData = canvas.toDataURL('image/jpeg', 0.5);
-            
+            faceData = canvas.toDataURL('image/jpeg', 0.4);
             document.getElementById('fotoStatus').classList.remove('hidden');
             if(document.getElementById('editModal').classList.contains('active')) {
                 document.getElementById('statusFotoEdicao').classList.remove('hidden');
@@ -245,7 +273,6 @@
         function carregarTurmas() {
             turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
             const selects = [document.getElementById('turma'), document.getElementById('turmaLote'), document.getElementById('editTurma')];
-            
             selects.forEach(select => {
                 if (!select) return;
                 select.innerHTML = '<option value="">Selecione...</option>';
@@ -262,7 +289,6 @@
         async function sincronizarAlunos() {
             const container = document.getElementById('listaAlunos');
             container.innerHTML = '<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-spinner fa-spin text-4xl mb-4 block opacity-30"></i>Sincronizando...</p>';
-            
             try {
                 const resposta = await fetch(URL_SCRIPT + '?getDados=alunos');
                 const dados = await resposta.json();
@@ -271,7 +297,6 @@
                     localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
                 }
             } catch (err) {
-                console.log('Erro ao sincronizar:', err);
                 alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
             }
             renderizarAlunos();
@@ -283,16 +308,14 @@
             let lista = alunos.filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || (a.turma && a.turma.toLowerCase().includes(filtro.toLowerCase())));
             lista.sort((a, b) => a.nome.localeCompare(b.nome));
             totalEl.textContent = `${lista.length} aluno${lista.length !== 1 ? 's' : ''}`;
-            
             if (lista.length === 0) {
-                container.innerHTML = `<p class="empty-state text-center py-12 text-sm uppercase tracking-widest"><i class="fas fa-inbox text-4xl mb-4 block opacity-30"></i>${filtro ? 'Nenhum aluno encontrado' : 'Nenhum aluno registrado'}</p>`;
+                container.innerHTML = `<p class="empty-state text-center py-12 text-sm uppercase tracking-widest">Nenhum aluno encontrado</p>`;
                 return;
             }
-
             container.innerHTML = lista.map((aluno, index) => {
                 const alunoIndex = alunos.findIndex(a => a.nome === aluno.nome && a.turma === aluno.turma);
                 const vencido = aluno.data_vencimento ? new Date(aluno.data_vencimento) < new Date() : false;
-                const temFoto = (aluno.face_data && aluno.face_data.length > 100) ? '<i class="fas fa-id-badge text-blue-400 ml-2" title="Possui Facial"></i>' : '';
+                const temFoto = (aluno.face_data && aluno.face_data.length > 100) ? '<i class="fas fa-id-badge text-blue-400 ml-2"></i>' : '';
                 return `
                 <div class="aluno-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex-1">
@@ -301,13 +324,13 @@
                         </h3>
                         <div class="flex flex-wrap gap-3 text-xs text-gray-400">
                             <span><i class="fas fa-users mr-1 text-fuchsia-500"></i>${aluno.turma || 'SEM TURMA'}</span>
-                            <span><i class="far fa-calendar-check mr-1 text-fuchsia-500"></i>Matrícula: ${formatarData(aluno.matricula_rematricula)}</span>
-                            <span class="${vencido ? 'text-rose-400' : 'text-emerald-400'}"><i class="far fa-calendar-times mr-1"></i>Vence: ${formatarData(aluno.data_vencimento)}</span>
+                            <span>Matrícula: ${formatarData(aluno.matricula_rematricula)}</span>
+                            <span class="${vencido ? 'text-rose-400' : 'text-emerald-400'}">Vence: ${formatarData(aluno.data_vencimento)}</span>
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="editarAluno(${alunoIndex})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button onclick="excluirAluno(${alunoIndex})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30" title="Excluir"><i class="fas fa-trash"></i></button>
+                        <button onclick="editarAluno(${alunoIndex})" class="edit-btn p-2 rounded-lg bg-amber-500/10 border border-amber-500/30"><i class="fas fa-edit"></i></button>
+                        <button onclick="excluirAluno(${alunoIndex})" class="delete-btn p-2 rounded-lg bg-rose-500/10 border border-rose-500/30"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             }).join('');
@@ -326,13 +349,10 @@
             document.getElementById('formLote').classList.toggle('hidden', tab !== 'lote');
         }
 
-        // CORREÇÃO: Envio usando FormData/URLSearchParams para estabilidade
         document.getElementById('formAluno').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
-            
             if(stream) capturarFoto();
-
             const params = new URLSearchParams();
             params.append('action', 'alunos');
             params.append('nome', document.getElementById('nome').value.toUpperCase());
@@ -340,34 +360,19 @@
             params.append('matricula_rematricula', document.getElementById('matricula').value);
             params.append('data_vencimento', document.getElementById('vencimento').value);
             params.append('face_data', faceData || "");
-
-            if (!document.getElementById('turma').value) return alert('Selecione uma turma!');
-            
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.classList.add('opacity-50');
-            
             try { 
-                await fetch(URL_SCRIPT, { 
-                    method: 'POST', 
-                    body: params,
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
+                await fetch(URL_SCRIPT, { method: 'POST', body: params });
                 alert("Salvo com sucesso!");
                 sincronizarAlunos();
-            } catch (err) { 
-                alert("Erro ao salvar.");
-            }
-            
+            } catch (err) { alert("Erro ao salvar."); }
             e.target.reset();
             pararCamera();
             faceData = null;
             document.getElementById('cameraContainer').style.display = 'none';
             document.getElementById('fotoStatus').classList.add('hidden');
             document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
-            document.getElementById('btnCamera').classList.remove('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
-            
             btn.innerHTML = '<i class="fas fa-plus"></i>';
-            btn.classList.remove('opacity-50');
         });
 
         async function cadastrarLote() {
@@ -375,13 +380,10 @@
             const matricula = document.getElementById('matriculaLote').value;
             const vencimento = document.getElementById('vencimentoLote').value;
             const nomesTexto = document.getElementById('listaNomesLote').value.trim();
-            if (!turma || !matricula || !vencimento) return alert('Preencha todos os campos!');
-            if (!nomesTexto) return alert('Digite pelo menos um nome!');
+            if (!turma || !matricula || !vencimento || !nomesTexto) return alert('Preencha tudo!');
             const nomes = nomesTexto.split('\n').map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
             const btn = document.getElementById('btnCadastrarLote');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-            btn.classList.add('opacity-50');
-            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
             for (const nome of nomes) {
                 const params = new URLSearchParams();
                 params.append('action', 'alunos');
@@ -390,14 +392,12 @@
                 params.append('matricula_rematricula', matricula);
                 params.append('data_vencimento', vencimento);
                 params.append('face_data', "");
-                try { await fetch(URL_SCRIPT, { method: 'POST', body: params }); } catch (err) { console.error(err); }
+                try { await fetch(URL_SCRIPT, { method: 'POST', body: params }); } catch (err) {}
             }
             sincronizarAlunos();
             document.getElementById('listaNomesLote').value = '';
             btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
-            btn.classList.remove('opacity-50');
-            alert('Cadastro em lote finalizado!');
-            switchTab('individual');
+            alert('Lote finalizado!');
         }
 
         function editarAluno(index) {
@@ -415,15 +415,12 @@
         function fecharModal() { 
             document.getElementById('editModal').classList.remove('active'); 
             pararCamera();
-            document.getElementById('cameraContainer').style.display = 'none';
         }
 
         async function salvarEdicao() {
             const index = document.getElementById('editIndex').value;
             const btn = document.getElementById('btnSalvarEdicao');
-            
             if(stream) capturarFoto();
-
             const params = new URLSearchParams();
             params.append('action', 'alunos');
             params.append('nome', document.getElementById('editNome').value.toUpperCase());
@@ -431,28 +428,19 @@
             params.append('matricula_rematricula', document.getElementById('editMatricula').value);
             params.append('data_vencimento', document.getElementById('editVencimento').value);
             params.append('face_data', faceData || alunos[index].face_data || "");
-
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            
             try {
-                await fetch(URL_SCRIPT, { 
-                    method: 'POST', 
-                    body: params,
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-                alert("Atualizado com sucesso!");
+                await fetch(URL_SCRIPT, { method: 'POST', body: params });
+                alert("Atualizado!");
                 sincronizarAlunos();
-            } catch(e) {
-                alert("Erro ao atualizar.");
-            }
-            
+            } catch(e) { alert("Erro!"); }
             btn.innerHTML = 'Salvar';
             fecharModal();
         }
 
         function excluirAluno(index) {
             if (!confirm(`Excluir "${alunos[index].nome}"?`)) return;
-            // Aqui você precisaria de uma action de delete no GS, mas para manter o padrão:
+            // Aqui você deve implementar a chamada de exclusão no seu Apps Script se houver
             alunos.splice(index, 1);
             localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
             renderizarAlunos();

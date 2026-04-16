@@ -13,6 +13,8 @@
         .camera-container { position: relative; width: 100%; max-width: 640px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 2px solid #10b981; box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); background: #000; }
         video { width: 100%; height: auto; transform: scaleX(-1); }
         canvas { position: absolute; top: 0; left: 0; pointer-events: none; transform: scaleX(-1); }
+        #overlayCanvas { display: block; }
+        #tempCanvas { display: none; }
         .status-badge { background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; border: 1px solid #10b981; }
         .log-container { height: 150px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px; }
         .log-entry { padding: 4px 8px; border-left: 2px solid #10b981; margin-bottom: 4px; background: rgba(255,255,255,0.02); }
@@ -31,10 +33,12 @@
 
         <div class="camera-container mb-6" id="videoWrapper">
             <video id="video" autoplay muted playsinline></video>
+            <canvas id="overlayCanvas"></canvas>
+            <canvas id="tempCanvas"></canvas>
             <div class="scan-line"></div>
             <div id="loadingOverlay">
                 <i class="fas fa-brain text-5xl text-emerald-500 animate-pulse mb-4"></i>
-                <p id="loadingStatus" class="text-emerald-400 font-bold uppercase text-sm">Carregando Banco de Dados...</p>
+                <p id="loadingStatus" class="text-emerald-400 font-bold uppercase text-sm">Carregando Banco Facial...</p>
                 <div class="w-48 h-1 bg-gray-800 rounded-full mt-4 overflow-hidden">
                     <div id="progressBar" class="w-0 h-full bg-emerald-500 transition-all duration-300"></div>
                 </div>
@@ -49,8 +53,8 @@
 
         <div class="glass p-4 rounded-2xl border border-emerald-500/20">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="text-[10px] uppercase text-emerald-500 font-bold tracking-widest">Console do Sistema</h3>
-                <span id="contadorAlunos" class="text-[9px] text-emerald-400">0 ROSTOS MAPEADOS</span>
+                <h3 class="text-[10px] uppercase text-emerald-500 font-bold tracking-widest">Relatório de Escaneamento</h3>
+                <span id="contadorAlunos" class="text-[9px] text-emerald-400">AGUARDANDO BANCO</span>
             </div>
             <div id="log" class="log-container"></div>
         </div>
@@ -60,124 +64,148 @@
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
         let faceMatcher = null;
         let isProcessing = false;
-        let lastIdentified = "";
-
-        function systemLog(msg, type = 'info') {
-            const logEl = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.style.color = type === 'success' ? '#10b981' : (type === 'error' ? '#f43f5e' : '#94a3b8');
-            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logEl.prepend(entry);
-        }
+        let lastDetectedName = "";
+        let detectionTimeout = null;
 
         async function iniciarSistema() {
+            addLog("Inicializando Motores de IA...");
             try {
-                const progressBar = document.getElementById('progressBar');
-                systemLog("Carregando modelos AI...");
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
                 
-                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-
-                progressBar.style.width = "30%";
-                systemLog("Buscando dados da planilha...");
-                
-                const response = await fetch(URL_SCRIPT + '?getDados=alunos');
-                const alunos = await response.json();
-                
-                systemLog(`${alunos.length} registros encontrados. Mapeando fotos...`);
-                
-                const labeledDescriptors = [];
-                const batchSize = 10; // Processa de 10 em 10 para não travar o Chrome
-
-                for (let i = 0; i < alunos.length; i += batchSize) {
-                    const batch = alunos.slice(i, i + batchSize);
-                    await Promise.all(batch.map(async (aluno) => {
-                        if (aluno.face_data && aluno.face_data.length > 500) {
-                            try {
-                                const img = new Image();
-                                img.src = aluno.face_data;
-                                await img.decode(); // Método moderno e rápido para carregar imagem
-
-                                const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-                                if (detection) {
-                                    labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(aluno.nome, [detection.descriptor]));
-                                }
-                            } catch (e) { console.warn("Erro no aluno: " + aluno.nome); }
-                        }
-                    }));
-                    
-                    let progresso = 30 + (i / alunos.length * 70);
-                    progressBar.style.width = progresso + "%";
-                    document.getElementById('contadorAlunos').textContent = `${labeledDescriptors.length} ROSTOS MAPEADOS`;
-                }
-
-                if (labeledDescriptors.length > 0) {
-                    faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
-                    systemLog("Reconhecimento pronto!", 'success');
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    document.getElementById('statusLabel').textContent = "ONLINE";
-                    startVideo();
-                } else {
-                    throw new Error("Nenhum rosto válido encontrado na planilha.");
-                }
+                addLog("IA Pronta. Baixando banco de dados...");
+                await carregarBancoDados();
+                await iniciarCamera();
             } catch (err) {
-                systemLog(err.message, 'error');
-                document.getElementById('loadingStatus').textContent = "ERRO: FOTOS INVÁLIDAS";
+                addLog("ERRO CRÍTICO: " + err.message);
             }
         }
 
-        async function startVideo() {
-            const video = document.getElementById('video');
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            video.srcObject = stream;
-            
-            video.onplay = () => {
-                const canvas = faceapi.createCanvasFromMedia(video);
-                document.getElementById('videoWrapper').append(canvas);
-                const displaySize = { width: video.clientWidth, height: video.clientHeight };
-                faceapi.matchDimensions(canvas, displaySize);
+        async function carregarBancoDados() {
+            try {
+                const resposta = await fetch(URL_SCRIPT + "?getDados=alunos");
+                const alunos = await resposta.json();
+                const descriptors = [];
+                const progresso = document.getElementById('progressBar');
+                
+                let validos = 0;
+                for (let i = 0; i < alunos.length; i++) {
+                    const aluno = alunos[i];
+                    progresso.style.width = ((i + 1) / alunos.length * 100) + '%';
+                    
+                    if (aluno.face_data && aluno.face_data.length > 500) {
+                        try {
+                            const img = await faceapi.fetchImage(aluno.face_data);
+                            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+                            if (detection) {
+                                descriptors.push(new faceapi.LabeledFaceDescriptors(aluno.nome, [detection.descriptor]));
+                                validos++;
+                            }
+                        } catch (e) { console.error("Erro no descriptor de: " + aluno.nome); }
+                    }
+                }
 
-                setInterval(async () => {
-                    if (isProcessing) return;
-                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
-                    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                    
-                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    resizedDetections.forEach(detection => {
-                        const result = faceMatcher.findBestMatch(detection.descriptor);
-                        if (result.label !== 'unknown' && result.label !== lastIdentified) {
-                            registrarPresenca(result.label);
+                if (descriptors.length > 0) {
+                    faceMatcher = new faceapi.FaceMatcher(descriptors, 0.6);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    document.getElementById('statusLabel').innerText = "Sistema Online";
+                    document.getElementById('contadorAlunos').innerText = `${validos} ROSTOS SINCRONIZADOS`;
+                    addLog("Banco facial carregado com sucesso.");
+                } else {
+                    addLog("Aviso: Nenhum aluno possui foto válida.");
+                    document.getElementById('loadingStatus').innerText = "Nenhum rosto cadastrado.";
+                }
+            } catch (err) {
+                addLog("Erro ao sincronizar banco.");
+            }
+        }
+
+        async function iniciarCamera() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('overlayCanvas');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = stream;
+                
+                video.addEventListener('play', () => {
+                    const displaySize = { width: video.clientWidth, height: video.clientHeight };
+                    faceapi.matchDimensions(canvas, displaySize);
+
+                    setInterval(async () => {
+                        if (isProcessing) return;
+
+                        const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                        
+                        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        if (detections.length > 0) {
+                            const result = faceMatcher.findBestMatch(detections[0].descriptor);
+                            
+                            // Desenha caixa de detecção
+                            const box = resizedDetections[0].detection.box;
+                            const drawBox = new faceapi.draw.DrawBox(box, { label: result.label === 'unknown' ? 'Analizando...' : result.label });
+                            drawBox.draw(canvas);
+
+                            if (result.label !== 'unknown' && result.label !== lastDetectedName) {
+                                registrarPresenca(result.label);
+                            }
                         }
-                    });
-                }, 600);
-            };
+                    }, 200);
+                });
+            } catch (err) {
+                addLog("Câmera bloqueada ou não encontrada.");
+            }
         }
 
         async function registrarPresenca(nome) {
             isProcessing = true;
-            lastIdentified = nome;
-            document.getElementById('nomeAluno').textContent = nome;
-            document.getElementById('resultCard').classList.remove('hidden');
+            lastDetectedName = nome;
             
+            // Captura a foto do momento (OTIMIZADA)
+            const video = document.getElementById('video');
+            const tempCanvas = document.getElementById('tempCanvas');
+            tempCanvas.width = 160;
+            tempCanvas.height = 120;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.translate(tempCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, 160, 120);
+            const fotoPresenca = tempCanvas.toDataURL('image/jpeg', 0.4);
+
+            document.getElementById('nomeAluno').innerText = nome;
+            document.getElementById('resultCard').classList.remove('hidden');
+            addLog(`RECONHECIDO: ${nome}`);
+
             try {
                 const params = new URLSearchParams();
                 params.append('action', 'presenca');
                 params.append('nome', nome);
+                params.append('foto', fotoPresenca); // ENVIA A FOTO CAPTURADA
+                
                 await fetch(URL_SCRIPT, { method: 'POST', body: params });
-                systemLog(`PRESENÇA: ${nome}`, 'success');
-            } catch (e) { systemLog("Erro ao salvar", 'error'); }
+                addLog("Ponto e foto salvos na nuvem.");
+            } catch (e) {
+                addLog("Erro ao comunicar com o servidor.");
+            }
 
             setTimeout(() => {
                 document.getElementById('resultCard').classList.add('hidden');
                 isProcessing = false;
-                lastIdentified = "";
-            }, 5000);
+                // Reset do nome após 10 segundos para permitir nova batida do mesmo aluno se necessário
+                setTimeout(() => { lastDetectedName = ""; }, 10000);
+            }, 4000);
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
         }
     </script>
 </body>
