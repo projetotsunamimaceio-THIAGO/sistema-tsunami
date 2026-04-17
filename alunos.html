@@ -17,10 +17,7 @@
             border: 1px solid rgba(255, 0, 255, 0.2) !important; 
             color: white !important; 
         }
-        select option {
-            background-color: #1a1a2e !important;
-            color: white !important;
-        }
+        select option { background-color: #1a1a2e !important; color: white !important; }
 
         textarea { resize: vertical; min-height: 120px; }
         .aluno-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 0, 255, 0.1); border-left: 4px solid #ff00ff; transition: all 0.3s; }
@@ -38,10 +35,11 @@
         .empty-state { color: rgba(255, 0, 255, 0.4); font-style: italic; }
 
         #cameraContainer { display: none; flex-direction: column; align-items: center; gap: 10px; margin-top: 15px; border-top: 1px solid rgba(255, 0, 255, 0.2); padding-top: 15px; }
-        #video { width: 100%; max-width: 320px; border-radius: 10px; border: 2px solid #ff00ff; transform: scaleX(-1); }
+        #video { width: 100%; max-width: 400px; border-radius: 10px; border: 2px solid #ff00ff; transform: scaleX(-1); }
         #canvas { display: none; }
         .capture-indicator { width: 10px; height: 10px; background: #ff00ff; border-radius: 50%; box-shadow: 0 0 10px #ff00ff; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .preview-capture { max-width: 200px; border-radius: 8px; border: 2px solid #10b981; margin-top: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-8" onload="inicializar()">
@@ -102,11 +100,15 @@
                 <div id="cameraContainer" class="md:col-span-12">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="capture-indicator"></div>
-                        <span class="text-[10px] uppercase text-fuchsia-300">Posicione o rosto no centro</span>
+                        <span class="text-[10px] uppercase text-fuchsia-300">Posicione o rosto no centro e bem iluminado</span>
                     </div>
                     <video id="video" autoplay muted></video>
                     <canvas id="canvas"></canvas>
-                    <p id="fotoStatus" class="text-[10px] text-emerald-400 hidden"><i class="fas fa-check-circle mr-1"></i> Foto capturada/carregada!</p>
+                    <div id="previewContainer" class="hidden flex-col items-center mt-3">
+                        <p class="text-[10px] text-emerald-400 mb-2"><i class="fas fa-check-circle mr-1"></i> Foto capturada! Preview:</p>
+                        <img id="previewImg" class="preview-capture">
+                    </div>
+                    <p id="fotoStatus" class="text-[10px] text-emerald-400 hidden mt-2"><i class="fas fa-check-circle mr-1"></i> Foto pronta para cadastro!</p>
                 </div>
             </form>
         </div>
@@ -169,7 +171,11 @@
                     <button type="button" onclick="ativarCameraEdicao()" class="w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 p-2 rounded-lg text-[10px] uppercase font-bold hover:bg-blue-500 hover:text-white transition">
                         <i class="fas fa-camera mr-2"></i>Capturar Novo Rosto
                     </button>
-                    <div id="statusFotoEdicao" class="text-[10px] text-emerald-400 mt-2 hidden text-center"><i class="fas fa-check"></i> Foto capturada para salvar!</div>
+                    <div id="cameraContainerEdicao" class="hidden mt-3 flex-col items-center">
+                        <video id="videoEdicao" class="w-full max-w-[300px] rounded-lg border-2 border-blue-500 transform scale-x-[-1]"></video>
+                        <canvas id="canvasEdicao" class="hidden"></canvas>
+                    </div>
+                    <div id="statusFotoEdicao" class="text-[10px] text-emerald-400 mt-2 hidden text-center"><i class="fas fa-check"></i> Nova foto capturada!</div>
                 </div>
 
                 <div class="flex gap-3 mt-6">
@@ -185,6 +191,7 @@
         let alunos = [];
         let turmas = [];
         let stream = null;
+        let streamEdicao = null;
         let faceData = null;
 
         function inicializar() {
@@ -192,21 +199,40 @@
             sincronizarAlunos();
         }
 
-        // --- NOVA FUNÇÃO DE UPLOAD ---
+        // ========== CORREÇÃO 1: RESOLUÇÃO AUMENTADA PARA 400x300 ==========
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d');
-                    canvas.width = 200; 
-                    canvas.height = 150;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    faceData = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    // AUMENTADO: De 200x150 para 400x300
+                    canvas.width = 400;  
+                    canvas.height = 300;
+                    
+                    // Centraliza e corta mantendo proporção do rosto
+                    const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+                    const x = (canvas.width / 2) - (img.width / 2) * scale;
+                    const y = (canvas.height / 2) - (img.height / 2) * scale;
+                    
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    
+                    // MELHOR QUALIDADE: De 0.6 para 0.9
+                    faceData = canvas.toDataURL('image/jpeg', 0.9);
+                    
+                    // Mostra preview
+                    document.getElementById('previewImg').src = faceData;
+                    document.getElementById('previewContainer').classList.remove('hidden');
+                    document.getElementById('previewContainer').classList.add('flex');
                     document.getElementById('fotoStatus').classList.remove('hidden');
+                    
                     pararCamera();
                     document.getElementById('cameraContainer').style.display = 'none';
                     document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
@@ -228,7 +254,13 @@
                 btn.classList.remove('bg-rose-500/20', 'text-rose-400', 'border-rose-500');
             } else {
                 try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: "user",
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        } 
+                    });
                     video.srcObject = stream;
                     container.style.display = 'flex';
                     btn.innerHTML = '<i class="fas fa-times"></i>';
@@ -244,30 +276,65 @@
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
             }
+            if (streamEdicao) {
+                streamEdicao.getTracks().forEach(track => track.stop());
+                streamEdicao = null;
+            }
         }
 
+        // ========== CORREÇÃO 2: RESOLUÇÃO DA CÂMERA AUMENTADA ==========
         function capturarFoto() {
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 160;
-            canvas.height = 120;
+            
+            // AUMENTADO: De 160x120 para 400x300
+            canvas.width = 400;
+            canvas.height = 300;
+            
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            faceData = canvas.toDataURL('image/jpeg', 0.4);
+            
+            // MELHOR QUALIDADE: De 0.4 para 0.9
+            faceData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Mostra preview
+            document.getElementById('previewImg').src = faceData;
+            document.getElementById('previewContainer').classList.remove('hidden');
+            document.getElementById('previewContainer').classList.add('flex');
             document.getElementById('fotoStatus').classList.remove('hidden');
+            
             if(document.getElementById('editModal').classList.contains('active')) {
                 document.getElementById('statusFotoEdicao').classList.remove('hidden');
             }
         }
 
         async function ativarCameraEdicao() {
-            const container = document.getElementById('cameraContainer');
-            if (container.style.display !== 'flex') {
-                await toggleCamera();
+            const container = document.getElementById('cameraContainerEdicao');
+            const video = document.getElementById('videoEdicao');
+            
+            if (streamEdicao) {
+                pararCamera();
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            } else {
+                try {
+                    streamEdicao = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: "user",
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        } 
+                    });
+                    video.srcObject = streamEdicao;
+                    container.classList.remove('hidden');
+                    container.classList.add('flex');
+                    container.scrollIntoView({ behavior: 'smooth' });
+                } catch (err) {
+                    alert("Câmera não disponível.");
+                }
             }
-            container.scrollIntoView({ behavior: 'smooth' });
         }
 
         function carregarTurmas() {
@@ -352,7 +419,16 @@
         document.getElementById('formAluno').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
-            if(stream) capturarFoto();
+            
+            // Se câmera está aberta, captura foto
+            if(stream && !faceData) {
+                capturarFoto();
+                if(!faceData) {
+                    alert("Aguarde a câmera inicializar ou envie um arquivo.");
+                    return;
+                }
+            }
+            
             const params = new URLSearchParams();
             params.append('action', 'alunos');
             params.append('nome', document.getElementById('nome').value.toUpperCase());
@@ -360,16 +436,21 @@
             params.append('matricula_rematricula', document.getElementById('matricula').value);
             params.append('data_vencimento', document.getElementById('vencimento').value);
             params.append('face_data', faceData || "");
+            
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             try { 
                 await fetch(URL_SCRIPT, { method: 'POST', body: params });
                 alert("Salvo com sucesso!");
                 sincronizarAlunos();
             } catch (err) { alert("Erro ao salvar."); }
+            
+            // Reset
             e.target.reset();
             pararCamera();
             faceData = null;
             document.getElementById('cameraContainer').style.display = 'none';
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('previewContainer').classList.remove('flex');
             document.getElementById('fotoStatus').classList.add('hidden');
             document.getElementById('btnCamera').innerHTML = '<i class="fas fa-camera"></i>';
             btn.innerHTML = '<i class="fas fa-plus"></i>';
@@ -380,10 +461,13 @@
             const matricula = document.getElementById('matriculaLote').value;
             const vencimento = document.getElementById('vencimentoLote').value;
             const nomesTexto = document.getElementById('listaNomesLote').value.trim();
+            
             if (!turma || !matricula || !vencimento || !nomesTexto) return alert('Preencha tudo!');
+            
             const nomes = nomesTexto.split('\n').map(n => n.trim().toUpperCase()).filter(n => n.length > 0);
             const btn = document.getElementById('btnCadastrarLote');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
+            
             for (const nome of nomes) {
                 const params = new URLSearchParams();
                 params.append('action', 'alunos');
@@ -394,6 +478,7 @@
                 params.append('face_data', "");
                 try { await fetch(URL_SCRIPT, { method: 'POST', body: params }); } catch (err) {}
             }
+            
             sincronizarAlunos();
             document.getElementById('listaNomesLote').value = '';
             btn.innerHTML = '<i class="fas fa-users"></i> Cadastrar Todos';
@@ -415,12 +500,28 @@
         function fecharModal() { 
             document.getElementById('editModal').classList.remove('active'); 
             pararCamera();
+            document.getElementById('cameraContainerEdicao').classList.add('hidden');
+            document.getElementById('cameraContainerEdicao').classList.remove('flex');
         }
 
         async function salvarEdicao() {
             const index = document.getElementById('editIndex').value;
             const btn = document.getElementById('btnSalvarEdicao');
-            if(stream) capturarFoto();
+            
+            // Se câmera de edição está aberta, captura foto
+            if(streamEdicao) {
+                const video = document.getElementById('videoEdicao');
+                const canvas = document.getElementById('canvasEdicao');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = 400;
+                canvas.height = 300;
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                faceData = canvas.toDataURL('image/jpeg', 0.9);
+            }
+            
             const params = new URLSearchParams();
             params.append('action', 'alunos');
             params.append('nome', document.getElementById('editNome').value.toUpperCase());
@@ -428,19 +529,20 @@
             params.append('matricula_rematricula', document.getElementById('editMatricula').value);
             params.append('data_vencimento', document.getElementById('editVencimento').value);
             params.append('face_data', faceData || alunos[index].face_data || "");
+            
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             try {
                 await fetch(URL_SCRIPT, { method: 'POST', body: params });
                 alert("Atualizado!");
                 sincronizarAlunos();
             } catch(e) { alert("Erro!"); }
+            
             btn.innerHTML = 'Salvar';
             fecharModal();
         }
 
         function excluirAluno(index) {
             if (!confirm(`Excluir "${alunos[index].nome}"?`)) return;
-            // Aqui você deve implementar a chamada de exclusão no seu Apps Script se houver
             alunos.splice(index, 1);
             localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
             renderizarAlunos();

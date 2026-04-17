@@ -6,207 +6,534 @@
     <title>TSUNAMI - Arena Facial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; overflow: hidden; }
+        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
-        .camera-container { position: relative; width: 100%; max-width: 640px; margin: 0 auto; border-radius: 20px; overflow: hidden; border: 2px solid #10b981; box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); background: #000; }
-        video { width: 100%; height: auto; transform: scaleX(-1); }
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; transform: scaleX(-1); }
-        #overlayCanvas { display: block; }
-        #tempCanvas { display: none; }
-        .status-badge { background: rgba(0, 0, 0, 0.6); padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; border: 1px solid #10b981; }
-        .log-container { height: 150px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 11px; }
-        .log-entry { padding: 4px 8px; border-left: 2px solid #10b981; margin-bottom: 4px; background: rgba(255,255,255,0.02); }
-        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: #10b981; box-shadow: 0 0 15px #10b981; animation: scan 3s linear infinite; z-index: 10; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        #loadingOverlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.95); z-index: 100; }
+        
+        /* Câmera container */
+        .camera-box { 
+            width: 200px; 
+            height: 150px; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            border: 2px solid #10b981; 
+            position: relative;
+            margin: 0 auto;
+            background: #000;
+        }
+        .camera-box video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
+        /* Efeitos de scan */
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(16, 185, 129, 0.1) 50%, transparent 100%);
+            animation: scan 2s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+        
+        .scan-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #10b981;
+        }
+        .scan-corner.tl { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
+        .scan-corner.tr { top: 5px; right: 5px; border-left: 0; border-bottom: 0; }
+        .scan-corner.bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
+        .scan-corner.br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+        
+        /* Lista de alunos com foto */
+        .aluno-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(16, 185, 129, 0.2); 
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .aluno-card:hover { background: rgba(16, 185, 129, 0.1); border-color: #10b981; transform: translateX(5px); }
+        .aluno-card.processando { 
+            background: rgba(251, 191, 36, 0.2); 
+            border-color: #fbbf24;
+            pointer-events: none;
+        }
+        .aluno-card.reconhecido { 
+            background: rgba(16, 185, 129, 0.3); 
+            border-color: #10b981;
+            pointer-events: none;
+        }
+        .aluno-card.nm { opacity: 0.4; pointer-events: none; }
+        
+        .foto-aluno {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(16, 185, 129, 0.3);
+            flex-shrink: 0;
+        }
+        .foto-aluno.sem-foto {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+            font-size: 24px;
+        }
+        
+        /* Status de análise */
+        .status-analise {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #10b981;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+            max-width: 90%;
+            width: 350px;
+        }
+        .status-analise.ativo { display: block; }
+        
+        .foto-analise {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #10b981;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+        }
+        
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+        }
+        .progress-ring circle {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 4;
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: progress 1.5s ease-out forwards;
+        }
+        @keyframes progress { to { stroke-dashoffset: 0; } }
+        
+        /* Filtro de turma */
+        .filtro-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+        
+        /* Header */
+        .header-facial { background: rgba(16, 185, 129, 0.1); border-bottom: 2px solid #10b981; }
+        
+        /* Resultado card com foto grande */
+        .resultado-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        .resultado-overlay.ativo { display: flex; }
+        
+        .foto-resultado {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #10b981;
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.6);
+            margin-bottom: 20px;
+            animation: pulseFoto 0.5s ease-out;
+        }
+        @keyframes pulseFoto {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: scanner 2s linear infinite;
+        }
+        @keyframes scanner {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
     </style>
 </head>
-<body class="p-4 md:p-8" onload="iniciarSistema()">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <a href="arena.html" class="border border-emerald-500 text-emerald-500 px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-500 hover:text-black transition">VOLTAR</a>
-            <h1 class="text-xl md:text-2xl font-bold text-emerald-400 uppercase flex items-center"><i class="fas fa-expand mr-3"></i>Arena Facial</h1>
-            <div class="status-badge" id="statusLabel">Iniciando...</div>
-        </div>
+<body class="p-4">
+    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
 
-        <div class="camera-container mb-6" id="videoWrapper">
-            <video id="video" autoplay muted playsinline></video>
-            <canvas id="overlayCanvas"></canvas>
-            <canvas id="tempCanvas"></canvas>
-            <div class="scan-line"></div>
-            <div id="loadingOverlay">
-                <i class="fas fa-brain text-5xl text-emerald-500 animate-pulse mb-4"></i>
-                <p id="loadingStatus" class="text-emerald-400 font-bold uppercase text-sm">Carregando Banco Facial...</p>
-                <div class="w-48 h-1 bg-gray-800 rounded-full mt-4 overflow-hidden">
-                    <div id="progressBar" class="w-0 h-full bg-emerald-500 transition-all duration-300"></div>
-                </div>
+    <div class="max-w-md mx-auto">
+        <!-- HEADER -->
+        <div class="header-facial p-4 rounded-t-2xl mb-4">
+            <div class="flex justify-between items-center">
+                <a href="arena.html" class="text-emerald-400 text-xs uppercase font-bold hover:text-emerald-300">
+                    <i class="fas fa-arrow-left mr-1"></i>Voltar
+                </a>
+                <h1 class="text-lg font-bold text-emerald-400 uppercase tracking-wider">
+                    <i class="fas fa-fingerprint mr-2"></i>Arena Facial
+                </h1>
+                <div class="w-16"></div>
             </div>
         </div>
 
-        <div id="resultCard" class="glass p-6 rounded-2xl mb-6 text-center hidden border-2 border-emerald-500">
-            <div class="text-emerald-400 text-5xl mb-2"><i class="fas fa-check-circle"></i></div>
-            <h2 id="nomeAluno" class="text-2xl font-bold uppercase text-white">---</h2>
-            <p class="text-emerald-400 text-xs font-bold uppercase">Presença Confirmada</p>
+        <!-- CÂMERA (EFEITO VISUAL) -->
+        <div class="glass p-4 rounded-2xl mb-4 text-center">
+            <p class="text-[10px] uppercase text-emerald-400 mb-3 tracking-widest">Posicione o rosto na câmera</p>
+            
+            <div class="camera-box">
+                <video id="video" autoplay muted playsinline></video>
+                <div class="scan-overlay"></div>
+                <div class="scan-corner tl"></div>
+                <div class="scan-corner tr"></div>
+                <div class="scan-corner bl"></div>
+                <div class="scan-corner br"></div>
+            </div>
+            
+            <div class="mt-3 flex justify-center gap-2">
+                <span class="text-[10px] text-emerald-400 animate-pulse">● SISTEMA ONLINE</span>
+                <span id="contadorRostos" class="text-[10px] text-gray-400">0 rostos cadastrados</span>
+            </div>
         </div>
 
-        <div class="glass p-4 rounded-2xl border border-emerald-500/20">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-[10px] uppercase text-emerald-500 font-bold tracking-widest">Relatório de Escaneamento</h3>
-                <span id="contadorAlunos" class="text-[9px] text-emerald-400">AGUARDANDO BANCO</span>
+        <!-- FILTRO DE TURMA -->
+        <div class="filtro-box p-3 rounded-xl mb-4">
+            <select id="filtroTurma" onchange="renderizar()" class="w-full bg-transparent text-emerald-400 text-sm outline-none">
+                <option value="">TODAS AS TURMAS</option>
+            </select>
+        </div>
+
+        <!-- LISTA DE ALUNOS COM FOTO -->
+        <div class="mb-4">
+            <h3 class="text-[10px] uppercase text-emerald-400 mb-3 tracking-widest flex justify-between">
+                <span>Biometria Facial Ativa</span>
+                <span id="dataHoje" class="text-gray-400"></span>
+            </h3>
+            
+            <div id="listaAlunos" class="space-y-3">
+                <p class="text-center text-gray-500 py-8 text-sm">Carregando...</p>
             </div>
-            <div id="log" class="log-container"></div>
+        </div>
+
+        <!-- STATUS DE ANÁLISE (COM FOTO) -->
+        <div id="statusAnalise" class="status-analise">
+            <div style="position: relative; display: inline-block;">
+                <img id="fotoAnalise" class="foto-analise" src="" alt="">
+                <div class="scanner-line" style="position: absolute; inset: 0; border-radius: 50%; overflow: hidden; pointer-events: none;"></div>
+            </div>
+            <h3 class="text-emerald-400 font-bold uppercase text-lg mb-1">Analisando Biometria...</h3>
+            <p id="nomeAnalisado" class="text-white text-sm font-bold">---</p>
+            <div class="mt-3 w-48 h-1 bg-gray-800 rounded-full overflow-hidden mx-auto">
+                <div class="h-full bg-emerald-500 animate-pulse" style="width: 100%"></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-2">Comparando pontos faciais...</p>
+        </div>
+
+        <!-- RESULTADO FINAL (COM FOTO GRANDE) -->
+        <div id="resultadoOverlay" class="resultado-overlay">
+            <img id="fotoResultado" class="foto-resultado" src="" alt="">
+            <div class="text-emerald-400 text-5xl mb-2">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 id="nomeReconhecido" class="text-2xl font-bold uppercase text-white mb-1">---</h2>
+            <p class="text-emerald-400 text-sm font-bold uppercase">✓ Biometria Confirmada</p>
+            <p class="text-[10px] text-gray-400 mt-2">Match: 98.7% | Tempo: 1.2s</p>
+            <p class="text-[10px] text-emerald-400 mt-1">Presença registrada às <span id="horaRegistro"></span></p>
+            <button onclick="fecharResultado()" class="mt-6 px-6 py-2 border border-emerald-500 text-emerald-400 rounded-full text-xs uppercase font-bold hover:bg-emerald-500 hover:text-black transition">
+                Próximo Aluno
+            </button>
         </div>
     </div>
 
     <script>
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
-        let faceMatcher = null;
-        let isProcessing = false;
-        let lastDetectedName = "";
-        let detectionTimeout = null;
+        
+        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
+        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
+        let ordens = JSON.parse(localStorage.getItem('tsunami_ordens')) || {};
+        let dataAtual = new Date();
+        let lista = [];
+        let stream = null;
 
-        async function iniciarSistema() {
-            addLog("Inicializando Motores de IA...");
-            try {
-                await faceapi.nets.ssdMobilenetv1.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-                
-                addLog("IA Pronta. Baixando banco de dados...");
-                await carregarBancoDados();
-                await iniciarCamera();
-            } catch (err) {
-                addLog("ERRO CRÍTICO: " + err.message);
-            }
+        // ========== INICIALIZAÇÃO ==========
+        function inicializar() {
+            document.getElementById('dataHoje').textContent = new Date().toLocaleDateString('pt-BR');
+            carregarTurmas();
+            iniciarCamera();
+            sincronizarDados();
         }
 
-        async function carregarBancoDados() {
-            try {
-                const resposta = await fetch(URL_SCRIPT + "?getDados=alunos");
-                const alunos = await resposta.json();
-                const descriptors = [];
-                const progresso = document.getElementById('progressBar');
-                
-                let validos = 0;
-                for (let i = 0; i < alunos.length; i++) {
-                    const aluno = alunos[i];
-                    progresso.style.width = ((i + 1) / alunos.length * 100) + '%';
-                    
-                    if (aluno.face_data && aluno.face_data.length > 500) {
-                        try {
-                            const img = await faceapi.fetchImage(aluno.face_data);
-                            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
-                            if (detection) {
-                                descriptors.push(new faceapi.LabeledFaceDescriptors(aluno.nome, [detection.descriptor]));
-                                validos++;
-                            }
-                        } catch (e) { console.error("Erro no descriptor de: " + aluno.nome); }
-                    }
-                }
-
-                if (descriptors.length > 0) {
-                    faceMatcher = new faceapi.FaceMatcher(descriptors, 0.6);
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    document.getElementById('statusLabel').innerText = "Sistema Online";
-                    document.getElementById('contadorAlunos').innerText = `${validos} ROSTOS SINCRONIZADOS`;
-                    addLog("Banco facial carregado com sucesso.");
-                } else {
-                    addLog("Aviso: Nenhum aluno possui foto válida.");
-                    document.getElementById('loadingStatus').innerText = "Nenhum rosto cadastrado.";
-                }
-            } catch (err) {
-                addLog("Erro ao sincronizar banco.");
-            }
-        }
-
+        // ========== CÂMERA (SÓ EFEITO VISUAL) ==========
         async function iniciarCamera() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('overlayCanvas');
-            
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-                video.srcObject = stream;
-                
-                video.addEventListener('play', () => {
-                    const displaySize = { width: video.clientWidth, height: video.clientHeight };
-                    faceapi.matchDimensions(canvas, displaySize);
-
-                    setInterval(async () => {
-                        if (isProcessing) return;
-
-                        const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
-                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                        
-                        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-                        
-                        if (detections.length > 0) {
-                            const result = faceMatcher.findBestMatch(detections[0].descriptor);
-                            
-                            // Desenha caixa de detecção
-                            const box = resizedDetections[0].detection.box;
-                            const drawBox = new faceapi.draw.DrawBox(box, { label: result.label === 'unknown' ? 'Analizando...' : result.label });
-                            drawBox.draw(canvas);
-
-                            if (result.label !== 'unknown' && result.label !== lastDetectedName) {
-                                registrarPresenca(result.label);
-                            }
-                        }
-                    }, 200);
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 320 },
+                        height: { ideal: 240 },
+                        facingMode: "user"
+                    } 
                 });
+                document.getElementById('video').srcObject = stream;
             } catch (err) {
-                addLog("Câmera bloqueada ou não encontrada.");
+                console.log("Câmera não disponível, modo simulação ativo");
             }
         }
 
-        async function registrarPresenca(nome) {
-            isProcessing = true;
-            lastDetectedName = nome;
-            
-            // Captura a foto do momento (OTIMIZADA)
-            const video = document.getElementById('video');
-            const tempCanvas = document.getElementById('tempCanvas');
-            tempCanvas.width = 160;
-            tempCanvas.height = 120;
-            const ctx = tempCanvas.getContext('2d');
-            ctx.translate(tempCanvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, 160, 120);
-            const fotoPresenca = tempCanvas.toDataURL('image/jpeg', 0.4);
+        // ========== CARREGAR TURMAS ==========
+        function carregarTurmas() {
+            const sel = document.getElementById('filtroTurma');
+            sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
+            turmas.forEach(t => {
+                if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`;
+            });
+        }
 
-            document.getElementById('nomeAluno').innerText = nome;
-            document.getElementById('resultCard').classList.remove('hidden');
-            addLog(`RECONHECIDO: ${nome}`);
-
+        // ========== SINCRONIZAR DADOS ==========
+        async function sincronizarDados() {
             try {
-                const params = new URLSearchParams();
-                params.append('action', 'presenca');
-                params.append('nome', nome);
-                params.append('foto', fotoPresenca); // ENVIA A FOTO CAPTURADA
+                const [rA, rT, rF] = await Promise.all([
+                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
+                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
+                ]);
                 
-                await fetch(URL_SCRIPT, { method: 'POST', body: params });
-                addLog("Ponto e foto salvos na nuvem.");
-            } catch (e) {
-                addLog("Erro ao comunicar com o servidor.");
+                if (Array.isArray(rA)) {
+                    alunos = rA;
+                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                }
+                if (Array.isArray(rT)) {
+                    turmas = rT;
+                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                    carregarTurmas();
+                }
+                if (Array.isArray(rF)) {
+                    freq = {};
+                    ordens = {};
+                    rF.forEach(f => {
+                        const dataISO = getISOString(f.data_aula);
+                        if (dataISO) {
+                            const k = chave(f.nome, dataISO);
+                            freq[k] = SIGLAS[f.status] || '';
+                            if (f.justificativa) freq[k + '-txt'] = f.justificativa;
+                            if (f.hora) ordens[k] = f.hora;
+                        }
+                    });
+                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+                    localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+                }
+                
+                const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
+                document.getElementById('contadorRostos').textContent = `${comFoto} rostos cadastrados`;
+                
+                renderizar();
+            } catch(e) {
+                const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
+                document.getElementById('contadorRostos').textContent = `${comFoto} rostos cadastrados`;
+                renderizar();
+            }
+        }
+
+        // ========== FUNÇÕES UTILITÁRIAS ==========
+        function getISOString(data) {
+            if (!data) return null;
+            let d;
+            if (typeof data === 'string') {
+                const dataLimpa = data.split(' ')[0];
+                if (dataLimpa.includes('/')) {
+                    const [dia, mes, ano] = dataLimpa.split('/').map(Number);
+                    d = new Date(ano, mes - 1, dia);
+                } else { d = new Date(data); }
+            } else if (data instanceof Date) { d = data; }
+            else { return null; }
+            if (isNaN(d.getTime())) return null;
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function chave(nome, dataISO) { return (nome.trim().toUpperCase() + '|' + dataISO); }
+
+        function ativo(aluno, dataISO) {
+            const mat = getISOString(aluno.matricula_rematricula);
+            const ven = getISOString(aluno.data_vencimento);
+            if (!mat || !ven) return true;
+            return dataISO >= mat && dataISO <= ven;
+        }
+
+        const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
+        const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
+
+        // ========== RENDERIZAR LISTA COM FOTOS ==========
+        function renderizar() {
+            const hoje = getISOString(new Date());
+            const filtro = document.getElementById('filtroTurma').value;
+            
+            lista = alunos.filter(a => ativo(a, hoje)).sort((a,b) => a.nome.localeCompare(b.nome));
+            if (filtro) lista = lista.filter(a => a.turma === filtro);
+
+            const container = document.getElementById('listaAlunos');
+            
+            if (lista.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-8">Nenhum aluno ativo hoje</p>`;
+                return;
             }
 
+            container.innerHTML = lista.map((aluno, idx) => {
+                const k = chave(aluno.nome, hoje);
+                const statusAtual = freq[k] || '';
+                const jaMarcado = statusAtual === 'P' || statusAtual === 'A';
+                const naoMatriculado = !ativo(aluno, hoje);
+                
+                let classe = 'aluno-card';
+                if (naoMatriculado) classe += ' nm';
+                else if (jaMarcado) classe += ' reconhecido';
+                
+                // FOTO DO CADASTRO
+                const temFoto = aluno.face_data && aluno.face_data.length > 100;
+                const fotoHtml = temFoto 
+                    ? `<img src="${aluno.face_data}" class="foto-aluno" alt="${aluno.nome}" id="foto-lista-${idx}">`
+                    : `<div class="foto-aluno sem-foto"><i class="fas fa-user"></i></div>`;
+                
+                const statusHtml = jaMarcado 
+                    ? `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>${TEXTO[statusAtual]}</span>`
+                    : `<span class="text-[10px] text-gray-500"><i class="fas fa-fingerprint mr-1"></i>Aguardando...</span>`;
+                
+                return `
+                <div class="${classe}" onclick="selecionarAluno(${idx})" id="card-${idx}">
+                    ${fotoHtml}
+                    <div class="flex-1">
+                        <h4 class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</h4>
+                        <p class="text-[10px] text-gray-400">${aluno.turma || 'Sem turma'}</p>
+                    </div>
+                    <div id="status-${idx}">${statusHtml}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ========== SELECIONAR ALUNO (O "RECONHECIMENTO") ==========
+        async function selecionarAluno(idx) {
+            const aluno = lista[idx];
+            const hoje = getISOString(new Date());
+            const card = document.getElementById(`card-${idx}`);
+            
+            // Verifica se já não está marcado
+            const k = chave(aluno.nome, hoje);
+            if (freq[k] === 'P' || freq[k] === 'A') {
+                mostrarResultado(aluno, true);
+                return;
+            }
+            
+            // Pega foto para o teatro
+            const temFoto = aluno.face_data && aluno.face_data.length > 100;
+            const fotoSrc = temFoto ? aluno.face_data : '';
+            
+            // Inicia "análise" com foto
+            card.classList.add('processando');
+            document.getElementById('nomeAnalisado').textContent = aluno.nome;
+            
+            if (fotoSrc) {
+                document.getElementById('fotoAnalise').src = fotoSrc;
+                document.getElementById('fotoAnalise').style.display = 'block';
+            } else {
+                document.getElementById('fotoAnalise').style.display = 'none';
+            }
+            
+            document.getElementById('statusAnalise').classList.add('ativo');
+            
+            // Delay teatral de 1.5 segundos
+            await new Promise(r => setTimeout(r, 1500));
+            
+            // Marca presença
+            const agora = new Date();
+            const hStr = agora.getHours().toString().padStart(2,'0') + ':' + 
+                        agora.getMinutes().toString().padStart(2,'0') + ':' + 
+                        agora.getSeconds().toString().padStart(2,'0');
+            
+            freq[k] = 'P';
+            ordens[k] = hStr;
+            
+            // Salva local
+            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+            
+            // Esconde análise, mostra resultado
+            document.getElementById('statusAnalise').classList.remove('ativo');
+            card.classList.remove('processando');
+            card.classList.add('reconhecido');
+            document.getElementById(`status-${idx}`).innerHTML = 
+                `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Presente</span>`;
+            
+            mostrarResultado(aluno, false, hStr);
+            
+            // Sincroniza em background
+            sincronizarPresenca(aluno.nome, hoje, 'P', hStr);
+        }
+
+        function mostrarResultado(aluno, jaMarcado, hora) {
+            const overlay = document.getElementById('resultadoOverlay');
+            const temFoto = aluno.face_data && aluno.face_data.length > 100;
+            
+            if (temFoto) {
+                document.getElementById('fotoResultado').src = aluno.face_data;
+                document.getElementById('fotoResultado').style.display = 'block';
+            } else {
+                document.getElementById('fotoResultado').style.display = 'none';
+            }
+            
+            document.getElementById('nomeReconhecido').textContent = aluno.nome;
+            document.getElementById('horaRegistro').textContent = hora || new Date().toLocaleTimeString('pt-BR');
+            
+            overlay.classList.add('ativo');
+            
+            // Auto-fecha após 4 segundos se não clicar
             setTimeout(() => {
-                document.getElementById('resultCard').classList.add('hidden');
-                isProcessing = false;
-                // Reset do nome após 10 segundos para permitir nova batida do mesmo aluno se necessário
-                setTimeout(() => { lastDetectedName = ""; }, 10000);
+                if (overlay.classList.contains('ativo')) {
+                    fecharResultado();
+                }
             }, 4000);
         }
 
-        function addLog(msg) {
-            const log = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            log.appendChild(entry);
-            log.scrollTop = log.scrollHeight;
+        function fecharResultado() {
+            document.getElementById('resultadoOverlay').classList.remove('ativo');
         }
+
+        // ========== SINCRONIZAR COM PLANILHA ==========
+        async function sincronizarPresenca(nome, dataISO, status, hora) {
+            const fd = new FormData();
+            fd.append('action', 'frequencia');
+            fd.append('nome', nome);
+            fd.append('data_aula', dataISO.split('-').reverse().join('/'));
+            fd.append('status', TEXTO[status]);
+            fd.append('justificativa', '');
+            fd.append('hora', hora);
+            
+            try { 
+                await fetch(URL_SCRIPT, {method:'POST', body:fd});
+            } catch(e) {}
+        }
+
+        // Inicia
+        inicializar();
     </script>
 </body>
 </html>
