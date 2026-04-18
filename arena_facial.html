@@ -10,7 +10,7 @@
         body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
         
-        /* Câmera container */
+        /* Câmera container - INICIA OCULTO */
         .camera-box { 
             width: 200px; 
             height: 150px; 
@@ -20,7 +20,9 @@
             position: relative;
             margin: 0 auto;
             background: #000;
+            display: none; /* ← CÂMERA COMEÇA DESLIGADA */
         }
+        .camera-box.ativo { display: block; }
         .camera-box video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
         /* Efeitos de scan */
@@ -44,7 +46,7 @@
         .scan-corner.bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
         .scan-corner.br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
         
-        /* Lista de alunos com foto */
+        /* Lista de alunos - INICIA VISÍVEL */
         .aluno-card { 
             background: rgba(255, 255, 255, 0.03); 
             border: 1px solid rgba(16, 185, 129, 0.2); 
@@ -56,11 +58,10 @@
             align-items: center;
             gap: 12px;
         }
-        .aluno-card:hover { background: rgba(16, 185, 129, 0.1); border-color: #10b981; transform: translateX(5px); }
-        .aluno-card.processando { 
+        .aluno-card:hover { background: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+        .aluno-card.marcado { 
             background: rgba(251, 191, 36, 0.2); 
-            border-color: #fbbf24;
-            pointer-events: none;
+            border-color: #fbbf24; /* Amarelo = Marcado escondido */
         }
         .aluno-card.reconhecido { 
             background: rgba(16, 185, 129, 0.3); 
@@ -86,7 +87,7 @@
             font-size: 24px;
         }
         
-        /* Status de análise */
+        /* Status de análise - INICIA OCULTO */
         .status-analise {
             position: fixed;
             top: 50%;
@@ -114,20 +115,20 @@
             box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
         }
         
-        .progress-ring {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 15px;
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: scanner 2s linear infinite;
         }
-        .progress-ring circle {
-            fill: none;
-            stroke: #10b981;
-            stroke-width: 4;
-            stroke-dasharray: 200;
-            stroke-dashoffset: 200;
-            animation: progress 1.5s ease-out forwards;
+        @keyframes scanner {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
         }
-        @keyframes progress { to { stroke-dashoffset: 0; } }
         
         /* Filtro de turma */
         .filtro-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -135,7 +136,7 @@
         /* Header */
         .header-facial { background: rgba(16, 185, 129, 0.1); border-bottom: 2px solid #10b981; }
         
-        /* Resultado card com foto grande */
+        /* Resultado final */
         .resultado-overlay {
             position: fixed;
             inset: 0;
@@ -165,19 +166,14 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
-        .scanner-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: scanner 2s linear infinite;
-        }
-        @keyframes scanner {
-            0%, 100% { top: 0; }
-            50% { top: 100%; }
+        /* Instrução inicial */
+        .instrucao-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -198,11 +194,21 @@
             </div>
         </div>
 
-        <!-- CÂMERA (EFEITO VISUAL) -->
+        <!-- INSTRUÇÃO -->
+        <div class="instrucao-box">
+            <p class="text-[10px] text-emerald-400 uppercase">
+                <i class="fas fa-hand-pointer mr-1"></i>
+                Toque no aluno primeiro
+            </p>
+        </div>
+
+        <!-- CÂMERA (COMEÇA DESLIGADA) -->
         <div class="glass p-4 rounded-2xl mb-4 text-center">
-            <p class="text-[10px] uppercase text-emerald-400 mb-3 tracking-widest">Posicione o rosto na câmera</p>
+            <p class="text-[10px] uppercase text-gray-400 mb-3 tracking-widest" id="cameraStatus">
+                Câmera aguardando...
+            </p>
             
-            <div class="camera-box">
+            <div class="camera-box" id="cameraBox">
                 <video id="video" autoplay muted playsinline></video>
                 <div class="scan-overlay"></div>
                 <div class="scan-corner tl"></div>
@@ -212,8 +218,8 @@
             </div>
             
             <div class="mt-3 flex justify-center gap-2">
-                <span class="text-[10px] text-emerald-400 animate-pulse">● SISTEMA ONLINE</span>
-                <span id="contadorRostos" class="text-[10px] text-gray-400">0 rostos cadastrados</span>
+                <span class="text-[10px] text-emerald-400" id="sistemaStatus">● SISTEMA PRONTO</span>
+                <span id="contadorRostos" class="text-[10px] text-gray-400">0 rostos</span>
             </div>
         </div>
 
@@ -224,10 +230,10 @@
             </select>
         </div>
 
-        <!-- LISTA DE ALUNOS COM FOTO -->
+        <!-- LISTA DE ALUNOS -->
         <div class="mb-4">
             <h3 class="text-[10px] uppercase text-emerald-400 mb-3 tracking-widest flex justify-between">
-                <span>Biometria Facial Ativa</span>
+                <span>Selecione o aluno</span>
                 <span id="dataHoje" class="text-gray-400"></span>
             </h3>
             
@@ -236,7 +242,7 @@
             </div>
         </div>
 
-        <!-- STATUS DE ANÁLISE (COM FOTO) -->
+        <!-- STATUS DE ANÁLISE -->
         <div id="statusAnalise" class="status-analise">
             <div style="position: relative; display: inline-block;">
                 <img id="fotoAnalise" class="foto-analise" src="" alt="">
@@ -250,7 +256,7 @@
             <p class="text-[10px] text-gray-400 mt-2">Comparando pontos faciais...</p>
         </div>
 
-        <!-- RESULTADO FINAL (COM FOTO GRANDE) -->
+        <!-- RESULTADO FINAL -->
         <div id="resultadoOverlay" class="resultado-overlay">
             <img id="fotoResultado" class="foto-resultado" src="" alt="">
             <div class="text-emerald-400 text-5xl mb-2">
@@ -258,7 +264,7 @@
             </div>
             <h2 id="nomeReconhecido" class="text-2xl font-bold uppercase text-white mb-1">---</h2>
             <p class="text-emerald-400 text-sm font-bold uppercase">✓ Biometria Confirmada</p>
-            <p class="text-[10px] text-gray-400 mt-2">Match: 98.7% | Tempo: 1.2s</p>
+            <p class="text-[10px] text-gray-400 mt-2">Match: 98.7%</p>
             <p class="text-[10px] text-emerald-400 mt-1">Presença registrada às <span id="horaRegistro"></span></p>
             <button onclick="fecharResultado()" class="mt-6 px-6 py-2 border border-emerald-500 text-emerald-400 rounded-full text-xs uppercase font-bold hover:bg-emerald-500 hover:text-black transition">
                 Próximo Aluno
@@ -276,17 +282,20 @@
         let dataAtual = new Date();
         let lista = [];
         let stream = null;
+        let alunoSelecionado = null; // Guarda aluno marcado
 
         // ========== INICIALIZAÇÃO ==========
         function inicializar() {
             document.getElementById('dataHoje').textContent = new Date().toLocaleDateString('pt-BR');
             carregarTurmas();
-            iniciarCamera();
             sincronizarDados();
         }
 
-        // ========== CÂMERA (SÓ EFEITO VISUAL) ==========
-        async function iniciarCamera() {
+        // ========== CÂMERA ==========
+        async function ligarCamera() {
+            const cameraBox = document.getElementById('cameraBox');
+            const statusText = document.getElementById('cameraStatus');
+            
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -296,9 +305,26 @@
                     } 
                 });
                 document.getElementById('video').srcObject = stream;
+                cameraBox.classList.add('ativo');
+                statusText.textContent = "Câmera ativa - Posicione o rosto";
+                statusText.classList.add('text-emerald-400');
+                statusText.classList.remove('text-gray-400');
+                return true;
             } catch (err) {
-                console.log("Câmera não disponível, modo simulação ativo");
+                console.log("Câmera não disponível");
+                return false;
             }
+        }
+
+        function desligarCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            document.getElementById('cameraBox').classList.remove('ativo');
+            document.getElementById('cameraStatus').textContent = "Câmera aguardando...";
+            document.getElementById('cameraStatus').classList.remove('text-emerald-400');
+            document.getElementById('cameraStatus').classList.add('text-gray-400');
         }
 
         // ========== CARREGAR TURMAS ==========
@@ -345,12 +371,12 @@
                 }
                 
                 const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
-                document.getElementById('contadorRostos').textContent = `${comFoto} rostos cadastrados`;
+                document.getElementById('contadorRostos').textContent = `${comFoto} rostos`;
                 
                 renderizar();
             } catch(e) {
                 const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
-                document.getElementById('contadorRostos').textContent = `${comFoto} rostos cadastrados`;
+                document.getElementById('contadorRostos').textContent = `${comFoto} rostos`;
                 renderizar();
             }
         }
@@ -383,7 +409,7 @@
         const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
         const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
 
-        // ========== RENDERIZAR LISTA COM FOTOS ==========
+        // ========== RENDERIZAR LISTA ==========
         function renderizar() {
             const hoje = getISOString(new Date());
             const filtro = document.getElementById('filtroTurma').value;
@@ -408,18 +434,17 @@
                 if (naoMatriculado) classe += ' nm';
                 else if (jaMarcado) classe += ' reconhecido';
                 
-                // FOTO DO CADASTRO
                 const temFoto = aluno.face_data && aluno.face_data.length > 100;
                 const fotoHtml = temFoto 
-                    ? `<img src="${aluno.face_data}" class="foto-aluno" alt="${aluno.nome}" id="foto-lista-${idx}">`
+                    ? `<img src="${aluno.face_data}" class="foto-aluno" alt="${aluno.nome}">`
                     : `<div class="foto-aluno sem-foto"><i class="fas fa-user"></i></div>`;
                 
                 const statusHtml = jaMarcado 
                     ? `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>${TEXTO[statusAtual]}</span>`
-                    : `<span class="text-[10px] text-gray-500"><i class="fas fa-fingerprint mr-1"></i>Aguardando...</span>`;
+                    : `<span class="text-[10px] text-gray-500"><i class="fas fa-fingerprint mr-1"></i>Aguardando</span>`;
                 
                 return `
-                <div class="${classe}" onclick="selecionarAluno(${idx})" id="card-${idx}">
+                <div class="${classe}" onclick="iniciarProcesso(${idx})" id="card-${idx}">
                     ${fotoHtml}
                     <div class="flex-1">
                         <h4 class="font-bold text-emerald-300 uppercase text-sm">${aluno.nome}</h4>
@@ -430,8 +455,8 @@
             }).join('');
         }
 
-        // ========== SELECIONAR ALUNO (O "RECONHECIMENTO") ==========
-        async function selecionarAluno(idx) {
+        // ========== NOVO FLUXO: TOQUE → MARCA → ESPERA → ENGANA ==========
+        async function iniciarProcesso(idx) {
             const aluno = lista[idx];
             const hoje = getISOString(new Date());
             const card = document.getElementById(`card-${idx}`);
@@ -443,27 +468,7 @@
                 return;
             }
             
-            // Pega foto para o teatro
-            const temFoto = aluno.face_data && aluno.face_data.length > 100;
-            const fotoSrc = temFoto ? aluno.face_data : '';
-            
-            // Inicia "análise" com foto
-            card.classList.add('processando');
-            document.getElementById('nomeAnalisado').textContent = aluno.nome;
-            
-            if (fotoSrc) {
-                document.getElementById('fotoAnalise').src = fotoSrc;
-                document.getElementById('fotoAnalise').style.display = 'block';
-            } else {
-                document.getElementById('fotoAnalise').style.display = 'none';
-            }
-            
-            document.getElementById('statusAnalise').classList.add('ativo');
-            
-            // Delay teatral de 1.5 segundos
-            await new Promise(r => setTimeout(r, 1500));
-            
-            // Marca presença
+            // 1. MARCA PRESENÇA IMEDIATAMENTE (escondido)
             const agora = new Date();
             const hStr = agora.getHours().toString().padStart(2,'0') + ':' + 
                         agora.getMinutes().toString().padStart(2,'0') + ':' + 
@@ -471,22 +476,64 @@
             
             freq[k] = 'P';
             ordens[k] = hStr;
-            
-            // Salva local
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
             localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             
-            // Esconde análise, mostra resultado
-            document.getElementById('statusAnalise').classList.remove('ativo');
-            card.classList.remove('processando');
-            card.classList.add('reconhecido');
+            // Atualiza visual para "marcado" (amarelo)
+            card.classList.add('marcado');
             document.getElementById(`status-${idx}`).innerHTML = 
-                `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Presente</span>`;
+                `<span class="text-[10px] text-yellow-400"><i class="fas fa-clock mr-1"></i>Processando...</span>`;
             
-            mostrarResultado(aluno, false, hStr);
+            // Guarda aluno para o teatro
+            alunoSelecionado = { aluno, hora: hStr, idx };
+            
+            // 2. DELAY DE 5-7 SEGUNDOS (você aponta a câmera)
+            const delayEspera = 5000 + Math.random() * 2000; // 5-7 segundos aleatório
+            await new Promise(r => setTimeout(r, delayEspera));
+            
+            // 3. LIGA A CÂMERA E FAZ O TEATRO
+            await fazerTeatro();
             
             // Sincroniza em background
             sincronizarPresenca(aluno.nome, hoje, 'P', hStr);
+        }
+
+        async function fazerTeatro() {
+            if (!alunoSelecionado) return;
+            
+            const { aluno, hora, idx } = alunoSelecionado;
+            const card = document.getElementById(`card-${idx}`);
+            
+            // Liga câmera
+            const cameraLigou = await ligarCamera();
+            
+            // Prepara tela de análise
+            const temFoto = aluno.face_data && aluno.face_data.length > 100;
+            if (temFoto) {
+                document.getElementById('fotoAnalise').src = aluno.face_data;
+                document.getElementById('fotoAnalise').style.display = 'block';
+            } else {
+                document.getElementById('fotoAnalise').style.display = 'none';
+            }
+            document.getElementById('nomeAnalisado').textContent = aluno.nome;
+            
+            // Mostra "Analisando..."
+            document.getElementById('statusAnalise').classList.add('ativo');
+            
+            // Delay de análise 1.5s
+            await new Promise(r => setTimeout(r, 1500));
+            
+            // Esconde análise
+            document.getElementById('statusAnalise').classList.remove('ativo');
+            
+            // Mostra resultado
+            mostrarResultado(aluno, false, hora);
+            
+            // Atualiza card para verde
+            card.classList.remove('marcado');
+            card.classList.add('reconhecido');
+            document.getElementById(`status-${idx}`).innerHTML = 
+                `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Presente</span>`;
         }
 
         function mostrarResultado(aluno, jaMarcado, hora) {
@@ -505,7 +552,12 @@
             
             overlay.classList.add('ativo');
             
-            // Auto-fecha após 4 segundos se não clicar
+            // Desliga câmera após mostrar resultado
+            setTimeout(() => {
+                desligarCamera();
+            }, 500);
+            
+            // Auto-fecha após 4 segundos
             setTimeout(() => {
                 if (overlay.classList.contains('ativo')) {
                     fecharResultado();
@@ -515,6 +567,7 @@
 
         function fecharResultado() {
             document.getElementById('resultadoOverlay').classList.remove('ativo');
+            alunoSelecionado = null;
         }
 
         // ========== SINCRONIZAR COM PLANILHA ==========
