@@ -10,7 +10,6 @@
         body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
         
-        /* Câmera container - INICIA OCULTO */
         .camera-box { 
             width: 250px; 
             height: 200px; 
@@ -25,7 +24,6 @@
         .camera-box.ativo { display: block; }
         .camera-box video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
-        /* Efeitos de scan */
         .scan-overlay {
             position: absolute;
             inset: 0;
@@ -46,7 +44,6 @@
         .scan-corner.bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
         .scan-corner.br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
         
-        /* Lista de alunos */
         .aluno-card { 
             background: rgba(255, 255, 255, 0.03); 
             border: 1px solid rgba(16, 185, 129, 0.2); 
@@ -88,7 +85,6 @@
             font-size: 24px;
         }
         
-        /* Status de análise */
         .status-analise {
             position: fixed;
             top: 50%;
@@ -131,13 +127,9 @@
             50% { top: 100%; }
         }
         
-        /* Filtro de turma */
         .filtro-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
-        
-        /* Header */
         .header-facial { background: rgba(16, 185, 129, 0.1); border-bottom: 2px solid #10b981; }
         
-        /* Resultado final */
         .resultado-overlay {
             position: fixed;
             inset: 0;
@@ -167,7 +159,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
-        /* Instrução */
         .instrucao-box {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid #10b981;
@@ -177,7 +168,6 @@
             margin-bottom: 10px;
         }
         
-        /* Timer visual */
         .timer-box {
             background: rgba(251, 191, 36, 0.1);
             border: 1px solid #fbbf24;
@@ -188,6 +178,26 @@
             display: none;
         }
         .timer-box.ativo { display: block; }
+        
+        /* Log de sincronização */
+        .sync-log {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 10px;
+            font-family: monospace;
+            max-height: 100px;
+            overflow-y: auto;
+            display: none;
+            z-index: 3000;
+        }
+        .sync-log.ativo { display: block; }
+        .sync-log.error { border-color: #f43f5e; color: #f43f5e; }
     </style>
 </head>
 <body class="p-4">
@@ -203,9 +213,14 @@
                 <h1 class="text-lg font-bold text-emerald-400 uppercase tracking-wider">
                     <i class="fas fa-fingerprint mr-2"></i>Arena Facial
                 </h1>
-                <div class="w-16"></div>
+                <button onclick="toggleLog()" class="text-[10px] text-gray-400">
+                    <i class="fas fa-terminal"></i>
+                </button>
             </div>
         </div>
+
+        <!-- LOG DE DEBUG (oculto) -->
+        <div id="syncLog" class="sync-log"></div>
 
         <!-- INSTRUÇÃO -->
         <div class="instrucao-box" id="instrucaoBox">
@@ -215,7 +230,7 @@
             </p>
         </div>
 
-        <!-- CÂMERA (COMEÇA DESLIGADA) -->
+        <!-- CÂMERA -->
         <div class="glass p-4 rounded-2xl mb-4 text-center">
             <p class="text-[10px] uppercase text-gray-400 mb-3 tracking-widest" id="cameraStatus">
                 Câmera aguardando...
@@ -230,7 +245,6 @@
                 <div class="scan-corner br"></div>
             </div>
             
-            <!-- Timer visual -->
             <div class="timer-box" id="timerBox">
                 <p class="text-[10px] text-yellow-400">
                     <i class="fas fa-clock mr-1"></i>
@@ -287,6 +301,9 @@
             <p class="text-emerald-400 text-sm font-bold uppercase">✓ Biometria Confirmada</p>
             <p class="text-[10px] text-gray-400 mt-2">Match: 98.7%</p>
             <p class="text-[10px] text-emerald-400 mt-1">Presença registrada às <span id="horaRegistro"></span></p>
+            <div id="syncStatus" class="text-[10px] text-yellow-400 mt-2">
+                <i class="fas fa-sync fa-spin mr-1"></i>Sincronizando...
+            </div>
             <button onclick="fecharResultado()" class="mt-6 px-6 py-2 border border-emerald-500 text-emerald-400 rounded-full text-xs uppercase font-bold hover:bg-emerald-500 hover:text-black transition">
                 Próximo Aluno
             </button>
@@ -304,6 +321,22 @@
         let lista = [];
         let stream = null;
         let alunoSelecionado = null;
+
+        // ========== LOG DE DEBUG ==========
+        function addLog(msg, tipo = 'info') {
+            const log = document.getElementById('syncLog');
+            const entry = document.createElement('div');
+            const hora = new Date().toLocaleTimeString('pt-BR');
+            entry.textContent = `[${hora}] ${msg}`;
+            if (tipo === 'error') entry.style.color = '#f43f5e';
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            console.log(`[${tipo}] ${msg}`);
+        }
+
+        function toggleLog() {
+            document.getElementById('syncLog').classList.toggle('ativo');
+        }
 
         // ========== INICIALIZAÇÃO ==========
         function inicializar() {
@@ -330,9 +363,10 @@
                 statusText.textContent = "Câmera ativa - Posicione no rosto do aluno";
                 statusText.classList.add('text-emerald-400');
                 statusText.classList.remove('text-gray-400');
+                addLog('Câmera ligada com sucesso');
                 return true;
             } catch (err) {
-                console.log("Câmera não disponível");
+                addLog('Erro ao ligar câmera: ' + err.message, 'error');
                 return false;
             }
         }
@@ -361,6 +395,7 @@
         // ========== SINCRONIZAR DADOS ==========
         async function sincronizarDados() {
             try {
+                addLog('Sincronizando dados...');
                 const [rA, rT, rF] = await Promise.all([
                     fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
                     fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
@@ -370,6 +405,7 @@
                 if (Array.isArray(rA)) {
                     alunos = rA;
                     localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                    addLog(`${alunos.length} alunos carregados`);
                 }
                 if (Array.isArray(rT)) {
                     turmas = rT;
@@ -390,6 +426,7 @@
                     });
                     localStorage.setItem('tsunami_freq', JSON.stringify(freq));
                     localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+                    addLog('Frequências sincronizadas');
                 }
                 
                 const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
@@ -397,8 +434,7 @@
                 
                 renderizar();
             } catch(e) {
-                const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
-                document.getElementById('contadorRostos').textContent = `${comFoto} rostos`;
+                addLog('Erro ao sincronizar: ' + e.message, 'error');
                 renderizar();
             }
         }
@@ -490,6 +526,8 @@
                 return;
             }
             
+            addLog(`Iniciando processo para: ${aluno.nome}`);
+            
             // 1. MARCA PRESENÇA IMEDIATAMENTE (escondido)
             const agora = new Date();
             const hStr = agora.getHours().toString().padStart(2,'0') + ':' + 
@@ -501,15 +539,17 @@
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
             localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             
+            addLog(`Presença marcada local: ${aluno.nome} às ${hStr}`);
+            
             // Atualiza visual para "processando" (amarelo)
             card.classList.add('processando');
             document.getElementById(`status-${idx}`).innerHTML = 
                 `<span class="text-[10px] text-yellow-400"><i class="fas fa-clock mr-1"></i>Processando...</span>`;
             
             // Guarda aluno para o teatro
-            alunoSelecionado = { aluno, hora: hStr, idx };
+            alunoSelecionado = { aluno, hora: hStr, idx, hoje };
             
-            // 2. DELAY DE 4 SEGUNDOS - Card amarelo, você aponta câmera
+            // 2. DELAY DE 4 SEGUNDOS
             await new Promise(r => setTimeout(r, 4000));
             
             // 3. LIGA CÂMERA, MOSTRA TIMER DE 4 SEGUNDOS
@@ -544,7 +584,7 @@
         async function faseAnalisando() {
             if (!alunoSelecionado) return;
             
-            const { aluno, hora, idx } = alunoSelecionado;
+            const { aluno, hora, idx, hoje } = alunoSelecionado;
             
             // Prepara tela de análise
             const temFoto = aluno.face_data && aluno.face_data.length > 100;
@@ -558,6 +598,9 @@
             
             // Mostra "Analisando..."
             document.getElementById('statusAnalise').classList.add('ativo');
+            
+            // INICIA SINCRONIZAÇÃO EM PARALELO (não espera)
+            sincronizarPresenca(aluno.nome, hoje, 'P', hora);
             
             // Delay de 1.5s
             await new Promise(r => setTimeout(r, 1500));
@@ -590,6 +633,11 @@
             document.getElementById('nomeReconhecido').textContent = aluno.nome;
             document.getElementById('horaRegistro').textContent = hora || new Date().toLocaleTimeString('pt-BR');
             
+            // Status de sincronização
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.innerHTML = '<i class="fas fa-sync fa-spin mr-1"></i>Sincronizando...';
+            syncStatus.className = 'text-[10px] text-yellow-400 mt-2';
+            
             overlay.classList.add('ativo');
             
             // Desliga câmera após mostrar resultado
@@ -597,7 +645,7 @@
                 desligarCamera();
             }, 500);
             
-            // Auto-fecha após 3 segundos (mais rápido para próximo aluno)
+            // Auto-fecha após 3 segundos
             setTimeout(() => {
                 if (overlay.classList.contains('ativo')) {
                     fecharResultado();
@@ -610,19 +658,68 @@
             alunoSelecionado = null;
         }
 
-        // ========== SINCRONIZAR COM PLANILHA ==========
+        // ========== SINCRONIZAR COM PLANILHA - CORRIGIDO ==========
         async function sincronizarPresenca(nome, dataISO, status, hora) {
-            const fd = new FormData();
-            fd.append('action', 'frequencia');
-            fd.append('nome', nome);
-            fd.append('data_aula', dataISO.split('-').reverse().join('/'));
-            fd.append('status', TEXTO[status]);
-            fd.append('justificativa', '');
-            fd.append('hora', hora);
+            addLog(`Tentando sincronizar: ${nome} - ${TEXTO[status]} - ${hora}`);
             
-            try { 
-                await fetch(URL_SCRIPT, {method:'POST', body:fd});
-            } catch(e) {}
+            try {
+                // Cria objeto com os dados
+                const dados = {
+                    action: 'frequencia',
+                    nome: nome,
+                    data_aula: dataISO.split('-').reverse().join('/'),
+                    status: TEXTO[status],
+                    justificativa: '',
+                    hora: hora
+                };
+                
+                addLog('Dados: ' + JSON.stringify(dados));
+                
+                // Usa URLSearchParams (mais compatível com Apps Script)
+                const params = new URLSearchParams();
+                params.append('action', 'frequencia');
+                params.append('nome', nome);
+                params.append('data_aula', dataISO.split('-').reverse().join('/'));
+                params.append('status', TEXTO[status]);
+                params.append('justificativa', '');
+                params.append('hora', hora);
+                
+                addLog('Enviando para: ' + URL_SCRIPT);
+                
+                const response = await fetch(URL_SCRIPT, {
+                    method: 'POST',
+                    body: params,
+                    // Importante para CORS
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
+                addLog('Resposta recebida, status: ' + response.status);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const resultado = await response.text();
+                addLog('Sucesso: ' + resultado);
+                
+                // Atualiza status na tela se estiver aberto
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.innerHTML = '<i class="fas fa-check mr-1"></i>Sincronizado!';
+                    syncStatus.className = 'text-[10px] text-emerald-400 mt-2';
+                }
+                
+            } catch (e) {
+                addLog('ERRO ao sincronizar: ' + e.message, 'error');
+                
+                // Atualiza status na tela
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Erro! Salvo localmente';
+                    syncStatus.className = 'text-[10px] text-red-400 mt-2';
+                }
+            }
         }
 
         // Inicia
