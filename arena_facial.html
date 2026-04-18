@@ -12,15 +12,15 @@
         
         /* Câmera container - INICIA OCULTO */
         .camera-box { 
-            width: 200px; 
-            height: 150px; 
+            width: 250px; 
+            height: 200px; 
             border-radius: 12px; 
             overflow: hidden; 
             border: 2px solid #10b981; 
             position: relative;
             margin: 0 auto;
             background: #000;
-            display: none; /* ← CÂMERA COMEÇA DESLIGADA */
+            display: none;
         }
         .camera-box.ativo { display: block; }
         .camera-box video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
@@ -46,7 +46,7 @@
         .scan-corner.bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
         .scan-corner.br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
         
-        /* Lista de alunos - INICIA VISÍVEL */
+        /* Lista de alunos */
         .aluno-card { 
             background: rgba(255, 255, 255, 0.03); 
             border: 1px solid rgba(16, 185, 129, 0.2); 
@@ -59,9 +59,10 @@
             gap: 12px;
         }
         .aluno-card:hover { background: rgba(16, 185, 129, 0.1); border-color: #10b981; }
-        .aluno-card.marcado { 
+        .aluno-card.processando { 
             background: rgba(251, 191, 36, 0.2); 
-            border-color: #fbbf24; /* Amarelo = Marcado escondido */
+            border-color: #fbbf24;
+            pointer-events: none;
         }
         .aluno-card.reconhecido { 
             background: rgba(16, 185, 129, 0.3); 
@@ -87,7 +88,7 @@
             font-size: 24px;
         }
         
-        /* Status de análise - INICIA OCULTO */
+        /* Status de análise */
         .status-analise {
             position: fixed;
             top: 50%;
@@ -166,7 +167,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
-        /* Instrução inicial */
+        /* Instrução */
         .instrucao-box {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid #10b981;
@@ -175,6 +176,18 @@
             text-align: center;
             margin-bottom: 10px;
         }
+        
+        /* Timer visual */
+        .timer-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        .timer-box.ativo { display: block; }
     </style>
 </head>
 <body class="p-4">
@@ -195,10 +208,10 @@
         </div>
 
         <!-- INSTRUÇÃO -->
-        <div class="instrucao-box">
+        <div class="instrucao-box" id="instrucaoBox">
             <p class="text-[10px] text-emerald-400 uppercase">
                 <i class="fas fa-hand-pointer mr-1"></i>
-                Toque no aluno primeiro
+                Toque no aluno primeiro, depois aponte a câmera
             </p>
         </div>
 
@@ -215,6 +228,14 @@
                 <div class="scan-corner tr"></div>
                 <div class="scan-corner bl"></div>
                 <div class="scan-corner br"></div>
+            </div>
+            
+            <!-- Timer visual -->
+            <div class="timer-box" id="timerBox">
+                <p class="text-[10px] text-yellow-400">
+                    <i class="fas fa-clock mr-1"></i>
+                    Posicione no rosto do aluno... <span id="timerSegundos">4</span>s
+                </p>
             </div>
             
             <div class="mt-3 flex justify-center gap-2">
@@ -282,7 +303,7 @@
         let dataAtual = new Date();
         let lista = [];
         let stream = null;
-        let alunoSelecionado = null; // Guarda aluno marcado
+        let alunoSelecionado = null;
 
         // ========== INICIALIZAÇÃO ==========
         function inicializar() {
@@ -299,14 +320,14 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        width: { ideal: 320 },
-                        height: { ideal: 240 },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
                         facingMode: "user"
                     } 
                 });
                 document.getElementById('video').srcObject = stream;
                 cameraBox.classList.add('ativo');
-                statusText.textContent = "Câmera ativa - Posicione o rosto";
+                statusText.textContent = "Câmera ativa - Posicione no rosto do aluno";
                 statusText.classList.add('text-emerald-400');
                 statusText.classList.remove('text-gray-400');
                 return true;
@@ -325,6 +346,7 @@
             document.getElementById('cameraStatus').textContent = "Câmera aguardando...";
             document.getElementById('cameraStatus').classList.remove('text-emerald-400');
             document.getElementById('cameraStatus').classList.add('text-gray-400');
+            document.getElementById('timerBox').classList.remove('ativo');
         }
 
         // ========== CARREGAR TURMAS ==========
@@ -455,7 +477,7 @@
             }).join('');
         }
 
-        // ========== NOVO FLUXO: TOQUE → MARCA → ESPERA → ENGANA ==========
+        // ========== NOVO FLUXO ==========
         async function iniciarProcesso(idx) {
             const aluno = lista[idx];
             const hoje = getISOString(new Date());
@@ -479,33 +501,50 @@
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
             localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
             
-            // Atualiza visual para "marcado" (amarelo)
-            card.classList.add('marcado');
+            // Atualiza visual para "processando" (amarelo)
+            card.classList.add('processando');
             document.getElementById(`status-${idx}`).innerHTML = 
                 `<span class="text-[10px] text-yellow-400"><i class="fas fa-clock mr-1"></i>Processando...</span>`;
             
             // Guarda aluno para o teatro
             alunoSelecionado = { aluno, hora: hStr, idx };
             
-            // 2. DELAY DE 5-7 SEGUNDOS (você aponta a câmera)
-            const delayEspera = 5000 + Math.random() * 2000; // 5-7 segundos aleatório
-            await new Promise(r => setTimeout(r, delayEspera));
+            // 2. DELAY DE 4 SEGUNDOS - Card amarelo, você aponta câmera
+            await new Promise(r => setTimeout(r, 4000));
             
-            // 3. LIGA A CÂMERA E FAZ O TEATRO
-            await fazerTeatro();
-            
-            // Sincroniza em background
-            sincronizarPresenca(aluno.nome, hoje, 'P', hStr);
+            // 3. LIGA CÂMERA, MOSTRA TIMER DE 4 SEGUNDOS
+            await faseCamera();
         }
 
-        async function fazerTeatro() {
+        async function faseCamera() {
             if (!alunoSelecionado) return;
             
             const { aluno, hora, idx } = alunoSelecionado;
-            const card = document.getElementById(`card-${idx}`);
             
             // Liga câmera
-            const cameraLigou = await ligarCamera();
+            await ligarCamera();
+            
+            // Mostra timer de 4 segundos
+            const timerBox = document.getElementById('timerBox');
+            const timerSpan = document.getElementById('timerSegundos');
+            timerBox.classList.add('ativo');
+            
+            // Contagem regressiva de 4 segundos
+            for (let i = 4; i > 0; i--) {
+                timerSpan.textContent = i;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
+            timerBox.classList.remove('ativo');
+            
+            // 4. FASE "ANALISANDO" - 1.5s
+            await faseAnalisando();
+        }
+
+        async function faseAnalisando() {
+            if (!alunoSelecionado) return;
+            
+            const { aluno, hora, idx } = alunoSelecionado;
             
             // Prepara tela de análise
             const temFoto = aluno.face_data && aluno.face_data.length > 100;
@@ -520,17 +559,18 @@
             // Mostra "Analisando..."
             document.getElementById('statusAnalise').classList.add('ativo');
             
-            // Delay de análise 1.5s
+            // Delay de 1.5s
             await new Promise(r => setTimeout(r, 1500));
             
             // Esconde análise
             document.getElementById('statusAnalise').classList.remove('ativo');
             
-            // Mostra resultado
+            // 5. MOSTRA RESULTADO
             mostrarResultado(aluno, false, hora);
             
             // Atualiza card para verde
-            card.classList.remove('marcado');
+            const card = document.getElementById(`card-${idx}`);
+            card.classList.remove('processando');
             card.classList.add('reconhecido');
             document.getElementById(`status-${idx}`).innerHTML = 
                 `<span class="text-[10px] text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Presente</span>`;
@@ -557,12 +597,12 @@
                 desligarCamera();
             }, 500);
             
-            // Auto-fecha após 4 segundos
+            // Auto-fecha após 3 segundos (mais rápido para próximo aluno)
             setTimeout(() => {
                 if (overlay.classList.contains('ativo')) {
                     fecharResultado();
                 }
-            }, 4000);
+            }, 3000);
         }
 
         function fecharResultado() {
