@@ -21,6 +21,7 @@
         .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
         .btn-share { background: #10b981; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
         .btn-order { background: #fbbf24; color: black; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
+        .btn-luck { background: #8b5cf6; color: white; font-size: 10px; padding: 4px 12px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto 5px auto; width: 45px; }
         .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
         .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
         .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
@@ -102,24 +103,18 @@
         const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
         const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
         const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
+        const NIVEIS = { '1': '⭐', '2': '⭐⭐', '3': '⭐⭐⭐', '4': '⭐⭐⭐⭐', '5': '⭐⭐⭐⭐⭐' };
 
-        // SOLUÇÃO DEFINITIVA: Limpeza total de fuso horário. Extrai apenas HH:MM:SS
         function limparHora(valor) {
             if (!valor) return "";
             let s = String(valor);
-            
-            // Se vier formato de data do Google (Sat Dec 30 1899 10:56:49...), pegamos apenas os números da hora
             let match = s.match(/(\d{2}:\d{2}:\d{2})/);
             if (match) return match[1];
-
-            // Se vier apenas HH:MM
             match = s.match(/(\d{2}:\d{2})/);
             if (match) return match[1] + ":00";
-
             return s;
         }
 
-        // Converte string de hora para segundos para ordenação correta
         function horaParaSegundos(h) {
             if (!h || h === "") return 999999;
             const partes = h.split(':').map(Number);
@@ -160,6 +155,101 @@
             const iniMes = getISOString(new Date(ano, mes, 1));
             const fimMes = getISOString(new Date(ano, mes + 1, 0));
             return mat <= fimMes && ven >= iniMes;
+        }
+
+        // ✅ FUNÇÃO CORRIGIDA: Snake Draft para distribuição PERFEITAMENTE equilibrada
+        async function compartilharSorteio(dIdx) {
+            const dataISO = dias[dIdx];
+            const dataBR = dataISO.split('-').reverse().join('/');
+            
+            // Separar alunos presentes POR TURMA
+            let turmasPresentes = {};
+            
+            lista.forEach(aluno => {
+                const aIdx = lista.indexOf(aluno);
+                const kEdit = aIdx + '-' + dIdx;
+                const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dataISO)] || '');
+                
+                if (s === 'P' || s === 'A') {
+                    const turmaNome = aluno.turma || 'SEM TURMA';
+                    if (!turmasPresentes[turmaNome]) {
+                        turmasPresentes[turmaNome] = [];
+                    }
+                    turmasPresentes[turmaNome].push({
+                        nome: aluno.nome.toUpperCase(),
+                        nivel: parseInt(aluno.nivel_aluno) || 1,
+                        turma: turmaNome
+                    });
+                }
+            });
+
+            if (Object.keys(turmasPresentes).length === 0) {
+                alert("Nenhum aluno presente para criar grupos!");
+                return;
+            }
+
+            let texto = `*🎲 SORTEIO ARENA - GRUPOS*\nDia: ${dataBR}\n\n`;
+            let totalGeral = 0;
+
+            // Processar cada turma separadamente
+            for (const turmaNome in turmasPresentes) {
+                const alunosTurma = turmasPresentes[turmaNome];
+                if (alunosTurma.length === 0) continue;
+
+                // ✅ SNAKE DRAFT: Ordena do MELHOR para o PIOR nível
+                let todosAlunos = [...alunosTurma];
+                todosAlunos.sort((a, b) => b.nivel - a.nivel); // 5⭐ primeiro, 1⭐ por último
+
+                // Calcular número de grupos (máx 5 por grupo)
+                let numGrupos = Math.ceil(alunosTurma.length / 5);
+                let grupos = Array(numGrupos).fill(null).map(() => []);
+
+                // ✅ Distribuição Serpente (ida e volta)
+                let indice = 0;
+                let rodada = 0;
+
+                while (indice < todosAlunos.length) {
+                    // Rodadas pares: ordem normal (0,1,2...) | Rodadas ímpares: inversa (2,1,0...)
+                    let ordem = rodada % 2 === 0 
+                        ? Array.from({length: numGrupos}, (_, i) => i) 
+                        : Array.from({length: numGrupos}, (_, i) => numGrupos - 1 - i);
+                    
+                    for (let g of ordem) {
+                        if (indice < todosAlunos.length && grupos[g].length < 5) {
+                            grupos[g].push(todosAlunos[indice]);
+                            indice++;
+                        }
+                    }
+                    rodada++;
+                }
+
+                // Montar texto do resultado
+                texto += `*🔹 TURMA: ${turmaNome}*\n`;
+                grupos.forEach((grupo, idx) => {
+                    if (grupo.length === 0) return;
+                    
+                    // Calcular soma de estrelas para exibir equilíbrio
+                    let somaEstrelas = grupo.reduce((sum, a) => sum + a.nivel, 0);
+                    
+                    texto += `\n*🔥 GRUPO ${idx + 1}* (${grupo.length} pessoas) - Total: ${somaEstrelas}⭐\n`;
+                    // Ordenar por nível dentro do grupo para visualização (opcional)
+                    grupo.sort((a, b) => a.nivel - b.nivel);
+                    grupo.forEach(aluno => {
+                        texto += `${NIVEIS[aluno.nivel] || '⭐'} ${aluno.nome}\n`;
+                    });
+                });
+                texto += `\n\n`;
+                totalGeral += alunosTurma.length;
+            }
+
+            texto += `*Total: ${totalGeral} alunos*`;
+
+            // Compartilhar via WhatsApp ou Web Share API
+            if (navigator.share) {
+                try { await navigator.share({ text: texto }); } catch (err) {}
+            } else {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`);
+            }
         }
 
         async function compartilhar(dIdx, tipo = 'geral') {
@@ -225,7 +315,6 @@
                     }
                 });
 
-                // Ordenação cronológica pura pelos segundos
                 registros.sort((a, b) => a.segundos - b.segundos);
 
                 if (registros.length > 0) {
@@ -273,6 +362,7 @@
                 <td class="col-dia p-2">
                     <button onclick="compartilhar(${i}, 'geral')" class="btn-share" title="Geral"><i class="fas fa-share-alt"></i></button>
                     <button onclick="compartilhar(${i}, 'ordem')" class="btn-order" title="Ordem"><i class="fas fa-clock"></i></button>
+                    <button onclick="compartilharSorteio(${i})" class="btn-luck" title="Sorteio"><i class="fas fa-dice"></i></button>
                     <button onclick="lote(${i})" class="all-btn">ALL</button>
                 </td>`);
             h += `<td class="col-faltas"></td></tr>`;
@@ -432,7 +522,6 @@
                     turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
                 }
                 if (Array.isArray(rF)) {
-                    // Limpa ordens para evitar lixo de memória
                     ordens = {};
                     rF.forEach(f => {
                         const dataISO = getISOString(f.data_aula);
@@ -440,7 +529,6 @@
                             const k = chave(f.nome, dataISO);
                             freq[k] = SIGLAS[f.status] || '';
                             if (f.justificativa) freq[k + '-txt'] = f.justificativa;
-                            // TRATAMENTO OBRIGATÓRIO: Força a limpeza da hora vinda do Google
                             if (f.hora) ordens[k] = limparHora(f.hora);
                         }
                     });
