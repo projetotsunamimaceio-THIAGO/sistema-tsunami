@@ -19,6 +19,17 @@
         .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; position: sticky; top: 0; background: #0a0a0f; }
         .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .ranking-container { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b5cf6 transparent; }
+        /* Seção de Pontuação */
+        .pts-pos { color: #10b981; font-weight: bold; }
+        .pts-neg { color: #f43f5e; font-weight: bold; }
+        .pts-zero { color: rgba(255,255,255,0.4); font-weight: bold; }
+        .pill-status { display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .pill-p { background: rgba(16,185,129,0.15); color: #10b981; }
+        .pill-a { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .pill-j { background: rgba(6,182,212,0.15); color: #06b6d4; }
+        .pill-f { background: rgba(244,63,94,0.15); color: #f43f5e; }
+        .bar-wrap { display: inline-block; width: 60px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; vertical-align: middle; margin-left: 6px; }
+        .bar-fill { height: 100%; border-radius: 99px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -98,6 +109,56 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== RELATÓRIO DE PONTUAÇÃO ===== -->
+        <div class="mt-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <h2 class="text-xl font-bold neon-violet tracking-widest uppercase">
+                    <i class="fas fa-trophy mr-2"></i> Relatório de Pontuação
+                </h2>
+                <div class="flex flex-wrap gap-2 justify-center items-center">
+                    <input type="month" id="mesRefPontos" onchange="processarPontuacao()">
+                    <select id="filtroJanelaPontos" onchange="processarPontuacao()">
+                        <option value="1">Mês Atual</option>
+                        <option value="2">Mês Atual + Anterior</option>
+                        <option value="3">Mês Atual + 2 Anteriores</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Legenda -->
+            <div class="glass p-3 rounded-xl mb-4 flex flex-wrap gap-4 justify-center text-xs">
+                <span style="color:rgba(255,255,255,0.4);letter-spacing:.1em;">SISTEMA:</span>
+                <span><span class="pill-status pill-p">P Presença</span> <b class="pts-pos">+5 pts</b></span>
+                <span><span class="pill-status pill-a">A Atraso</span> <b style="color:#f59e0b;font-weight:bold;">+2 pts</b></span>
+                <span><span class="pill-status pill-j">J Justificativa</span> <b class="pts-neg">−1 pt</b></span>
+                <span><span class="pill-status pill-f">F Falta</span> <b class="pts-neg">−3 pts</b></span>
+            </div>
+
+            <!-- Tabela de pontuação -->
+            <div class="glass p-6 rounded-2xl border-t-2 border-violet-500">
+                <div class="ranking-container">
+                    <table class="table-ranking" id="tabelaPontuacao">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;">#</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th class="text-center">P</th>
+                                <th class="text-center">A</th>
+                                <th class="text-center">J</th>
+                                <th class="text-center">F</th>
+                                <th class="text-right">Pontuação</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p id="semDadosPontos" class="text-center text-gray-500 text-sm py-6" style="display:none;">Nenhum dado encontrado para este período.</p>
+            </div>
+        </div>
+        <!-- ===== FIM RELATÓRIO DE PONTUAÇÃO ===== -->
+
     </div>
 
     <script>
@@ -229,6 +290,119 @@
 
         initCharts();
         processarDados();
+
+        // ===== PONTUAÇÃO =====
+        const PTS_SISTEMA = { P: 5, A: 2, J: -1, F: -3 };
+        const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        document.getElementById('mesRefPontos').value = new Date().toISOString().slice(0, 7);
+
+        function processarPontuacao() {
+            const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+            const freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
+
+            const mesRefValue = document.getElementById('mesRefPontos').value;
+            const janela = parseInt(document.getElementById('filtroJanelaPontos').value);
+            if (!mesRefValue) return;
+
+            const [anoRef, mes1] = mesRefValue.split('-').map(Number);
+
+            // Monta lista de {ano, mes 1-12} a incluir
+            const periodos = [];
+            for (let i = 0; i < janela; i++) {
+                let m = mes1 - i, a = anoRef;
+                if (m <= 0) { m += 12; a -= 1; }
+                periodos.push({ ano: a, mes: m });
+            }
+
+            // Inicializa stats
+            const statsMap = {};
+            alunos.forEach(a => {
+                const key = a.nome.trim().toUpperCase();
+                statsMap[key] = { nomeOriginal: a.nome, turma: a.turma || 'S/T', P: 0, A: 0, J: 0, F: 0 };
+            });
+
+            Object.entries(freq).forEach(([chave, status]) => {
+                if (chave.endsWith('-txt')) return;
+                const partes = chave.split('|');
+                if (partes.length < 2) return;
+                const nomeRaw = partes[0].trim().toUpperCase();
+                const dataF = new Date(partes[1] + 'T00:00:00');
+                if (dataF.getDay() !== 6) return; // só sábados
+                const mData = dataF.getMonth() + 1, aData = dataF.getFullYear();
+                if (!periodos.some(p => p.mes === mData && p.ano === aData)) return;
+
+                if (!statsMap[nomeRaw]) statsMap[nomeRaw] = { nomeOriginal: nomeRaw, turma: 'S/T', P: 0, A: 0, J: 0, F: 0 };
+                const s = (status || '').toUpperCase();
+                if (s === 'P') statsMap[nomeRaw].P++;
+                else if (s === 'A') statsMap[nomeRaw].A++;
+                else if (s === 'J') statsMap[nomeRaw].J++;
+                else if (s === 'F') statsMap[nomeRaw].F++;
+            });
+
+            // Calcula pontos e filtra quem teve algum registro
+            const lista = Object.values(statsMap)
+                .filter(a => a.P + a.A + a.J + a.F > 0)
+                .map(a => ({ ...a, pontos: a.P * PTS_SISTEMA.P + a.A * PTS_SISTEMA.A + a.J * PTS_SISTEMA.J + a.F * PTS_SISTEMA.F }))
+                .sort((a, b) => {
+                    if (b.pontos !== a.pontos) return b.pontos - a.pontos;   // pontuação
+                    if (b.P !== a.P) return b.P - a.P;                       // 1º critério: mais presenças
+                    if (a.A !== b.A) return a.A - b.A;                       // 2º critério: menos atrasos
+                    return a.F - b.F;                                         // 3º critério: menos faltas
+                });
+
+            const tbody = document.querySelector('#tabelaPontuacao tbody');
+            const semDados = document.getElementById('semDadosPontos');
+
+            if (lista.length === 0) {
+                tbody.innerHTML = '';
+                semDados.style.display = '';
+                return;
+            }
+            semDados.style.display = 'none';
+
+            const maxPts = Math.max(...lista.map(a => a.pontos), 1);
+            const minPts = Math.min(...lista.map(a => a.pontos), 0);
+            const range = (maxPts - minPts) || 1;
+
+            // Calcula posição real respeitando empate (mesma posição para empate total)
+            const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+            const posicoes = [];
+            let posAtual = 1;
+            lista.forEach((a, i) => {
+                if (i === 0) {
+                    posicoes.push(posAtual);
+                } else {
+                    const prev = lista[i - 1];
+                    const empate = a.pontos === prev.pontos && a.P === prev.P && a.A === prev.A && a.F === prev.F;
+                    if (!empate) posAtual = i + 1;
+                    posicoes.push(posAtual);
+                }
+            });
+
+            tbody.innerHTML = lista.map((a, i) => {
+                const pos = posicoes[i];
+                const posLabel = medals[pos] ? medals[pos] : `${pos}º`;
+                const pct = Math.max(0, ((a.pontos - minPts) / range) * 100);
+                const barColor = a.pontos >= 0 ? '#10b981' : '#f43f5e';
+                const scoreClass = a.pontos > 0 ? 'pts-pos' : a.pontos < 0 ? 'pts-neg' : 'pts-zero';
+                return `<tr>
+                    <td style="text-align:center;">${posLabel}</td>
+                    <td>${a.nomeOriginal}</td>
+                    <td class="text-gray-400">${a.turma}</td>
+                    <td class="text-center"><span class="pill-status pill-p">${a.P}</span></td>
+                    <td class="text-center"><span class="pill-status pill-a">${a.A}</span></td>
+                    <td class="text-center"><span class="pill-status pill-j">${a.J}</span></td>
+                    <td class="text-center"><span class="pill-status pill-f">${a.F}</span></td>
+                    <td class="text-right">
+                        <span class="${scoreClass}">${a.pontos > 0 ? '+' : ''}${a.pontos} pts</span>
+                        <span class="bar-wrap"><span class="bar-fill" style="width:${pct}%;background:${barColor};"></span></span>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        processarPontuacao();
     </script>
 </body>
 </html>
