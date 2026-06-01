@@ -3,325 +3,492 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TSUNAMI - Projeto</title>
+    <title>TSUNAMI - Relatórios (Sábados)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-        .btn-projeto { border: 1px solid #f59e0b; background: rgba(245, 158, 11, 0.1); transition: all 0.3s; color: #f59e0b; }
-        .btn-projeto:hover { background: #f59e0b; color: black; }
-        .projeto-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(245, 158, 11, 0.1); border-radius: 16px; }
-        .header-projeto { background: rgba(245, 158, 11, 0.1); border-bottom: 1px solid rgba(245, 158, 11, 0.2); }
-        .freq-btn { width: 32px; height: 32px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
-        .freq-vazio { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: transparent; }
-        .freq-falta { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; color: #f43f5e; }
-        .freq-presente { background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981; }
-        .freq-atraso { background: rgba(251, 191, 36, 0.2); border-color: #fbbf24; color: #fbbf24; }
-        .freq-justificado { background: rgba(6, 182, 212, 0.2); border-color: #06b6d4; color: #06b6d4; }
-        .all-btn { background: #3b82f6; color: white; font-size: 9px; padding: 2px 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; display: block; margin: 0 auto; }
-        .nm-badge { background: rgba(107, 114, 128, 0.2); color: #6b7280; font-size: 10px; padding: 2px 8px; border-radius: 4px; }
-        .contador-faltas { background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
-        .contador-presencas { color: #10b981; font-size: 12px; font-weight: bold; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border: 1px solid rgba(245, 158, 11, 0.1); text-align: center; padding: 8px; }
-        .col-atleta { width: 250px; text-align: left; }
-        .col-dia { width: 60px; }
-        .col-faltas { width: 80px; }
-        select { background: #1a1a2e; border: 1px solid rgba(245, 158, 11, 0.2); color: white; padding: 8px; border-radius: 8px; }
-        select option { background: #1a1a2e; color: white; }
+        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.1); }
+        .neon-violet { color: #8b5cf6; text-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+        .btn-violet { border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); transition: 0.3s; }
+        .btn-violet:hover { background: #8b5cf6; color: white; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        select, input[type="month"] { background: #1a1a2e; border: 1px solid #8b5cf6; color: white; padding: 5px 10px; border-radius: 8px; outline: none; font-size: 12px; }
+        .table-ranking { width: 100%; font-size: 13px; }
+        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; position: sticky; top: 0; background: #0a0a0f; }
+        .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .ranking-container { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b5cf6 transparent; }
+        /* Seção de Pontuação */
+        .pts-pos { color: #10b981; font-weight: bold; }
+        .pts-neg { color: #f43f5e; font-weight: bold; }
+        .pts-zero { color: rgba(255,255,255,0.4); font-weight: bold; }
+        .pill-status { display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .pill-p { background: rgba(16,185,129,0.15); color: #10b981; }
+        .pill-a { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .pill-j { background: rgba(6,182,212,0.15); color: #06b6d4; }
+        .pill-f { background: rgba(244,63,94,0.15); color: #f43f5e; }
+        .bar-wrap { display: inline-block; width: 60px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; vertical-align: middle; margin-left: 6px; }
+        .bar-fill { height: 100%; border-radius: 99px; }
     </style>
+<base target="_blank">
 </head>
 <body class="p-4 md:p-8">
-    <script>if (sessionStorage.getItem('tsunami_logged') !== 'true') { window.location.href = 'login.html'; }</script>
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-10">
+            <a href="index.html" class="btn-violet px-4 py-2 rounded-lg text-sm uppercase font-bold text-white">
+                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            </a>
+            <div class="text-center">
+                <h1 class="text-3xl font-bold neon-violet tracking-widest uppercase">Estatísticas Arena</h1>
+                <p class="text-[10px] text-violet-400 tracking-[0.3em] uppercase mt-1">Apenas dados de Sábado</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 justify-center">
+                <input type="month" id="mesReferencia" onchange="processarDados()">
 
-    <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <a href="index.html" class="btn-projeto px-4 py-2 rounded-lg text-xs uppercase font-bold"><i class="fas fa-arrow-left mr-2"></i>Voltar</a>
-            <h1 class="text-2xl md:text-3xl font-bold text-amber-500 tracking-widest uppercase text-center flex-1"><i class="fas fa-project-diagram mr-3"></i>Frequência Projeto</h1>
-            <div class="w-20"></div>
-        </div>
+                <select id="filtroTipo" onchange="processarDados()">
+                    <option value="mes">Apenas o Mês</option>
+                    <option value="bimestre">Bimestre</option>
+                    <option value="trimestre">Trimestre</option>
+                    <option value="semestre">Semestre</option>
+                    <option value="ano">Ano Inteiro</option>
+                </select>
 
-        <div class="projeto-card">
-            <div class="header-projeto p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <button onclick="mudarMes(-1)" class="btn-projeto w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-left"></i></button>
-                    <h2 id="tituloMes" class="text-lg font-bold uppercase tracking-wider text-amber-400 min-w-[180px] text-center"></h2>
-                    <button onclick="mudarMes(1)" class="btn-projeto w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-chevron-right"></i></button>
-                </div>
-                <select id="filtroTurma" onchange="renderizar()" class="px-4 py-2 rounded-lg text-sm outline-none">
-                    <option value="">TODAS AS TURMAS</option>
+                <select id="filtroPeriodo" onchange="processarDados()">
+                    <option value="30">Últimos 30 dias</option>
+                    <option value="60">Últimos 60 dias</option>
+                    <option value="90">Últimos 90 dias</option>
+                    <option value="120">Últimos 120 dias</option>
                 </select>
             </div>
+        </div>
 
-            <div class="overflow-x-auto">
-                <table id="tabelaFrequencia">
-                    <thead id="theadPrincipal"></thead>
-                    <tbody id="corpoTabela"></tbody>
-                    <tfoot id="tfootPrincipal"></tfoot>
-                </table>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="glass p-6 rounded-2xl text-center border-b-4 border-violet-500">
+                <h3 class="text-xs uppercase text-violet-400 mb-1">Alunos em Sábados</h3>
+                <p id="totalAlunos" class="text-4xl font-bold">0</p>
             </div>
-
-            <div class="p-4 border-t border-amber-500/20 flex flex-col md:flex-row gap-3 justify-end">
-                <button onclick="sincronizar()" class="px-6 py-3 rounded-lg border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 transition text-xs uppercase font-bold"><i class="fas fa-sync mr-2"></i>Sincronizar</button>
-                <button onclick="salvar()" id="btnSalvar" class="btn-projeto px-6 py-3 rounded-lg text-xs uppercase font-bold"><i class="fas fa-save mr-2"></i>Salvar</button>
+            <div class="glass p-6 rounded-2xl text-center border-b-4 border-cyan-500">
+                <h3 class="text-xs uppercase text-cyan-400 mb-1">Turmas Ativas (Sáb)</h3>
+                <p id="totalTurmas" class="text-4xl font-bold">0</p>
             </div>
         </div>
-    </div>
 
-    <div id="modalJust" class="modal">
-        <div class="bg-gray-900 p-6 rounded-2xl max-w-md w-full mx-4 border border-amber-500">
-            <h3 class="text-xl font-bold text-amber-500 mb-4 uppercase">Justificar Falta</h3>
-            <input type="hidden" id="jA"><input type="hidden" id="jD">
-            <textarea id="jT" class="w-full p-3 rounded-lg bg-black text-white text-sm mb-4" rows="3" placeholder="Motivo..."></textarea>
-            <div class="flex gap-3">
-                <button onclick="fecharJust()" class="flex-1 border border-gray-500 text-gray-400 p-3 rounded-lg uppercase text-xs font-bold">Cancelar</button>
-                <button onclick="salvarJust()" class="flex-1 bg-amber-500 text-black p-3 rounded-lg uppercase text-xs font-bold">Salvar</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="text-sm font-bold uppercase mb-4 text-violet-300">Alunos por Turma</h3>
+                <div class="chart-container"><canvas id="chartPizza"></canvas></div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <h3 class="text-sm font-bold uppercase mb-4 text-cyan-300">Presença vs Faltas (Sábados)</h3>
+                <div class="chart-container"><canvas id="chartColunas"></canvas></div>
+            </div>
+            <div class="glass p-6 rounded-2xl md:col-span-2">
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-300">Evolução de Presenças aos Sábados</h3>
+                <div class="chart-container"><canvas id="chartLinhas"></canvas></div>
             </div>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="glass p-6 rounded-2xl border-t-2 border-emerald-500">
+                <h3 class="text-sm font-bold uppercase mb-4 text-emerald-400"><i class="fas fa-star mr-2"></i> Ranking Sábado: 15 Mais Frequentes</h3>
+                <div class="ranking-container">
+                    <table class="table-ranking" id="rankingPresenca">
+                        <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass p-6 rounded-2xl border-t-2 border-rose-500">
+                <h3 class="text-sm font-bold uppercase mb-4 text-rose-400"><i class="fas fa-exclamation-triangle mr-2"></i> Ranking Sábado: 15 Mais Faltas</h3>
+                <div class="ranking-container">
+                    <table class="table-ranking" id="rankingFaltas">
+                        <thead><tr><th>Aluno</th><th>Turma</th><th class="text-right">Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RELATÓRIO DE PONTUAÇÃO ===== -->
+        <div class="mt-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <h2 class="text-xl font-bold neon-violet tracking-widest uppercase">
+                    <i class="fas fa-trophy mr-2"></i> Relatório de Pontuação
+                </h2>
+                <div class="flex flex-wrap gap-2 justify-center items-center">
+                    <input type="month" id="mesRefPontos" onchange="processarPontuacao()">
+                    <select id="filtroJanelaPontos" onchange="processarPontuacao()">
+                        <option value="1">Mês Atual</option>
+                        <option value="2">Mês Atual + Anterior</option>
+                        <option value="3">Mês Atual + 2 Anteriores</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Legenda -->
+            <div class="glass p-3 rounded-xl mb-4 flex flex-wrap gap-4 justify-center text-xs">
+                <span style="color:rgba(255,255,255,0.4);letter-spacing:.1em;">SISTEMA:</span>
+                <span><span class="pill-status pill-p">P Presença</span> <b class="pts-pos">+5 pts</b></span>
+                <span><span class="pill-status pill-a">A Atraso</span> <b style="color:#f59e0b;font-weight:bold;">+2 pts</b></span>
+                <span><span class="pill-status pill-j">J Justificativa</span> <b class="pts-neg">−1 pt</b></span>
+                <span><span class="pill-status pill-f">F Falta</span> <b class="pts-neg">−3 pts</b></span>
+            </div>
+
+            <!-- Tabela de pontuação -->
+            <div class="glass p-6 rounded-2xl border-t-2 border-violet-500">
+                <div class="ranking-container">
+                    <table class="table-ranking" id="tabelaPontuacao">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;">#</th>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th class="text-center">P</th>
+                                <th class="text-center">A</th>
+                                <th class="text-center">J</th>
+                                <th class="text-center">F</th>
+                                <th class="text-center" style="color:#a78bfa;">Média Cheg.</th>
+                                <th class="text-center" title="Quantidade de sábados (arenas) no período" style="color:#10b981;cursor:help;">
+                                    Q <span id="badgeArenas" style="background:rgba(16,185,129,0.15);color:#10b981;border-radius:99px;padding:1px 6px;font-size:10px;font-weight:bold;">0</span>
+                                </th>
+                                <th class="text-right">Pontuação</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p id="semDadosPontos" class="text-center text-gray-500 text-sm py-6" style="display:none;">Nenhum dado encontrado para este período.</p>
+            </div>
+        </div>
+        <!-- ===== FIM RELATÓRIO DE PONTUAÇÃO ===== -->
+
     </div>
 
     <script>
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycby-23cMovuAZ0m6JouTueAara4JIYnAQVvRImBzhZWMh26gWhm0aB_KiFpRo2t2CcEQCA/exec";
-        
-        let alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
-        let turmas = JSON.parse(localStorage.getItem('tsunami_turmas')) || [];
-        let freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {}; 
-        let dataAtual = new Date();
-        let dias = [];
-        let lista = [];
-        let editando = {}; 
+        let charts = {};
+        const CORES_PALETA = ['#06b6d4', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899', '#3b82f6', '#ffffff'];
 
-        const CICLO = ['', 'F', 'P', 'A', 'J'];
-        const CORES = { '': 'freq-vazio', 'F': 'freq-falta', 'P': 'freq-presente', 'A': 'freq-atraso', 'J': 'freq-justificado' };
-        const TEXTO = {'P':'Presente','A':'Atraso','F':'Faltou','J':'Justificado'};
-        const SIGLAS = {'Presente':'P', 'Atraso':'A', 'Faltou':'F', 'Justificado':'J'};
-        const DIAS_NOMES = {2: 'TER', 5: 'SEX', 6: 'SÁB'};
+        // Define o mês atual como padrão no input
+        document.getElementById('mesReferencia').value = new Date().toISOString().slice(0, 7);
 
-        function getISOString(data) {
-            if (!data) return null;
-            let d;
-            if (typeof data === 'string') {
-                const dataLimpa = data.split(' ')[0];
-                if (dataLimpa.includes('/')) {
-                    const [dia, mes, ano] = dataLimpa.split('/').map(Number);
-                    d = new Date(ano, mes - 1, dia);
-                } else { d = new Date(data); }
-            } else if (data instanceof Date) { d = data; }
-            else { return null; }
-            d.setHours(0,0,0,0);
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        function initCharts() {
+            const config = { 
+                plugins: { legend: { labels: { color: 'white', font: { size: 10 }, usePointStyle: true } } }, 
+                maintainAspectRatio: false 
+            };
+            charts.pizza = new Chart(document.getElementById('chartPizza'), { type: 'pie', data: { labels: [], datasets: [{ data: [], backgroundColor: CORES_PALETA }] }, options: config });
+            charts.colunas = new Chart(document.getElementById('chartColunas'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Presenças', backgroundColor: '#10b981', data: [] }, { label: 'Faltas', backgroundColor: '#f43f5e', data: [] }] }, options: { ...config, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' }, beginAtZero: true } } } });
+            charts.linhas = new Chart(document.getElementById('chartLinhas'), { type: 'line', data: { labels: [], datasets: [] }, options: { ...config, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' }, beginAtZero: true, stepSize: 1 } } } });
         }
 
-        function chave(nome, dataISO) { return (nome.trim().toUpperCase() + '|' + dataISO); }
-
-        function ativo(aluno, dataISO) {
-            const mat = getISOString(aluno.matricula_rematricula);
-            const ven = getISOString(aluno.data_vencimento);
-            if (!mat || !ven) return true; 
-            return dataISO >= mat && dataISO <= ven;
-        }
-
-        function noMes(aluno, ano, mes) {
-            const mat = getISOString(aluno.matricula_rematricula);
-            const ven = getISOString(aluno.data_vencimento);
-            if (!mat || !ven) return true; 
-            const iniMes = getISOString(new Date(ano, mes, 1));
-            const fimMes = getISOString(new Date(ano, mes + 1, 0));
-            return mat <= fimMes && ven >= iniMes;
-        }
-
-        function renderizar() {
-            const ano = dataAtual.getFullYear();
-            const mes = dataAtual.getMonth();
-            const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-            document.getElementById('tituloMes').textContent = nomesMes[mes] + ' ' + ano;
-
-            dias = [];
-            let dTemp = new Date(ano, mes, 1);
-            while (dTemp.getMonth() === mes) {
-                if ([2, 5, 6].includes(dTemp.getDay())) {
-                    dias.push({iso: getISOString(dTemp), diaSemana: dTemp.getDay()});
-                }
-                dTemp.setDate(dTemp.getDate() + 1);
-            }
+        function processarDados() {
+            const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+            const freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
             
-            const filtro = document.getElementById('filtroTurma').value;
-            lista = alunos.filter(a => noMes(a, ano, mes)).sort((a,b) => a.nome.localeCompare(b.nome));
-            if (filtro) lista = lista.filter(a => a.turma === filtro);
+            const mesRefValue = document.getElementById('mesReferencia').value;
+            const tipoPeriodo = document.getElementById('filtroTipo').value;
+            const diasComparativo = parseInt(document.getElementById('filtroPeriodo').value);
+            
+            if (!mesRefValue) return;
 
-            let h = '<tr class="bg-amber-500/5"><th class="col-atleta text-[10px] uppercase text-amber-400 p-3">Atleta</th>';
-            dias.forEach(d => {
-                h += `<th class="col-dia p-2"><div style="font-size:9px;color:#9ca3af">${DIAS_NOMES[d.diaSemana]}</div><div style="font-size:18px;font-weight:bold;color:#f59e0b">${d.iso.split('-')[2]}</div></th>`;
+            const [anoRef, mesRef0] = mesRefValue.split('-').map(Number);
+            const dataFinalFiltro = new Date(anoRef, mesRef0, 0); // Último dia do mês selecionado
+            const dataInicialFiltro = new Date(dataFinalFiltro);
+            dataInicialFiltro.setDate(dataFinalFiltro.getDate() - diasComparativo);
+
+            const mapaAlunos = {};
+            const statsIndividuais = {}; 
+
+            alunos.forEach(a => { 
+                const nomeKey = a.nome.trim().toUpperCase();
+                mapaAlunos[nomeKey] = a.turma || "S/T";
+                statsIndividuais[nomeKey] = { P: 0, F: 0, turma: a.turma || "S/T", nomeOriginal: a.nome };
             });
-            h += '<th class="col-faltas text-[10px] uppercase text-amber-400 p-3">Faltas</th></tr>';
             
-            h += '<tr class="bg-blue-500/5"><td class="col-atleta text-[9px] uppercase text-blue-400 font-bold px-4 py-2">Ações Lote</td>';
-            dias.forEach((_,i) => h += `<td class="col-dia p-2"><button onclick="lote(${i})" class="all-btn">ALL</button></td>`);
-            h += '<td class="col-faltas"></td></tr>';
-            document.getElementById('theadPrincipal').innerHTML = h;
+            const dadosTurmaColunas = {};
+            const evolucaoPorData = {}; 
+            let contagemAlunosSabado = new Set();
 
-            const tbody = document.getElementById('corpoTabela');
-            if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${2+dias.length}" class="p-8 text-center text-gray-500">Nenhum aluno ativo</td></tr>`;
-                return;
-            }
+            Object.entries(freq).forEach(([chave, status]) => {
+                if (chave.endsWith('-txt')) return;
+                const partes = chave.split('|');
+                if (partes.length < 2) return;
+                
+                const nomeRaw = partes[0].trim().toUpperCase();
+                const dataISO = partes[1];
+                const dataF = new Date(dataISO + "T00:00:00");
 
-            tbody.innerHTML = lista.map((aluno, aIdx) => {
-                let r = `<tr><td class="col-atleta px-4 py-3"><div class="font-bold text-amber-300 uppercase text-sm">${aluno.nome}</div><div class="text-[9px] text-gray-500">${aluno.turma||''}</div></td>`;
-                dias.forEach((dObj, dIdx) => {
-                    const dia = dObj.iso;
-                    if (!ativo(aluno, dia)) {
-                        r += `<td class="col-dia p-2"><span class="nm-badge">N/M</span></td>`;
-                    } else {
-                        const kEdit = aIdx + '-' + dIdx;
-                        const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-                        r += `<td class="col-dia p-2"><button onclick="ciclo(${aIdx},${dIdx})" class="freq-btn ${CORES[s]}">${s}</button></td>`;
+                if (dataF.getDay() !== 6) return; // Só Sábados
+
+                let dentroDoPeriodo = false;
+
+                // 1. Verificar Janela de Dias (Comparativo Real)
+                if (dataF >= dataInicialFiltro && dataF <= dataFinalFiltro) {
+                    
+                    // 2. Refinar por Tipo de Período Acadêmico
+                    const mRef = mesRef0 - 1; // 0-11
+                    const mData = dataF.getMonth();
+                    
+                    if (tipoPeriodo === 'mes' && mData === mRef) dentroDoPeriodo = true;
+                    else if (tipoPeriodo === 'bimestre' && mData >= (mRef - 1) && mData <= mRef) dentroDoPeriodo = true;
+                    else if (tipoPeriodo === 'trimestre' && mData >= (mRef - 2) && mData <= mRef) dentroDoPeriodo = true;
+                    else if (tipoPeriodo === 'semestre' && mData >= (mRef - 5) && mData <= mRef) dentroDoPeriodo = true;
+                    else if (tipoPeriodo === 'ano' && dataF.getFullYear() === anoRef) dentroDoPeriodo = true;
+                }
+
+                if (dentroDoPeriodo) {
+                    const tNome = mapaAlunos[nomeRaw] || "S/T";
+                    if (!dadosTurmaColunas[tNome]) dadosTurmaColunas[tNome] = { P: 0, F: 0 };
+                    if (!evolucaoPorData[dataISO]) evolucaoPorData[dataISO] = {};
+                    
+                    contagemAlunosSabado.add(nomeRaw);
+
+                    if (status === 'P' || status === 'A') {
+                        dadosTurmaColunas[tNome].P++;
+                        evolucaoPorData[dataISO][tNome] = (evolucaoPorData[dataISO][tNome] || 0) + 1;
+                        if (statsIndividuais[nomeRaw]) statsIndividuais[nomeRaw].P++;
+                    } else if (status === 'F') {
+                        dadosTurmaColunas[tNome].F++;
+                        if (statsIndividuais[nomeRaw]) statsIndividuais[nomeRaw].F++;
                     }
-                });
-                let f = 0;
-                dias.forEach((dObj, dIdx) => {
-                    const kEdit = aIdx + '-' + dIdx;
-                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dObj.iso)] || '');
-                    if (s === 'F' || s === 'J') f++;
-                });
-                r += `<td class="col-faltas"><span class="contador-faltas">${f}</span></td></tr>`;
-                return r;
-            }).join('');
-
-            let fRow = '<tr class="bg-amber-500/10"><td class="col-atleta text-[10px] uppercase text-amber-400 font-bold px-4 py-3">Presenças / Dia</td>';
-            dias.forEach((dObj, dIdx) => {
-                let total = 0;
-                lista.forEach((aluno, aIdx) => {
-                    const kEdit = aIdx + '-' + dIdx;
-                    const s = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dObj.iso)] || '');
-                    if (s === 'P' || s === 'A') total++;
-                });
-                fRow += `<td class="col-dia p-2"><span class="contador-presencas">${total}</span></td>`;
+                }
             });
-            fRow += '<td class="col-faltas"></td></tr>';
-            document.getElementById('tfootPrincipal').innerHTML = fRow;
+
+            // Atualiza UI
+            document.getElementById('totalAlunos').innerText = contagemAlunosSabado.size;
+            document.getElementById('totalTurmas').innerText = Object.keys(dadosTurmaColunas).length;
+
+            // Pizza
+            charts.pizza.data.labels = Object.keys(dadosTurmaColunas);
+            charts.pizza.data.datasets[0].data = Object.keys(dadosTurmaColunas).map(t => {
+                return alunos.filter(a => (a.turma || "S/T") === t).length;
+            });
+            charts.pizza.update();
+
+            // Colunas
+            charts.colunas.data.labels = Object.keys(dadosTurmaColunas);
+            charts.colunas.data.datasets[0].data = Object.values(dadosTurmaColunas).map(d => d.P);
+            charts.colunas.data.datasets[1].data = Object.values(dadosTurmaColunas).map(d => d.F);
+            charts.colunas.update();
+
+            // Linhas
+            const datasOrd = Object.keys(evolucaoPorData).sort();
+            charts.linhas.data.labels = datasOrd.map(d => d.split('-').reverse().slice(0,2).join('/'));
+            const turmasUnicas = Object.keys(dadosTurmaColunas).sort();
+            const dataPointsGeral = datasOrd.map(dt => turmasUnicas.reduce((s, t) => s + (evolucaoPorData[dt][t] || 0), 0));
+            const datasetsFinal = [{ label: "PRESENÇA TOTAL (SÁB)", data: dataPointsGeral, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 4, fill: true, tension: 0.3, pointRadius: 5 }];
+            
+            turmasUnicas.forEach((t, idx) => {
+                const pts = datasOrd.map(dt => evolucaoPorData[dt][t] || 0);
+                datasetsFinal.push({ label: t, data: pts, borderColor: CORES_PALETA[idx % CORES_PALETA.length], backgroundColor: 'transparent', borderWidth: 2, tension: 0.3 });
+            });
+            charts.linhas.data.datasets = datasetsFinal;
+            charts.linhas.update();
+
+            // Rankings
+            const listaStats = Object.values(statsIndividuais).filter(a => a.P > 0 || a.F > 0);
+            document.querySelector('#rankingPresenca tbody').innerHTML = [...listaStats].sort((a, b) => b.P - a.P).slice(0, 15).map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-emerald-400">${a.P}</td></tr>`).join('');
+            document.querySelector('#rankingFaltas tbody').innerHTML = [...listaStats].sort((a, b) => b.F - a.F).slice(0, 15).map(a => `<tr><td>${a.nomeOriginal}</td><td class="text-gray-400">${a.turma}</td><td class="text-right font-bold text-rose-400">${a.F}</td></tr>`).join('');
         }
 
-        function ciclo(a, d) {
-            const kEdit = a + '-' + d;
-            const aluno = lista[a], dia = dias[d].iso;
-            const atual = editando[kEdit] !== undefined ? editando[kEdit] : (freq[chave(aluno.nome, dia)] || '');
-            const prox = CICLO[(CICLO.indexOf(atual) + 1) % CICLO.length];
-            if (prox === 'J') {
-                document.getElementById('jA').value = a; document.getElementById('jD').value = d;
-                document.getElementById('modalJust').classList.add('active');
-                return;
+        initCharts();
+        processarDados();
+
+        // ===== PONTUAÇÃO =====
+        const PTS_SISTEMA = { P: 5, A: 2, J: -1, F: -3 };
+        const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        document.getElementById('mesRefPontos').value = new Date().toISOString().slice(0, 7);
+
+        function processarPontuacao() {
+            const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
+            const freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
+
+            // DEBUG: mostra no console as chaves -txt encontradas (remova depois de confirmar)
+            const txtKeys = Object.keys(freq).filter(k => k.endsWith('-txt'));
+            if (txtKeys.length > 0) {
+                console.log('[DEBUG] Chaves -txt encontradas:', txtKeys.slice(0, 5));
+                console.log('[DEBUG] Exemplo valor:', freq[txtKeys[0]]);
+            } else {
+                console.warn('[DEBUG] Nenhuma chave -txt encontrada no tsunami_freq. Horários de chegada não serão exibidos.');
             }
-            editando[kEdit] = prox;
-            renderizar();
-        }
 
-        function lote(dIdx) {
-            const dia = dias[dIdx].iso;
-            let primeiro = '';
-            for(let i=0; i<lista.length; i++) {
-                if(ativo(lista[i], dia)) {
-                    primeiro = editando[i+'-'+dIdx] !== undefined ? editando[i+'-'+dIdx] : (freq[chave(lista[i].nome, dia)] || '');
-                    break;
+            const mesRefValue = document.getElementById('mesRefPontos').value;
+            const janela = parseInt(document.getElementById('filtroJanelaPontos').value);
+            if (!mesRefValue) return;
+
+            const [anoRef, mes1] = mesRefValue.split('-').map(Number);
+
+            // Monta lista de {ano, mes 1-12} a incluir
+            const periodos = [];
+            for (let i = 0; i < janela; i++) {
+                let m = mes1 - i, a = anoRef;
+                if (m <= 0) { m += 12; a -= 1; }
+                periodos.push({ ano: a, mes: m });
+            }
+
+            // Coleta todos os sábados únicos do período para contar arenas (Q)
+            const sabadosNoPeriodo = new Set();
+            Object.keys(freq).forEach(chave => {
+                if (chave.endsWith('-txt')) return;
+                const partes = chave.split('|');
+                if (partes.length < 2) return;
+                const dataISO = partes[1];
+                const dataF = new Date(dataISO + 'T00:00:00');
+                if (dataF.getDay() !== 6) return;
+                const mData = dataF.getMonth() + 1, aData = dataF.getFullYear();
+                if (periodos.some(p => p.mes === mData && p.ano === aData)) {
+                    sabadosNoPeriodo.add(dataISO);
                 }
-            }
-            const prox = CICLO[(CICLO.indexOf(primeiro) + 1) % CICLO.length];
-            if (prox === 'J') return;
-            lista.forEach((aluno, aIdx) => { if(ativo(aluno, dia)) editando[aIdx+'-'+dIdx] = prox; });
-            renderizar();
-        }
+            });
+            const totalArenas = sabadosNoPeriodo.size;
 
-        function fecharJust() { document.getElementById('modalJust').classList.remove('active'); }
-        function salvarJust() {
-            const a = document.getElementById('jA').value, d = document.getElementById('jD').value;
-            editando[a+'-'+d] = 'J';
-            editando[a+'-'+d+'-txt'] = document.getElementById('jT').value;
-            fecharJust(); renderizar();
-        }
+            // Atualiza badge Q
+            const badgeQ = document.getElementById('badgeArenas');
+            if (badgeQ) badgeQ.textContent = totalArenas;
 
-        async function salvar() {
-            const btn = document.getElementById('btnSalvar');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Salvando...';
-            btn.disabled = true;
-            for (const k in editando) {
-                if (k.includes('-txt')) continue;
-                const [aIdx, dIdx] = k.split('-').map(Number);
-                const aluno = lista[aIdx], dia = dias[dIdx].iso, status = editando[k];
-                const kFreq = chave(aluno.nome, dia);
-                freq[kFreq] = status;
-                if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
-                const fd = new FormData();
-                fd.append('action', 'frequencia');
-                fd.append('nome', aluno.nome);
-                fd.append('data_aula', dia.split('-').reverse().join('/')); 
-                fd.append('status', TEXTO[status] || '');
-                fd.append('justificativa', editando[k+'-txt'] || '');
-                try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
-            }
-            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-            editando = {};
-            btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar';
-            btn.disabled = false;
-            alert('Frequência salva!');
-            renderizar();
-        }
+            // Inicializa stats
+            const statsMap = {};
+            alunos.forEach(a => {
+                const key = a.nome.trim().toUpperCase();
+                statsMap[key] = { nomeOriginal: a.nome, turma: a.turma || 'S/T', P: 0, A: 0, J: 0, F: 0, chegadas: [] };
+            });
 
-        async function sincronizar() {
-            const sel = document.getElementById('filtroTurma');
-            const valAnterior = sel.value;
-            try {
-                const [rA, rT, rF] = await Promise.all([
-                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
-                ]);
-                if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
-                if (Array.isArray(rT)) { 
-                    turmas = rT; 
-                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
-                    sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
-                    turmas.forEach(t => {
-                        if(t.nome) {
-                            const o = document.createElement('option');
-                            o.value = t.nome; o.textContent = t.nome;
-                            sel.appendChild(o);
-                        }
-                    });
-                    sel.value = valAnterior;
-                }
-                if (Array.isArray(rF)) {
-                    rF.forEach(f => {
-                        const dataISO = getISOString(f.data_aula);
-                        if (dataISO) {
-                            const k = chave(f.nome, dataISO);
-                            if (f.status) {
-                                freq[k] = SIGLAS[f.status] || '';
-                                if (f.justificativa) freq[k + '-txt'] = f.justificativa;
+            Object.entries(freq).forEach(([chave, status]) => {
+                if (chave.endsWith('-txt')) return;
+                const partes = chave.split('|');
+                if (partes.length < 2) return;
+                const nomeRaw = partes[0].trim().toUpperCase();
+                const dataISO = partes[1];
+                const dataF = new Date(dataISO + 'T00:00:00');
+                if (dataF.getDay() !== 6) return; // so sabados
+                const mData = dataF.getMonth() + 1, aData = dataF.getFullYear();
+                if (!periodos.some(p => p.mes === mData && p.ano === aData)) return;
+
+                if (!statsMap[nomeRaw]) statsMap[nomeRaw] = { nomeOriginal: nomeRaw, turma: 'S/T', P: 0, A: 0, J: 0, F: 0, chegadas: [] };
+                const s = (status || '').toUpperCase();
+                if (s === 'P') {
+                    statsMap[nomeRaw].P++;
+                    // Busca horario de chegada - tenta chave exata e variações
+                    const horaChegada = freq[chave + '-txt'] 
+                        || freq[nomeRaw.toLowerCase() + '|' + dataISO + '-txt']
+                        || freq[partes[0].trim() + '|' + dataISO + '-txt'];
+                    if (horaChegada && typeof horaChegada === 'string') {
+                        const match = horaChegada.match(/(\d{1,2}):(\d{2})/);
+                        if (match) {
+                            const h = parseInt(match[1]), min = parseInt(match[2]);
+                            if (!isNaN(h) && !isNaN(min)) {
+                                statsMap[nomeRaw].chegadas.push(h * 60 + min);
                             }
                         }
-                    });
-                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
+                    }
                 }
-            } catch(e) { console.error(e); }
-            renderizar();
-        }
+                else if (s === 'A') {
+                    statsMap[nomeRaw].A++;
+                    // Atraso também pode ter horário registrado
+                    const horaChegada = freq[chave + '-txt']
+                        || freq[partes[0].trim() + '|' + dataISO + '-txt'];
+                    if (horaChegada && typeof horaChegada === 'string') {
+                        const match = horaChegada.match(/(\d{1,2}):(\d{2})/);
+                        if (match) {
+                            const h = parseInt(match[1]), min = parseInt(match[2]);
+                            if (!isNaN(h) && !isNaN(min)) {
+                                statsMap[nomeRaw].chegadas.push(h * 60 + min);
+                            }
+                        }
+                    }
+                }
+                else if (s === 'J') statsMap[nomeRaw].J++;
+                else if (s === 'F') statsMap[nomeRaw].F++;
+            });
 
-        function mudarMes(dir) { dataAtual.setMonth(dataAtual.getMonth() + dir); editando = {}; renderizar(); }
-        
-        // Inicialização
-        (function init(){
-            const sel = document.getElementById('filtroTurma');
-            turmas.forEach(t => {
-                if(t.nome) {
-                    const o = document.createElement('option');
-                    o.value = t.nome; o.textContent = t.nome;
-                    sel.appendChild(o);
+            // Calcula media de chegada e pontos
+            const lista = Object.values(statsMap)
+                .filter(a => a.P + a.A + a.J + a.F > 0)
+                .map(a => {
+                    const totalChegadas = a.chegadas.length;
+                    const mediaMinutos = totalChegadas > 0 ? Math.round(a.chegadas.reduce((s, v) => s + v, 0) / totalChegadas) : null;
+                    // Q = quantidade de sábados que o aluno teve qualquer registro
+                    const qAluno = a.P + a.A + a.J + a.F;
+                    return {
+                        ...a,
+                        pontos: a.P * PTS_SISTEMA.P + a.A * PTS_SISTEMA.A + a.J * PTS_SISTEMA.J + a.F * PTS_SISTEMA.F,
+                        mediaChegada: mediaMinutos,
+                        totalChegadas: totalChegadas,
+                        qAluno: qAluno
+                    };
+                })
+                .sort((a, b) => {
+                    if (b.pontos !== a.pontos) return b.pontos - a.pontos;   // pontuacao
+                    if (b.P !== a.P) return b.P - a.P;                       // 1 criterio: mais presencas
+                    if (a.A !== b.A) return a.A - b.A;                       // 2 criterio: menos atrasos
+                    if (a.F !== b.F) return a.F - b.F;                       // 3 criterio: menos faltas
+                    // 4 criterio: media de chegada mais cedo (menor = melhor)
+                    if (a.mediaChegada !== null && b.mediaChegada !== null) return a.mediaChegada - b.mediaChegada;
+                    if (a.mediaChegada !== null) return -1; // quem tem chegada vence quem nao tem
+                    if (b.mediaChegada !== null) return 1;
+                    return 0;
+                });
+
+            const tbody = document.querySelector('#tabelaPontuacao tbody');
+            const semDados = document.getElementById('semDadosPontos');
+
+            if (lista.length === 0) {
+                tbody.innerHTML = '';
+                semDados.style.display = '';
+                return;
+            }
+            semDados.style.display = 'none';
+
+            const maxPts = Math.max(...lista.map(a => a.pontos), 1);
+            const minPts = Math.min(...lista.map(a => a.pontos), 0);
+            const range = (maxPts - minPts) || 1;
+
+            // Calcula posicao real respeitando empate (mesma posicao para empate total)
+            const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+            const posicoes = [];
+            let posAtual = 1;
+            lista.forEach((a, i) => {
+                if (i === 0) {
+                    posicoes.push(posAtual);
+                } else {
+                    const prev = lista[i - 1];
+                    const empate = a.pontos === prev.pontos && a.P === prev.P && a.A === prev.A && a.F === prev.F && a.mediaChegada === prev.mediaChegada;
+                    if (!empate) posAtual = i + 1;
+                    posicoes.push(posAtual);
                 }
             });
-            sincronizar();
-        })();
+
+            tbody.innerHTML = lista.map((a, i) => {
+                const pos = posicoes[i];
+                const posLabel = medals[pos] ? medals[pos] : `${pos}º`;
+                const pct = Math.max(0, ((a.pontos - minPts) / range) * 100);
+                const barColor = a.pontos >= 0 ? '#10b981' : '#f43f5e';
+                const scoreClass = a.pontos > 0 ? 'pts-pos' : a.pontos < 0 ? 'pts-neg' : 'pts-zero';
+                const horaFormatada = a.mediaChegada !== null 
+                    ? `${String(Math.floor(a.mediaChegada / 60)).padStart(2, '0')}:${String(a.mediaChegada % 60).padStart(2, '0')}` 
+                    : '—';
+                return `<tr>
+                    <td style="text-align:center;">${posLabel}</td>
+                    <td>${a.nomeOriginal}</td>
+                    <td class="text-gray-400">${a.turma}</td>
+                    <td class="text-center"><span class="pill-status pill-p">${a.P}</span></td>
+                    <td class="text-center"><span class="pill-status pill-a">${a.A}</span></td>
+                    <td class="text-center"><span class="pill-status pill-j">${a.J}</span></td>
+                    <td class="text-center"><span class="pill-status pill-f">${a.F}</span></td>
+                    <td class="text-center" style="color:#a78bfa;font-size:12px;font-family:monospace;">${horaFormatada}</td>
+                    <td class="text-center" style="color:#10b981;font-size:12px;font-weight:bold;">${a.qAluno}<span style="color:rgba(255,255,255,0.3);font-size:10px;">/${totalArenas}</span></td>
+                    <td class="text-right">
+                        <span class="${scoreClass}">${a.pontos > 0 ? '+' : ''}${a.pontos} pts</span>
+                        <span class="bar-wrap"><span class="bar-fill" style="width:${pct}%;background:${barColor};"></span></span>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        processarPontuacao();
     </script>
 </body>
 </html>
