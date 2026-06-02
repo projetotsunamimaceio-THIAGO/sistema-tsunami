@@ -228,9 +228,9 @@
         <!-- HEADER -->
         <div class="header-facial p-4 rounded-t-2xl mb-4">
             <div class="flex justify-between items-center">
-                <a href="arena.html" class="text-emerald-400 text-xs uppercase font-bold hover:text-emerald-300">
+                <button onclick="window.location.href='arena.html'" class="text-emerald-400 text-xs uppercase font-bold hover:text-emerald-300">
                     <i class="fas fa-arrow-left mr-1"></i>Voltar
-                </a>
+                </button>
                 <h1 class="text-lg font-bold text-emerald-400 uppercase tracking-wider">
                     <i class="fas fa-fingerprint mr-2"></i>Arena Facial
                 </h1>
@@ -808,9 +808,23 @@
             const k = chave(aluno.nome, hoje);
 
             if (novoStatus === null) {
-                // Apagar
+                // Apagar localmente
                 delete freq[k];
                 delete ordens[k];
+                // Envia exclusão ao banco (status "Apagado" como sinal para o Apps Script deletar)
+                try {
+                    const params = new URLSearchParams();
+                    params.append('action', 'frequencia');
+                    params.append('nome', aluno.nome);
+                    params.append('data_aula', hoje.split('-').reverse().join('/'));
+                    params.append('status', 'Apagado');
+                    params.append('justificativa', '');
+                    params.append('hora', '');
+                    await fetch(URL_SCRIPT, { method: 'POST', body: params, mode: 'cors', cache: 'no-cache' });
+                    addLog(`Exclusão enviada ao banco: ${aluno.nome}`);
+                } catch (e) {
+                    addLog('Erro ao apagar no banco: ' + e.message, 'error');
+                }
             } else {
                 const agora = new Date();
                 const hStr = agora.getHours().toString().padStart(2,'0') + ':' +
