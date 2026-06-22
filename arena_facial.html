@@ -440,24 +440,73 @@
             });
         }
 
+        // Salva no localStorage sem estourar a cota
+        // Alunos: salva dados sem face_data no LS; face_data fica só em memória (variável alunos)
+        function salvarAlunosSeguro(lista) {
+            try {
+                // Tenta salvar com fotos
+                localStorage.setItem('tsunami_alunos', JSON.stringify(lista));
+            } catch(e) {
+                try {
+                    // Se lotou, salva sem fotos (fotos ficam só em memória nesta sessão)
+                    const semFoto = lista.map(a => { const c = {...a}; delete c.face_data; return c; });
+                    localStorage.setItem('tsunami_alunos', JSON.stringify(semFoto));
+                    console.warn('Fotos não salvas no LS por falta de espaço, funcionam só nesta sessão.');
+                } catch(e2) {
+                    console.warn('localStorage cheio, alunos só em memória.');
+                }
+            }
+        }
+
+        function salvarSeguro(chaveLS, valor) {
+            try {
+                localStorage.setItem(chaveLS, JSON.stringify(valor));
+            } catch(e) {
+                console.warn('Erro ao salvar ' + chaveLS + ':', e.message);
+            }
+        }
+
+        // ========== FETCH COM RETRY ==========
+        async function fetchComRetry(url, opcoes, tentativas = 3) {
+            for (let i = 0; i < tentativas; i++) {
+                try {
+                    const r = await fetch(url, opcoes);
+                    return r;
+                } catch(e) {
+                    addLog(`Tentativa ${i+1} falhou: ${e.message}`, 'error');
+                    if (i === tentativas - 1) throw e;
+                    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+                }
+            }
+        }
+
         // ========== SINCRONIZAR DADOS ==========
         async function sincronizarDados() {
             try {
                 addLog('Sincronizando dados...');
+                document.getElementById('sistemaStatus').textContent = '⟳ SINCRONIZANDO...';
+
+                const buscar = (param) => fetchComRetry(URL_SCRIPT + '?getDados=' + param, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: { 'Accept': 'application/json' }
+                }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
                 const [rA, rT, rF] = await Promise.all([
-                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
+                    buscar('alunos'),
+                    buscar('turmas'),
+                    buscar('frequencia')
                 ]);
                 
-                if (Array.isArray(rA)) {
+                if (Array.isArray(rA) && rA.length > 0) {
                     alunos = rA;
-                    localStorage.setItem('tsunami_alunos', JSON.stringify(alunos));
+                    salvarAlunosSeguro(alunos); // tenta com fotos, cai sem fotos se lotou
                     addLog(`${alunos.length} alunos carregados`);
                 }
-                if (Array.isArray(rT)) {
+                if (Array.isArray(rT) && rT.length > 0) {
                     turmas = rT;
-                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+                    salvarSeguro('tsunami_turmas', turmas);
                     carregarTurmas();
                 }
                 if (Array.isArray(rF)) {
@@ -472,17 +521,20 @@
                             if (f.hora) ordens[k] = f.hora;
                         }
                     });
-                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-                    localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
-                    addLog('Frequências sincronizadas');
+                    salvarSeguro('tsunami_freq', freq);
+                    salvarSeguro('tsunami_ordens', ordens);
+                    addLog(`${rF.length} frequências sincronizadas`);
                 }
                 
                 const comFoto = alunos.filter(a => a.face_data && a.face_data.length > 100).length;
                 document.getElementById('contadorRostos').textContent = `${comFoto} rostos`;
+                document.getElementById('sistemaStatus').textContent = '● SISTEMA PRONTO';
                 
                 renderizar();
             } catch(e) {
                 addLog('Erro ao sincronizar: ' + e.message, 'error');
+                document.getElementById('sistemaStatus').textContent = '⚠ ERRO DE CONEXÃO';
+                document.getElementById('sistemaStatus').style.color = '#f43f5e';
                 renderizar();
             }
         }
@@ -588,8 +640,8 @@
             
             freq[k] = 'P';
             ordens[k] = hStr;
-            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+            salvarSeguro('tsunami_freq', freq);
+            salvarSeguro('tsunami_ordens', ordens);
             
             addLog(`Presença marcada local: ${aluno.nome} às ${hStr}`);
             
@@ -836,8 +888,8 @@
                 sincronizarPresenca(aluno.nome, hoje, novoStatus, hStr);
             }
 
-            localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-            localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+            salvarSeguro('tsunami_freq', freq);
+            salvarSeguro('tsunami_ordens', ordens);
 
             fecharCorrecao();
             renderizar();

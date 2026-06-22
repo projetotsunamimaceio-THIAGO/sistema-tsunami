@@ -472,13 +472,72 @@
             fecharJust(); renderizar();
         }
 
+        // Salva no localStorage com proteção contra quota exceeded
+        function salvarSeguro(chaveLS, valor) {
+            try {
+                localStorage.setItem(chaveLS, JSON.stringify(valor));
+            } catch(e) {
+                if (e.name === 'QuotaExceededError' || e.code === 22) {
+                    try {
+                        localStorage.removeItem('tsunami_alunos');
+                        localStorage.removeItem('tsunami_turmas');
+                        localStorage.setItem(chaveLS, JSON.stringify(valor));
+                    } catch(e2) {
+                        console.warn('localStorage cheio, operando só em memória:', e2.message);
+                    }
+                }
+            }
+        }
+
+        // Remove face_data dos alunos (fotos não são usadas no arena.html)
+        function alunosSemFoto(lista) {
+            return lista.map(a => { const c = {...a}; delete c.face_data; return c; });
+        }
+
+        function mostrarStatus(msg, tipo) {
+            let bar = document.getElementById('statusBar');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'statusBar';
+                bar.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:bold;box-shadow:0 4px 24px rgba(0,0,0,0.5);transition:all 0.3s;max-width:90vw;text-align:center;';
+                document.body.appendChild(bar);
+            }
+            if (tipo === 'ok') { bar.style.background='#10b981'; bar.style.color='#000'; bar.style.border='1px solid #059669'; }
+            else if (tipo === 'erro') { bar.style.background='#f43f5e'; bar.style.color='#fff'; bar.style.border='1px solid #e11d48'; }
+            else { bar.style.background='#1e293b'; bar.style.color='#38bdf8'; bar.style.border='1px solid #38bdf8'; }
+            bar.textContent = msg;
+            bar.style.display = 'block';
+            clearTimeout(bar._t);
+            bar._t = setTimeout(() => { bar.style.display = 'none'; }, 4000);
+        }
+
+        async function fetchComRetry(url, opcoes, tentativas = 3) {
+            for (let i = 0; i < tentativas; i++) {
+                try {
+                    const r = await fetch(url, opcoes);
+                    return r;
+                } catch(e) {
+                    if (i === tentativas - 1) throw e;
+                    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+                }
+            }
+        }
+
         async function salvar() {
             const btn = document.getElementById('btnSalvar');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>SINC...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>SALVANDO...';
             btn.disabled = true;
 
-            for (const k in editando) {
-                if (k.includes('-txt')) continue;
+            const itens = Object.keys(editando).filter(k => !k.includes('-txt'));
+            if (itens.length === 0) {
+                mostrarStatus('Nenhuma alteração para salvar.', 'info');
+                btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Tudo';
+                btn.disabled = false;
+                return;
+            }
+
+            let erros = 0;
+            for (const k of itens) {
                 const [aIdx, dIdx] = k.split('-').map(Number);
                 const aluno = lista[aIdx], dia = dias[dIdx], status = editando[k];
                 const kFreq = chave(aluno.nome, dia);
@@ -486,15 +545,20 @@
                 freq[kFreq] = status;
                 if (editando[k+'-txt']) freq[kFreq+'-txt'] = editando[k+'-txt'];
 
-                const fd = new FormData();
-                fd.append('action', 'frequencia');
-                fd.append('nome', aluno.nome);
-                fd.append('data_aula', dia.split('-').reverse().join('/')); 
-                fd.append('status', TEXTO[status] || '');
-                fd.append('justificativa', editando[k+'-txt'] || '');
-                fd.append('hora', ordens[kFreq] || '');
+                const params = new URLSearchParams();
+                params.append('action', 'frequencia');
+                params.append('nome', aluno.nome);
+                params.append('data_aula', dia.split('-').reverse().join('/'));
+                params.append('status', TEXTO[status] || '');
+                params.append('justificativa', editando[k+'-txt'] || '');
+                params.append('hora', ordens[kFreq] || '');
                 
-                try { await fetch(URL_SCRIPT, {method:'POST', body:fd}); } catch(e){}
+                try {
+                    await fetchComRetry(URL_SCRIPT, { method:'POST', body: params, mode:'cors', cache:'no-cache' });
+                } catch(e) {
+                    erros++;
+                    console.error('Erro ao salvar', aluno.nome, e);
+                }
             }
 
             localStorage.setItem('tsunami_freq', JSON.stringify(freq));
@@ -502,26 +566,48 @@
             editando = {};
             btn.innerHTML = '<i class="fas fa-save mr-2"></i>Salvar Tudo';
             btn.disabled = false;
-            alert('Sincronizado!');
+
+            if (erros === 0) {
+                mostrarStatus('✅ ' + itens.length + ' registro(s) salvo(s) com sucesso!', 'ok');
+            } else {
+                mostrarStatus('⚠️ ' + erros + ' erro(s) ao enviar. Dados salvos localmente.', 'erro');
+            }
             renderizar();
         }
 
         async function sincronizar() {
+            mostrarStatus('🔄 Buscando dados do servidor...', 'info');
+            const btnSync = document.querySelector('button[onclick="sincronizar()"]');
+            if (btnSync) { btnSync.disabled = true; btnSync.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...'; }
+
             try {
+                const buscar = (param) => fetchComRetry(URL_SCRIPT + '?getDados=' + param, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    headers: { 'Accept': 'application/json' }
+                }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+
                 const [rA, rT, rF] = await Promise.all([
-                    fetch(URL_SCRIPT + '?getDados=alunos').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=turmas').then(r => r.json()),
-                    fetch(URL_SCRIPT + '?getDados=frequencia').then(r => r.json())
+                    buscar('alunos'),
+                    buscar('turmas'),
+                    buscar('frequencia')
                 ]);
-                if (Array.isArray(rA)) { alunos = rA; localStorage.setItem('tsunami_alunos', JSON.stringify(alunos)); }
-                if (Array.isArray(rT)) { 
-                    turmas = rT; 
-                    localStorage.setItem('tsunami_turmas', JSON.stringify(turmas));
+
+                if (Array.isArray(rA) && rA.length > 0) {
+                    alunos = rA;
+                    // Remove fotos antes de salvar: arena.html não exibe fotos e elas enchem o localStorage
+                    salvarSeguro('tsunami_alunos', alunosSemFoto(alunos));
+                }
+                if (Array.isArray(rT) && rT.length > 0) {
+                    turmas = rT;
+                    salvarSeguro('tsunami_turmas', turmas);
                     const sel = document.getElementById('filtroTurma');
                     sel.innerHTML = '<option value="">TODAS AS TURMAS</option>';
                     turmas.forEach(t => { if(t.nome) sel.innerHTML += `<option value="${t.nome}">${t.nome}</option>`; });
                 }
                 if (Array.isArray(rF)) {
+                    freq = {};
                     ordens = {};
                     rF.forEach(f => {
                         const dataISO = getISOString(f.data_aula);
@@ -532,10 +618,17 @@
                             if (f.hora) ordens[k] = limparHora(f.hora);
                         }
                     });
-                    localStorage.setItem('tsunami_freq', JSON.stringify(freq));
-                    localStorage.setItem('tsunami_ordens', JSON.stringify(ordens));
+                    salvarSeguro('tsunami_freq', freq);
+                    salvarSeguro('tsunami_ordens', ordens);
                 }
-            } catch(e) { console.error(e); }
+
+                mostrarStatus('✅ Sincronizado! ' + alunos.length + ' alunos, ' + rF.length + ' registros.', 'ok');
+            } catch(e) {
+                console.error('Erro sincronizar:', e);
+                mostrarStatus('❌ Falha na sincronização: ' + e.message, 'erro');
+            }
+
+            if (btnSync) { btnSync.disabled = false; btnSync.innerHTML = '<i class="fas fa-sync mr-2"></i>Sincronizar'; }
             renderizar();
         }
 
