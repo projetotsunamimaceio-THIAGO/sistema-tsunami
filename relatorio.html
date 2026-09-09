@@ -304,15 +304,8 @@
         function processarPontuacao() {
             const alunos = JSON.parse(localStorage.getItem('tsunami_alunos')) || [];
             const freq = JSON.parse(localStorage.getItem('tsunami_freq')) || {};
-
-            // DEBUG: mostra no console as chaves -txt encontradas (remova depois de confirmar)
-            const txtKeys = Object.keys(freq).filter(k => k.endsWith('-txt'));
-            if (txtKeys.length > 0) {
-                console.log('[DEBUG] Chaves -txt encontradas:', txtKeys.slice(0, 5));
-                console.log('[DEBUG] Exemplo valor:', freq[txtKeys[0]]);
-            } else {
-                console.warn('[DEBUG] Nenhuma chave -txt encontrada no tsunami_freq. Horários de chegada não serão exibidos.');
-            }
+            // Horário de chegada fica salvo separadamente em tsunami_ordens, com a MESMA chave "NOME|DATA-ISO"
+            const ordens = JSON.parse(localStorage.getItem('tsunami_ordens')) || {};
 
             const mesRefValue = document.getElementById('mesRefPontos').value;
             const janela = parseInt(document.getElementById('filtroJanelaPontos').value);
@@ -370,10 +363,8 @@
                 const s = (status || '').toUpperCase();
                 if (s === 'P') {
                     statsMap[nomeRaw].P++;
-                    // Busca horario de chegada - tenta chave exata e variações
-                    const horaChegada = freq[chave + '-txt'] 
-                        || freq[nomeRaw.toLowerCase() + '|' + dataISO + '-txt']
-                        || freq[partes[0].trim() + '|' + dataISO + '-txt'];
+                    // Busca horario de chegada no tsunami_ordens (chave "NOME|DATA-ISO")
+                    const horaChegada = ordens[chave] || ordens[nomeRaw + '|' + dataISO];
                     if (horaChegada && typeof horaChegada === 'string') {
                         const match = horaChegada.match(/(\d{1,2}):(\d{2})/);
                         if (match) {
@@ -386,9 +377,8 @@
                 }
                 else if (s === 'A') {
                     statsMap[nomeRaw].A++;
-                    // Atraso também pode ter horário registrado
-                    const horaChegada = freq[chave + '-txt']
-                        || freq[partes[0].trim() + '|' + dataISO + '-txt'];
+                    // Atraso também tem horário registrado, no tsunami_ordens
+                    const horaChegada = ordens[chave] || ordens[nomeRaw + '|' + dataISO];
                     if (horaChegada && typeof horaChegada === 'string') {
                         const match = horaChegada.match(/(\d{1,2}):(\d{2})/);
                         if (match) {
@@ -420,14 +410,18 @@
                     };
                 })
                 .sort((a, b) => {
-                    if (b.pontos !== a.pontos) return b.pontos - a.pontos;   // pontuacao
-                    if (b.P !== a.P) return b.P - a.P;                       // 1 criterio: mais presencas
-                    if (a.A !== b.A) return a.A - b.A;                       // 2 criterio: menos atrasos
-                    if (a.F !== b.F) return a.F - b.F;                       // 3 criterio: menos faltas
-                    // 4 criterio: media de chegada mais cedo (menor = melhor)
-                    if (a.mediaChegada !== null && b.mediaChegada !== null) return a.mediaChegada - b.mediaChegada;
-                    if (a.mediaChegada !== null) return -1; // quem tem chegada vence quem nao tem
-                    if (b.mediaChegada !== null) return 1;
+                    if (b.pontos !== a.pontos) return b.pontos - a.pontos;   // 1 criterio: pontuacao
+
+                    // 2 criterio: quem chega mais cedo (media de horario, menor = mais cedo) vence o desempate
+                    if (a.mediaChegada !== null && b.mediaChegada !== null && a.mediaChegada !== b.mediaChegada) {
+                        return a.mediaChegada - b.mediaChegada;
+                    }
+                    if (a.mediaChegada !== null && b.mediaChegada === null) return -1; // quem tem chegada registrada vence quem nao tem
+                    if (a.mediaChegada === null && b.mediaChegada !== null) return 1;
+
+                    if (b.P !== a.P) return b.P - a.P;                       // 3 criterio: mais presencas
+                    if (a.A !== b.A) return a.A - b.A;                       // 4 criterio: menos atrasos
+                    if (a.F !== b.F) return a.F - b.F;                       // 5 criterio: menos faltas
                     return 0;
                 });
 
