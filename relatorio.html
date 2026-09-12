@@ -7,16 +7,31 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="logo.png">
     <style>
-        body { background: #0a0a0f; color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(139, 92, 246, 0.1); }
-        .neon-violet { color: #8b5cf6; text-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
-        .btn-violet { border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); transition: 0.3s; }
-        .btn-violet:hover { background: #8b5cf6; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+        body { background: #06070d; color: white; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; position: relative; }
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(circle at 10% 0%, rgba(139,92,246,0.12), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(139,92,246,0.06), transparent 45%);
+            pointer-events: none; z-index: 0;
+        }
+        .max-w-6xl { position: relative; z-index: 1; }
+        h1, h2, .font-brand { font-family: 'Outfit', sans-serif; }
+
+        .glass { background: rgba(255, 255, 255, 0.035); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(139, 92, 246, 0.14); box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+        .neon-violet { background: linear-gradient(90deg,#b39ddb,#8b5cf6); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 14px rgba(139,92,246,0.35)); }
+        .btn-violet { border: 1px solid rgba(139,92,246,0.55); background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(139,92,246,0.06)); transition: all .25s ease; }
+        .btn-violet:hover { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; transform: translateY(-2px); box-shadow: 0 10px 26px rgba(139,92,246,0.3); }
         .chart-container { position: relative; height: 350px; width: 100%; }
-        select, input[type="month"] { background: #1a1a2e; border: 1px solid #8b5cf6; color: white; padding: 5px 10px; border-radius: 8px; outline: none; font-size: 12px; }
+        select, input[type="month"] { background: rgba(255,255,255,0.05); border: 1px solid rgba(139,92,246,0.4); color: white; padding: 6px 12px; border-radius: 10px; outline: none; font-size: 12px; transition: border-color .2s; }
+        select:focus, input[type="month"]:focus { border-color: #8b5cf6; }
         .table-ranking { width: 100%; font-size: 13px; }
-        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #8b5cf6; position: sticky; top: 0; background: #0a0a0f; }
+        .table-ranking th { text-align: left; padding: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #b39ddb; position: sticky; top: 0; background: #0b0c14; }
         .table-ranking td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .ranking-container { max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8b5cf6 transparent; }
         /* Seção de Pontuação */
@@ -30,13 +45,16 @@
         .pill-f { background: rgba(244,63,94,0.15); color: #f43f5e; }
         .bar-wrap { display: inline-block; width: 60px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; vertical-align: middle; margin-left: 6px; }
         .bar-fill { height: 100%; border-radius: 99px; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { animation: fadeUp .45s ease both; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-10">
-            <a href="index.html" class="btn-violet px-4 py-2 rounded-lg text-sm uppercase font-bold text-white">
-                <i class="fas fa-arrow-left mr-2"></i> Voltar
+            <a href="index.html" class="btn-violet px-4 py-2 rounded-xl text-sm uppercase font-bold text-white flex items-center gap-2 w-fit">
+                <i class="fas fa-arrow-left"></i> <span>Voltar</span>
             </a>
             <div class="text-center">
                 <h1 class="text-3xl font-bold neon-violet tracking-widest uppercase">Estatísticas Arena</h1>

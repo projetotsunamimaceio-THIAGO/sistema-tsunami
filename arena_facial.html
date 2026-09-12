@@ -6,9 +6,12 @@
     <title>TSUNAMI - Arena Facial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="logo.png">
     <style>
-        body { background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); color: white; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(16, 185, 129, 0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+        body { background: #06070d; color: white; font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 100vh; }
+        h1, .font-brand { font-family: 'Outfit', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.035); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(16, 185, 129, 0.12); box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
         
         .camera-box { 
             width: 250px; 
@@ -212,8 +215,9 @@
             50% { top: 100%; }
         }
         
-        .filtro-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
-        .header-facial { background: rgba(16, 185, 129, 0.1); border-bottom: 2px solid #10b981; }
+        .filtro-box { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; }
+        .header-facial { background: rgba(16, 185, 129, 0.08); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(16,185,129,0.3); }
+        .aluno-card { border-radius: 14px !important; }
         
         .resultado-overlay {
             position: fixed;

@@ -6,55 +6,80 @@
     <title>TSUNAMI - Turmas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="logo.png">
     <style>
-        body { 
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); 
-            color: white; 
-            font-family: 'Segoe UI', sans-serif; 
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+        body {
+            background: #06070d;
+            color: white;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             min-height: 100vh;
+            position: relative;
         }
-        .glass { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(0, 255, 255, 0.1); 
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 10% 0%, rgba(0,229,255,0.10), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(0,229,255,0.06), transparent 45%);
+            pointer-events: none;
+            z-index: 0;
         }
-        .btn-cyan { 
-            border: 1px solid #00ffff; 
-            background: rgba(0, 255, 255, 0.1); 
-            transition: all 0.3s; 
-            color: #00ffff; 
+        .max-w-6xl { position: relative; z-index: 1; }
+
+        h1, .font-brand { font-family: 'Outfit', sans-serif; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.035);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(0, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
         }
-        .btn-cyan:hover { 
-            background: #00ffff; 
-            color: black; 
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        .btn-cyan {
+            border: 1px solid rgba(0,255,255,0.5);
+            background: linear-gradient(135deg, rgba(0,255,255,0.16), rgba(0,255,255,0.05));
+            transition: all 0.25s ease;
+            color: #00e5ff;
+        }
+        .btn-cyan:hover {
+            background: linear-gradient(135deg, #00e5ff, #00b8d4);
+            color: #06121a;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(0, 255, 255, 0.3);
         }
         .day-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 255, 255, 0.2);
-            color: #00ffff;
-            transition: all 0.3s;
-            padding: 8px 16px;
-            border-radius: 8px;
+            color: #00e5ff;
+            transition: all 0.25s ease;
+            padding: 9px 18px;
+            border-radius: 10px;
             font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
             cursor: pointer;
         }
+        .day-btn:hover { border-color: rgba(0,255,255,0.5); background: rgba(0,255,255,0.08); }
         .day-btn.selected {
-            background: #00ffff;
-            color: black;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            background: linear-gradient(135deg, #00e5ff, #00b8d4);
+            color: #06121a;
+            border-color: transparent;
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.35);
         }
         .turma-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(0, 255, 255, 0.1);
-            border-left: 4px solid #00ffff;
-            transition: all 0.3s;
+            border-left: 3px solid #00e5ff;
+            border-radius: 14px;
+            transition: all 0.25s ease;
         }
         .turma-card:hover {
-            background: rgba(0, 255, 255, 0.05);
-            transform: translateX(5px);
+            background: rgba(0, 255, 255, 0.06);
+            transform: translateX(6px);
+            border-color: rgba(0,255,255,0.25);
         }
         .modal {
             display: none;
@@ -63,13 +88,19 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
+            background: rgba(4, 5, 12, 0.85);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
         }
         .modal.active { display: flex; }
+
+        input, select { border-radius: 10px !important; transition: border-color .2s, background .2s; }
+        input:focus, select:focus { border-color: rgba(0,229,255,0.6) !important; outline: none; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { animation: fadeUp .45s ease both; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -77,11 +108,12 @@
 
     <div class="max-w-6xl mx-auto">
         <div class="flex justify-between items-center mb-8">
-            <a href="index.html" class="btn-cyan px-4 py-2 rounded-lg text-xs uppercase font-bold">
-                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            <a href="index.html" class="btn-cyan px-4 py-2 rounded-xl text-xs uppercase font-bold flex items-center gap-2 w-fit">
+                <i class="fas fa-arrow-left"></i><span class="hidden sm:inline">Voltar</span>
             </a>
-            <h1 class="text-2xl md:text-3xl font-bold text-cyan-400 tracking-widest uppercase text-center flex-1">
-                <i class="fas fa-users-cog mr-3"></i>Gerenciar Turmas
+            <h1 class="text-2xl md:text-3xl font-bold text-cyan-400 tracking-widest uppercase text-center flex-1 font-brand flex items-center justify-center gap-3">
+                <img src="logo.png" alt="" class="w-8 h-8 rounded-full hidden sm:block" style="border:1px solid rgba(0,255,255,.5)" onerror="this.style.display='none'">
+                <span><i class="fas fa-users-cog mr-2"></i>Gerenciar Turmas</span>
             </h1>
             <div class="w-20"></div>
         </div>
